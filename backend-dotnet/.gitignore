@@ -1,0 +1,28 @@
+## C# / .NET specific ignores for backend-dotnet/
+
+# Build outputs
+backend-dotnet/**/bin/
+backend-dotnet/**/obj/
+backend-dotnet/**/*.user
+backend-dotnet/**/*.suo
+
+# Test results
+backend-dotnet/**/TestResults/
+backend-dotnet/**/*.trx
+backend-dotnet/**/*.coverage
+backend-dotnet/**/*.coveragexml
+
+# NuGet
+backend-dotnet/**/*.nupkg
+backend-dotnet/**/project.lock.json
+backend-dotnet/**/project.assets.json
+
+# Rider / Resharper
+backend-dotnet/**/.idea/
+backend-dotnet/**/*.DotSettings
+
+# Environment / secrets
+backend-dotnet/.env
+backend-dotnet/.env.local
+backend-dotnet/**/*.pfx
+backend-dotnet/**/*.snk

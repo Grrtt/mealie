@@ -1,0 +1,15 @@
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/bin/Debug/net10.0/Mealie.Migration
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/bin/Debug/net10.0/Mealie.Migration.deps.json
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/bin/Debug/net10.0/Mealie.Migration.runtimeconfig.json
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/bin/Debug/net10.0/Mealie.Migration.dll
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/bin/Debug/net10.0/Mealie.Migration.pdb
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.GeneratedMSBuildEditorConfig.editorconfig
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.AssemblyInfoInputs.cache
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.AssemblyInfo.cs
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.csproj.CoreCompileInputs.cache
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.sourcelink.json
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.dll
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/refint/Mealie.Migration.dll
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.pdb
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/Mealie.Migration.genruntimeconfig.cache
+/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/obj/Debug/net10.0/ref/Mealie.Migration.dll

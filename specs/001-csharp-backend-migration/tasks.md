@@ -18,18 +18,18 @@
 
 **Purpose**: Create the C# solution structure under `backend-dotnet/` on branch `001-csharp-backend-migration`.
 
-- [ ] T001 Create `backend-dotnet/` directory at repo root and scaffold `Mealie.sln` solution file linking all projects
-- [ ] T002 Create `Mealie.Api` ASP.NET Core web project in `backend-dotnet/src/Mealie.Api/` and add to `Mealie.sln`
-- [ ] T003 [P] Create `Mealie.Application` class library in `backend-dotnet/src/Mealie.Application/` and add to `Mealie.sln`
-- [ ] T004 [P] Create `Mealie.Domain` class library in `backend-dotnet/src/Mealie.Domain/` and add to `Mealie.sln`
-- [ ] T005 [P] Create `Mealie.Infrastructure` class library in `backend-dotnet/src/Mealie.Infrastructure/` and add to `Mealie.sln`
-- [ ] T006 [P] Create `Mealie.Shared` class library in `backend-dotnet/src/Mealie.Shared/` and add to `Mealie.sln`
-- [ ] T007 [P] Create `Mealie.UnitTests` xUnit project in `backend-dotnet/tests/Mealie.UnitTests/` and add to `Mealie.sln`
-- [ ] T008 [P] Create `Mealie.IntegrationTests` xUnit project in `backend-dotnet/tests/Mealie.IntegrationTests/` and add to `Mealie.sln`
-- [ ] T009 [P] Create `Mealie.Migration` CLI project (`dotnet new console`) in `backend-dotnet/tools/Mealie.Migration/` and add to `Mealie.sln`
-- [ ] T010 Add `Directory.Packages.props` and `Directory.Build.props` to `backend-dotnet/` declaring all NuGet packages with pinned versions (ASP.NET Core 10, EF Core 10 + Npgsql + SQLite, Mapperly, FluentValidation, Serilog, Swashbuckle.AspNetCore, MailKit, HtmlAgilityPack, AngleSharp, Dapper, NSubstitute, xUnit, WebApplicationFactory)
-- [ ] T011 [P] Add `backend-dotnet/global.json` (pinning `dotnet-version` to `10.x`, `rollForward: latestFeature`), `.editorconfig` (C# coding style), and `.gitignore` additions for `bin/`, `obj/`, `*.user`
-- [ ] T012 [P] Add a `C#-Build` stage to `azure-pipelines.yml` that runs `dotnet build backend-dotnet/Mealie.sln` and `dotnet test backend-dotnet/Mealie.sln` on branch `001-csharp-backend-migration` (no deployment step, no merge to main)
+- [x] T001 Create `backend-dotnet/` directory at repo root and scaffold `Mealie.sln` solution file linking all projects
+- [x] T002 Create `Mealie.Api` ASP.NET Core web project in `backend-dotnet/src/Mealie.Api/` and add to `Mealie.sln`
+- [x] T003 [P] Create `Mealie.Application` class library in `backend-dotnet/src/Mealie.Application/` and add to `Mealie.sln`
+- [x] T004 [P] Create `Mealie.Domain` class library in `backend-dotnet/src/Mealie.Domain/` and add to `Mealie.sln`
+- [x] T005 [P] Create `Mealie.Infrastructure` class library in `backend-dotnet/src/Mealie.Infrastructure/` and add to `Mealie.sln`
+- [x] T006 [P] Create `Mealie.Shared` class library in `backend-dotnet/src/Mealie.Shared/` and add to `Mealie.sln`
+- [x] T007 [P] Create `Mealie.UnitTests` xUnit project in `backend-dotnet/tests/Mealie.UnitTests/` and add to `Mealie.sln`
+- [x] T008 [P] Create `Mealie.IntegrationTests` xUnit project in `backend-dotnet/tests/Mealie.IntegrationTests/` and add to `Mealie.sln`
+- [x] T009 [P] Create `Mealie.Migration` CLI project (`dotnet new console`) in `backend-dotnet/tools/Mealie.Migration/` and add to `Mealie.sln`
+- [x] T010 Add `Directory.Packages.props` and `Directory.Build.props` to `backend-dotnet/` declaring all NuGet packages with pinned versions (ASP.NET Core 10, EF Core 10 + Npgsql + SQLite, Mapperly, FluentValidation, Serilog, Swashbuckle.AspNetCore, MailKit, HtmlAgilityPack, AngleSharp, Dapper, NSubstitute, xUnit, WebApplicationFactory)
+- [x] T011 [P] Add `backend-dotnet/global.json` (pinning `dotnet-version` to `10.x`, `rollForward: latestFeature`), `.editorconfig` (C# coding style), and `.gitignore` additions for `bin/`, `obj/`, `*.user`
+- [x] T012 [P] Add a `C#-Build` stage to `azure-pipelines.yml` that runs `dotnet build backend-dotnet/Mealie.sln` and `dotnet test backend-dotnet/Mealie.sln` on branch `001-csharp-backend-migration` (no deployment step, no merge to main)
 
 ---
 
@@ -39,44 +39,44 @@
 
 ### Domain Entities
 
-- [ ] T013 Create core tenancy domain entities `Group`, `Household`, `User`, and `ApiKey` (matching data-model.md column specs exactly) in `backend-dotnet/src/Mealie.Domain/Entities/Core/`
-- [ ] T014 [P] Create recipe domain entity cluster: `Recipe`, `RecipeIngredient`, `RecipeInstruction`, `RecipeNote`, `RecipeAsset`, `RecipeComment`, `RecipeTimelineEvent`, `RecipeShareToken`, `Nutrition`, `RecipeSettings` in `backend-dotnet/src/Mealie.Domain/Entities/Recipes/`
-- [ ] T015 [P] Create organizer domain entities: `Tag`, `Category`, `Tool`, `Cookbook`, `MultiPurposeLabel`, `GroupInviteToken` in `backend-dotnet/src/Mealie.Domain/Entities/Organizers/`
-- [ ] T016 [P] Create food and unit domain entities: `IngredientFood`, `IngredientFoodAlias`, `IngredientUnit` in `backend-dotnet/src/Mealie.Domain/Entities/Ingredients/`
-- [ ] T017 [P] Create planning and shopping domain entities: `MealPlan`, `ShoppingList`, `ShoppingListItem`, `ShoppingListItemRecipeReference`, `ShoppingListRecipeReference` in `backend-dotnet/src/Mealie.Domain/Entities/Planning/`
-- [ ] T018 [P] Create preferences and notification domain entities: `GroupPreferences`, `HouseholdPreferences`, `Webhook`, `EventNotifier`, `ServerTask` in `backend-dotnet/src/Mealie.Domain/Entities/Settings/`
+- [x] T013 Create core tenancy domain entities `Group`, `Household`, `User`, and `ApiKey` (matching data-model.md column specs exactly) in `backend-dotnet/src/Mealie.Domain/Entities/Core/`
+- [x] T014 [P] Create recipe domain entity cluster: `Recipe`, `RecipeIngredient`, `RecipeInstruction`, `RecipeNote`, `RecipeAsset`, `RecipeComment`, `RecipeTimelineEvent`, `RecipeShareToken`, `Nutrition`, `RecipeSettings` in `backend-dotnet/src/Mealie.Domain/Entities/Recipes/`
+- [x] T015 [P] Create organizer domain entities: `Tag`, `Category`, `Tool`, `Cookbook`, `MultiPurposeLabel`, `GroupInviteToken` in `backend-dotnet/src/Mealie.Domain/Entities/Organizers/`
+- [x] T016 [P] Create food and unit domain entities: `IngredientFood`, `IngredientFoodAlias`, `IngredientUnit` in `backend-dotnet/src/Mealie.Domain/Entities/Ingredients/`
+- [x] T017 [P] Create planning and shopping domain entities: `MealPlan`, `ShoppingList`, `ShoppingListItem`, `ShoppingListItemRecipeReference`, `ShoppingListRecipeReference` in `backend-dotnet/src/Mealie.Domain/Entities/Planning/`
+- [x] T018 [P] Create preferences and notification domain entities: `GroupPreferences`, `HouseholdPreferences`, `Webhook`, `EventNotifier`, `ServerTask` in `backend-dotnet/src/Mealie.Domain/Entities/Settings/`
 
 ### EF Core Data Layer
 
-- [ ] T019 Create `ApplicationDbContext` with `UseSnakeCaseNamingConvention()`, dual provider selection (`DB_ENGINE=sqlite` → `UseSqlite`, `DB_ENGINE=postgres` → `UseNpgsql`), and `DbSet<>` registrations for all 30+ entities in `backend-dotnet/src/Mealie.Infrastructure/Data/ApplicationDbContext.cs`
-- [ ] T020 Create `IEntityTypeConfiguration` implementations for `Group`, `Household`, `User`, `ApiKey` (explicit table names, constraints, unique indexes, FK relationships matching Python schema) in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/`
-- [ ] T021 [P] Create `IEntityTypeConfiguration` for `Recipe` (unique constraint `(slug, group_id)`, JSON column for `ingredient_references`, all FK relationships) and all recipe sub-entity configurations in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/Recipes/`
-- [ ] T022 [P] Create `IEntityTypeConfiguration` for all remaining entities: organizers, foods, units, planning, shopping, preferences, junction tables (`recipes_to_tags`, `recipes_to_categories`, `recipes_to_tools`, `households_to_ingredient_foods`, `user_to_recipe`) in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/`
-- [ ] T023 Implement `ITenantContext` interface and `TenantContextAccessor` scoped service (resolves `GroupId` and `HouseholdId` from current HTTP context JWT claims) in `backend-dotnet/src/Mealie.Infrastructure/Auth/TenantContextAccessor.cs`
-- [ ] T024 Implement `TenantContextMiddleware` that reads authenticated user claims and populates `ITenantContext` on every authenticated request in `backend-dotnet/src/Mealie.Api/Middleware/TenantContextMiddleware.cs`
-- [ ] T025 Apply EF Core global query filters in `ApplicationDbContext.OnModelCreating`: household-scoped filter on all tenant-owned entities; group-scoped filter on group-level entities; document `IgnoreQueryFilters()` usage pattern for admin routes in `backend-dotnet/src/Mealie.Infrastructure/Data/ApplicationDbContext.cs`
-- [ ] T026 Generate initial EF Core migration using PostgreSQL as canonical provider (`dotnet ef migrations add InitialSchema`) capturing the full schema; verify SQLite compatibility in `backend-dotnet/src/Mealie.Infrastructure/Data/Migrations/`
+- [x] T019 Create `ApplicationDbContext` with `UseSnakeCaseNamingConvention()`, dual provider selection (`DB_ENGINE=sqlite` → `UseSqlite`, `DB_ENGINE=postgres` → `UseNpgsql`), and `DbSet<>` registrations for all 30+ entities in `backend-dotnet/src/Mealie.Infrastructure/Data/ApplicationDbContext.cs`
+- [x] T020 Create `IEntityTypeConfiguration` implementations for `Group`, `Household`, `User`, `ApiKey` (explicit table names, constraints, unique indexes, FK relationships matching Python schema) in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/`
+- [x] T021 [P] Create `IEntityTypeConfiguration` for `Recipe` (unique constraint `(slug, group_id)`, JSON column for `ingredient_references`, all FK relationships) and all recipe sub-entity configurations in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/Recipes/`
+- [x] T022 [P] Create `IEntityTypeConfiguration` for all remaining entities: organizers, foods, units, planning, shopping, preferences, junction tables (`recipes_to_tags`, `recipes_to_categories`, `recipes_to_tools`, `households_to_ingredient_foods`, `user_to_recipe`) in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/`
+- [x] T023 Implement `ITenantContext` interface and `TenantContextAccessor` scoped service (resolves `GroupId` and `HouseholdId` from current HTTP context JWT claims) in `backend-dotnet/src/Mealie.Infrastructure/Auth/TenantContextAccessor.cs`
+- [x] T024 Implement `TenantContextMiddleware` that reads authenticated user claims and populates `ITenantContext` on every authenticated request in `backend-dotnet/src/Mealie.Api/Middleware/TenantContextMiddleware.cs`
+- [x] T025 Apply EF Core global query filters in `ApplicationDbContext.OnModelCreating`: household-scoped filter on all tenant-owned entities; group-scoped filter on group-level entities; document `IgnoreQueryFilters()` usage pattern for admin routes in `backend-dotnet/src/Mealie.Infrastructure/Data/ApplicationDbContext.cs`
+- [x] T026 Generate initial EF Core migration using PostgreSQL as canonical provider (`dotnet ef migrations add InitialSchema`) capturing the full schema; verify SQLite compatibility in `backend-dotnet/src/Mealie.Infrastructure/Data/Migrations/`
 
 ### Authentication
 
-- [ ] T027 Implement `JwtTokenService` (generate and validate JWT access tokens, issue refresh tokens, read signing key from `SECRET` env var) in `backend-dotnet/src/Mealie.Infrastructure/Auth/JwtTokenService.cs`
-- [ ] T028 [P] Implement `ApiKeyAuthenticationHandler` (reads `Authorization: Bearer` header, queries `long_live_tokens` table, verifies bcrypt hash, resolves `HouseholdId`/`GroupId` from stored user) in `backend-dotnet/src/Mealie.Infrastructure/Auth/ApiKeyAuthenticationHandler.cs`
+- [x] T027 Implement `JwtTokenService` (generate and validate JWT access tokens, issue refresh tokens, read signing key from `SECRET` env var) in `backend-dotnet/src/Mealie.Infrastructure/Auth/JwtTokenService.cs`
+- [x] T028 [P] Implement `ApiKeyAuthenticationHandler` (reads `Authorization: Bearer` header, queries `long_live_tokens` table, verifies bcrypt hash, resolves `HouseholdId`/`GroupId` from stored user) in `backend-dotnet/src/Mealie.Infrastructure/Auth/ApiKeyAuthenticationHandler.cs`
 
 ### Middleware & Cross-Cutting
 
-- [ ] T029 Configure Serilog: Console JSON sink in production, human-readable in development; `UseSerilogRequestLogging` with enrichment properties `{Method}`, `{Path}`, `{StatusCode}`, `{Elapsed}`, `{UserId}`, `{HouseholdId}`, `{GroupId}`, `{RequestId}`; log level from `LOG_LEVEL` env var in `backend-dotnet/src/Mealie.Api/Program.cs`
-- [ ] T030 [P] Configure FluentValidation: assembly scanning of `Mealie.Application`, automatic DI registration, disable default DataAnnotations validation in `backend-dotnet/src/Mealie.Api/Program.cs`
-- [ ] T031 Implement `ValidationExceptionMiddleware` catching `FluentValidation.ValidationException` and returning HTTP 422 with Pydantic-compatible body `{"detail":[{"loc":["body","field"],"msg":"...","type":"..."}]}` in `backend-dotnet/src/Mealie.Api/Middleware/ValidationExceptionMiddleware.cs`
-- [ ] T032 [P] Implement `GlobalExceptionHandlerMiddleware` catching all unhandled exceptions, logging via Serilog at Error level, and returning `{"detail":"Internal server error"}` HTTP 500 in `backend-dotnet/src/Mealie.Api/Middleware/GlobalExceptionHandlerMiddleware.cs`
-- [ ] T033 Implement `MealieControllerBase` (inherits `ControllerBase`): exposes `CurrentGroupId`, `CurrentHouseholdId`, `CurrentUserId` from `ITenantContext`; provides `NotFoundOrForbidden()` helper that returns HTTP 404 regardless of whether resource exists vs. belongs to different household in `backend-dotnet/src/Mealie.Api/Controllers/MealieControllerBase.cs`
-- [ ] T034 [P] Implement `PaginatedResponse<T>` wrapper, `PaginationParams` (page, per_page), and `IQueryable<T>.ToPaginatedAsync()` extension method returning `{page, per_page, total, total_pages, items}` in `backend-dotnet/src/Mealie.Shared/Pagination/`
-- [ ] T035 Implement `CorrelationIdMiddleware` (generate or pass-through `X-Correlation-Id` header; add to Serilog log context as `{RequestId}`) in `backend-dotnet/src/Mealie.Api/Middleware/CorrelationIdMiddleware.cs`
+- [x] T029 Configure Serilog: Console JSON sink in production, human-readable in development; `UseSerilogRequestLogging` with enrichment properties `{Method}`, `{Path}`, `{StatusCode}`, `{Elapsed}`, `{UserId}`, `{HouseholdId}`, `{GroupId}`, `{RequestId}`; log level from `LOG_LEVEL` env var in `backend-dotnet/src/Mealie.Api/Program.cs`
+- [x] T030 [P] Configure FluentValidation: assembly scanning of `Mealie.Application`, automatic DI registration, disable default DataAnnotations validation in `backend-dotnet/src/Mealie.Api/Program.cs`
+- [x] T031 Implement `ValidationExceptionMiddleware` catching `FluentValidation.ValidationException` and returning HTTP 422 with Pydantic-compatible body `{"detail":[{"loc":["body","field"],"msg":"...","type":"..."}]}` in `backend-dotnet/src/Mealie.Api/Middleware/ValidationExceptionMiddleware.cs`
+- [x] T032 [P] Implement `GlobalExceptionHandlerMiddleware` catching all unhandled exceptions, logging via Serilog at Error level, and returning `{"detail":"Internal server error"}` HTTP 500 in `backend-dotnet/src/Mealie.Api/Middleware/GlobalExceptionHandlerMiddleware.cs`
+- [x] T033 Implement `MealieControllerBase` (inherits `ControllerBase`): exposes `CurrentGroupId`, `CurrentHouseholdId`, `CurrentUserId` from `ITenantContext`; provides `NotFoundOrForbidden()` helper that returns HTTP 404 regardless of whether resource exists vs. belongs to different household in `backend-dotnet/src/Mealie.Api/Controllers/MealieControllerBase.cs`
+- [x] T034 [P] Implement `PaginatedResponse<T>` wrapper, `PaginationParams` (page, per_page), and `IQueryable<T>.ToPaginatedAsync()` extension method returning `{page, per_page, total, total_pages, items}` in `backend-dotnet/src/Mealie.Shared/Pagination/`
+- [x] T035 Implement `CorrelationIdMiddleware` (generate or pass-through `X-Correlation-Id` header; add to Serilog log context as `{RequestId}`) in `backend-dotnet/src/Mealie.Api/Middleware/CorrelationIdMiddleware.cs`
 
 ### DI Wiring & Startup
 
-- [ ] T036 Wire up `Program.cs`: middleware pipeline order (CorrelationId → Serilog → HTTPS → Auth → TenantContext → Validation → GlobalException → Controllers), DI registrations for all services, configure Swashbuckle (camelCase JSON naming policy, `SchemaId` override, serve spec at `/api/openapi.json`, Swagger UI at `/api/docs` in development only) in `backend-dotnet/src/Mealie.Api/Program.cs`
-- [ ] T037 [P] Implement health check endpoints `GET /healthz` and `GET /readyz` returning `{"status":"ok","version":"2.0.0","database":"connected"}` (HTTP 200) or `{"status":"degraded"}` (HTTP 503) in `backend-dotnet/src/Mealie.Api/Controllers/Utility/HealthController.cs`
-- [ ] T038 [P] Configure static file serving from `DATA_DIR` with SPA fallback: `app.UseStaticFiles(DATA_DIR/frontend)` + `app.MapFallbackToFile("index.html")`; bind all environment variable configuration (`DATABASE_URL`, `SECRET`, `BASE_URL`, `DATA_DIR`, `LOG_LEVEL`, `LDAP_*`, `OIDC_*`, `SMTP_*`, `OPENAI_API_KEY`, `ALLOW_SIGNUP`, `API_PORT`) in `backend-dotnet/src/Mealie.Api/Configuration/AppSettings.cs`
+- [x] T036 Wire up `Program.cs`: middleware pipeline order (CorrelationId → Serilog → HTTPS → Auth → TenantContext → Validation → GlobalException → Controllers), DI registrations for all services, configure Swashbuckle (camelCase JSON naming policy, `SchemaId` override, serve spec at `/api/openapi.json`, Swagger UI at `/api/docs` in development only) in `backend-dotnet/src/Mealie.Api/Program.cs`
+- [x] T037 [P] Implement health check endpoints `GET /healthz` and `GET /readyz` returning `{"status":"ok","version":"2.0.0","database":"connected"}` (HTTP 200) or `{"status":"degraded"}` (HTTP 503) in `backend-dotnet/src/Mealie.Api/Controllers/Utility/HealthController.cs`
+- [x] T038 [P] Configure static file serving from `DATA_DIR` with SPA fallback: `app.UseStaticFiles(DATA_DIR/frontend)` + `app.MapFallbackToFile("index.html")`; bind all environment variable configuration (`DATABASE_URL`, `SECRET`, `BASE_URL`, `DATA_DIR`, `LOG_LEVEL`, `LDAP_*`, `OIDC_*`, `SMTP_*`, `OPENAI_API_KEY`, `ALLOW_SIGNUP`, `API_PORT`) in `backend-dotnet/src/Mealie.Api/Configuration/AppSettings.cs`
 
 **⚠️ Checkpoint**: Foundation complete — all user story phases can now begin in parallel.
 

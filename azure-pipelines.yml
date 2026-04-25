@@ -5,6 +5,39 @@ trigger:
 
 pr: none
 
+# ─── C# Backend Migration CI ─────────────────────────────────────────────────
+# Separate stage that runs ONLY on the migration branch.
+# No deployment step; never merges to main.
+stages:
+  - stage: CSharpBuild
+    displayName: 'C# Backend Build & Test'
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/001-csharp-backend-migration')
+    pool:
+      vmImage: ubuntu-latest
+    jobs:
+      - job: BuildAndTest
+        displayName: 'dotnet build + dotnet test'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Install .NET 10 SDK'
+            inputs:
+              packageType: sdk
+              version: '10.x'
+
+          - script: dotnet build backend-dotnet/Mealie.slnx --configuration Release -p:AllowMissingPrunePackageData=true
+            displayName: 'dotnet build backend-dotnet/Mealie.slnx'
+
+          - script: dotnet test backend-dotnet/Mealie.slnx --configuration Release --logger trx --no-build -p:AllowMissingPrunePackageData=true
+            displayName: 'dotnet test backend-dotnet/Mealie.slnx'
+
+          - task: PublishTestResults@2
+            displayName: 'Publish test results'
+            condition: always()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: 'backend-dotnet/**/TestResults/*.trx'
+# ─────────────────────────────────────────────────────────────────────────────
+
 pool:
   vmImage: ubuntu-latest
 

@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "2k2HcYkaKVY=",
+  "success": true,
+  "projectFilePath": "/home/grrtt/dev/mealie/backend-dotnet/tools/Mealie.Migration/Mealie.Migration.csproj",
+  "expectedPackageFiles": [
+    "/home/grrtt/.nuget/packages/microsoft.aspnetcore.app.ref/10.0.4/microsoft.aspnetcore.app.ref.10.0.4.nupkg.sha512"
+  ],
+  "logs": []
+}

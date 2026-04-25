@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "dgSpecHash": "OKxTYAfh7nQ=",
+  "success": true,
+  "projectFilePath": "/home/grrtt/dev/mealie/backend-dotnet/src/Mealie.Shared/Mealie.Shared.csproj",
+  "expectedPackageFiles": [
+    "/home/grrtt/.nuget/packages/microsoft.entityframeworkcore/10.0.4/microsoft.entityframeworkcore.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.entityframeworkcore.abstractions/10.0.4/microsoft.entityframeworkcore.abstractions.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.entityframeworkcore.analyzers/10.0.4/microsoft.entityframeworkcore.analyzers.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.entityframeworkcore.relational/10.0.4/microsoft.entityframeworkcore.relational.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.caching.abstractions/10.0.4/microsoft.extensions.caching.abstractions.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.caching.memory/10.0.4/microsoft.extensions.caching.memory.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.configuration.abstractions/10.0.4/microsoft.extensions.configuration.abstractions.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.dependencyinjection/10.0.4/microsoft.extensions.dependencyinjection.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.4/microsoft.extensions.dependencyinjection.abstractions.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.logging/10.0.4/microsoft.extensions.logging.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.logging.abstractions/10.0.4/microsoft.extensions.logging.abstractions.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.options/10.0.4/microsoft.extensions.options.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.extensions.primitives/10.0.4/microsoft.extensions.primitives.10.0.4.nupkg.sha512",
+    "/home/grrtt/.nuget/packages/microsoft.aspnetcore.app.ref/10.0.4/microsoft.aspnetcore.app.ref.10.0.4.nupkg.sha512"
+  ],
+  "logs": []
+}
