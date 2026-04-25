@@ -38,7 +38,7 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
 
     public async Task<AdminGroupResponse?> CreateGroupAsync(CreateAdminGroupRequest request, CancellationToken ct = default)
     {
-        var slug = GenerateSlug(request.Name);
+        var slug = await GenerateUniqueGroupSlugAsync(request.Name, ct);
         var group = new Group
         {
             Id = Guid.NewGuid(),
@@ -119,7 +119,7 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
 
     public async Task<AdminHouseholdResponse?> CreateHouseholdAsync(CreateAdminHouseholdRequest request, CancellationToken ct = default)
     {
-        var slug = GenerateSlug(request.Name);
+        var slug = await GenerateUniqueHouseholdSlugAsync(request.Name, ct);
         var household = new Household
         {
             Id = Guid.NewGuid(),
@@ -185,6 +185,26 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
 
     private static string GenerateSlug(string name)
         => System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant().Trim(), @"[^a-z0-9]+", "-").Trim('-');
+
+    private async Task<string> GenerateUniqueGroupSlugAsync(string name, CancellationToken ct)
+    {
+        var baseSlug = GenerateSlug(name);
+        var slug = baseSlug;
+        var i = 1;
+        while (await db.Groups.IgnoreQueryFilters().AnyAsync(g => g.Slug == slug, ct))
+            slug = $"{baseSlug}-{i++}";
+        return slug;
+    }
+
+    private async Task<string> GenerateUniqueHouseholdSlugAsync(string name, CancellationToken ct)
+    {
+        var baseSlug = GenerateSlug(name);
+        var slug = baseSlug;
+        var i = 1;
+        while (await db.Households.IgnoreQueryFilters().AnyAsync(h => h.Slug == slug, ct))
+            slug = $"{baseSlug}-{i++}";
+        return slug;
+    }
 
     private static AdminGroupResponse MapGroupToResponse(Group g) => new()
     {
