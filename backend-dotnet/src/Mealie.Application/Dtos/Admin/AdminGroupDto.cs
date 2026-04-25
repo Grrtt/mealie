@@ -49,6 +49,8 @@ public class AdminGroupResponse
     public int UserCount { get; set; }
     public int HouseholdCount { get; set; }
     public GroupPreferencesDto? Preferences { get; set; }
+    public List<object> Users { get; set; } = [];
+    public List<object> Households { get; set; } = [];
 }
 
 public class CreateAdminGroupRequest

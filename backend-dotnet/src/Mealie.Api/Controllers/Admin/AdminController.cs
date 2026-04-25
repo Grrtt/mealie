@@ -103,7 +103,7 @@ public class AdminController(
     // ── Groups ──────────────────────────────────────────────────────────────
 
     [HttpGet("groups")]
-    public async Task<ActionResult<IList<AdminGroupResponse>>> GetGroups(CancellationToken ct)
+    public async Task<IActionResult> GetGroups(CancellationToken ct)
         => Ok(await groupService.GetAllGroupsAsync(ct));
 
     [HttpGet("groups/{groupId:guid}")]

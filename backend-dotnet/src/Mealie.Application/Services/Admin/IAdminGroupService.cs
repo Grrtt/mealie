@@ -4,7 +4,7 @@ namespace Mealie.Application.Services.Admin;
 
 public interface IAdminGroupService
 {
-    Task<IList<AdminGroupResponse>> GetAllGroupsAsync(CancellationToken ct = default);
+    Task<object> GetAllGroupsAsync(CancellationToken ct = default);
     Task<AdminGroupResponse?> GetGroupAsync(Guid groupId, CancellationToken ct = default);
     Task<AdminGroupResponse?> CreateGroupAsync(CreateAdminGroupRequest request, CancellationToken ct = default);
     Task<AdminGroupResponse?> UpdateGroupAsync(Guid groupId, UpdateAdminGroupRequest request, CancellationToken ct = default);

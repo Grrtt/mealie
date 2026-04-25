@@ -10,20 +10,25 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
 {
     // ── Groups ──────────────────────────────────────────────────────────────
 
-    public async Task<IList<AdminGroupResponse>> GetAllGroupsAsync(CancellationToken ct = default)
+    public async Task<object> GetAllGroupsAsync(CancellationToken ct = default)
     {
-        return await db.Groups.IgnoreQueryFilters()
-            .Select(g => new AdminGroupResponse
-            {
-                Id = g.Id,
-                Name = g.Name,
-                Slug = g.Slug,
-                CreatedAt = g.CreatedAt,
-                UpdateAt = g.UpdateAt,
-                UserCount = g.Users.Count,
-                HouseholdCount = g.Households.Count,
-            })
+        var groups = await db.Groups.IgnoreQueryFilters()
+            .Include(g => g.Users)
+            .Include(g => g.Households)
+            .Include(g => g.Preferences)
+            .OrderBy(g => g.Name)
             .ToListAsync(ct);
+
+        var items = groups.Select(MapGroupToResponse).ToList();
+
+        return new
+        {
+            page = 1,
+            per_page = -1,
+            total = items.Count,
+            total_pages = 1,
+            items,
+        };
     }
 
     public async Task<AdminGroupResponse?> GetGroupAsync(Guid groupId, CancellationToken ct = default)
@@ -215,6 +220,8 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         UpdateAt = g.UpdateAt,
         UserCount = g.Users.Count,
         HouseholdCount = g.Households.Count,
+        Users = g.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
+        Households = g.Households.Select(h => (object)new { h.Id, h.Name, h.Slug }).ToList(),
         Preferences = g.Preferences is null ? null : new GroupPreferencesDto
         {
             Id = g.Preferences.Id,
