@@ -2529,6 +2529,111 @@ namespace Mealie.Infrastructure.Data.Migrations
 
                     b.Navigation("TimelineEvents");
                 });
+
+            modelBuilder.Entity("Mealie.Domain.Entities.Core.Report", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasDefaultValue("migration")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasDefaultValue("in-progress")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("timestamp");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reports");
+
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_reports_group_id");
+
+                    b.ToTable("reports");
+                });
+
+            modelBuilder.Entity("Mealie.Domain.Entities.Core.ReportEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ReportId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("report_id");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("timestamp");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("success");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("message");
+
+                    b.Property<string>("Exception")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("exception");
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_entries");
+
+                    b.HasIndex("ReportId")
+                        .HasDatabaseName("ix_report_entries_report_id");
+
+                    b.ToTable("report_entries");
+                });
+
+            modelBuilder.Entity("Mealie.Domain.Entities.Core.Report", b =>
+                {
+                    b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_reports_groups_group_id");
+
+                    b.Navigation("Group");
+                });
+
+            modelBuilder.Entity("Mealie.Domain.Entities.Core.ReportEntry", b =>
+                {
+                    b.HasOne("Mealie.Domain.Entities.Core.Report", "Report")
+                        .WithMany("Entries")
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_entries_reports_report_id");
+
+                    b.Navigation("Report");
+                });
+
+            modelBuilder.Entity("Mealie.Domain.Entities.Core.Report", b =>
+                {
+                    b.Navigation("Entries");
+                });
 #pragma warning restore 612, 618
         }
     }

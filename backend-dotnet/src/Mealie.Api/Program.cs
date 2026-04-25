@@ -51,6 +51,10 @@ appSettings.DataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? appSetti
 appSettings.LogLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? appSettings.LogLevel;
 appSettings.OpenAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
+var allowSignupEnv = Environment.GetEnvironmentVariable("ALLOW_SIGNUP");
+if (allowSignupEnv is not null)
+    appSettings.AllowSignup = allowSignupEnv.Equals("true", StringComparison.OrdinalIgnoreCase);
+
 builder.Services.AddSingleton(appSettings);
 builder.Services.AddOptions<AppSettings>().Configure(o =>
 {
@@ -107,6 +111,11 @@ builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
     else
         options.UseSqlite(appSettings.DatabaseUrl)
                .UseSnakeCaseNamingConvention();
+
+    // Suppress warning when a hand-written migration's snapshot doesn't exactly
+    // match EF's internal representation — migrations themselves are correct.
+    options.ConfigureWarnings(w =>
+        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
 // ── Tenant Context ─────────────────────────────────────────────────────────
@@ -206,6 +215,10 @@ builder.Services.AddSingleton<IMigrationParser, NextcloudCookbookMigrationParser
 builder.Services.AddSingleton<IMigrationParser, TandoorMigrationParser>();
 builder.Services.AddSingleton<IMigrationParser, MealieBackupImportParser>();
 builder.Services.AddScoped<MigrationImportService>();
+
+// Migration queue: singleton channel + hosted background processor
+builder.Services.AddSingleton<Mealie.Application.Services.Migrations.MigrationQueue>();
+builder.Services.AddHostedService<Mealie.Application.Services.Migrations.MigrationBackgroundService>();
 
 // ── FluentValidation ───────────────────────────────────────────────────────
 builder.Services.AddValidatorsFromAssembly(typeof(Mealie.Application.PlaceholderMarker).Assembly);
@@ -331,6 +344,14 @@ if (args.Length > 0)
             return;
     }
 }
+
+// Apply migrations and seed on every startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<Mealie.Infrastructure.Data.ApplicationDbContext>();
+    await db.Database.MigrateAsync();
+}
+await Mealie.Api.Commands.SeedCommand.RunAsync(app.Services);
 
 // Media file routes (T094)
 app.MapGet("/api/media/recipes/{recipeId}/images/{fileName}",

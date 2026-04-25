@@ -61,6 +61,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<EventNotifier> EventNotifiers => Set<EventNotifier>();
     public DbSet<ServerTask> ServerTasks => Set<ServerTask>();
 
+    // Reports
+    public DbSet<Report> Reports => Set<Report>();
+    public DbSet<ReportEntry> ReportEntries => Set<ReportEntry>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
