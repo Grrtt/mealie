@@ -46,8 +46,8 @@
 
   <!-- Email -->
   <ItemGroup>
-    <PackageVersion Include="MailKit" Version="4.12.0" />
-    <PackageVersion Include="MimeKit" Version="4.12.0" />
+    <PackageVersion Include="MailKit" Version="4.16.0" />
+    <PackageVersion Include="MimeKit" Version="4.16.0" />
   </ItemGroup>
 
   <!-- HTML Parsing / Scraping -->
