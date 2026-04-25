@@ -16,7 +16,7 @@ steps:
     displayName: Login to GHCR
     inputs:
       command: login
-      containerRegistry: GHCR_SERVICE_CONNECTION  # Replace with your ADO service connection name
+      containerRegistry: mealie-docker-images  # Replace with your ADO service connection name
 
   - task: Docker@2
     displayName: Build Docker image
