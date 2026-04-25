@@ -1,28 +1,35 @@
- trigger:
-   branches:
-     include:
-       - main
- 
- pool:
-   vmImage: ubuntu-latest
- 
- variables:
-   IMAGE_NAME: mealie
-   REGISTRY: your-registry.azurecr.io  # or Docker Hub, GHCR, etc.
- 
- steps:
-   - task: Docker@2
-     displayName: Build Docker image
-     inputs:
-       command: build
-       dockerfile: docker/Dockerfile
-       tags: $(Build.BuildId)
-       arguments: --build-arg COMMIT=$(Build.SourceVersion)
- 
-   - task: Docker@2
-     displayName: Push to registry
-     inputs:
-       command: push
-       containerRegistry: your-service-connection  # set up in Project Settings
-       repository: $(IMAGE_NAME)
-       tags: $(Build.BuildId)
+trigger:
+  branches:
+    include:
+      - mealie-next
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  IMAGE_NAME: mealie
+  # Set ACR_NAME in Azure DevOps Pipeline → Edit → Variables (without .azurecr.io)
+
+steps:
+  - task: Docker@2
+    displayName: Build Docker image
+    inputs:
+      command: build
+      dockerfile: docker/Dockerfile
+      repository: $(ACR_NAME).azurecr.io/$(IMAGE_NAME)
+      tags: |
+        $(Build.SourceVersion)
+        latest
+      arguments: --build-arg COMMIT=$(Build.SourceVersion)
+
+  - task: Docker@2
+    displayName: Push to ACR
+    inputs:
+      command: push
+      containerRegistry: ACR_SERVICE_CONNECTION  # Replace with your ADO service connection name
+      repository: $(IMAGE_NAME)
+      tags: |
+        $(Build.SourceVersion)
+        latest
