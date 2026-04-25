@@ -350,6 +350,33 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<Mealie.Infrastructure.Data.ApplicationDbContext>();
     await db.Database.MigrateAsync();
+
+    // Ensure report tables exist — applied as raw SQL so it's always idempotent
+    // regardless of EF migration discovery issues with hand-written migrations.
+    await db.Database.ExecuteSqlRawAsync(@"
+        CREATE TABLE IF NOT EXISTS reports (
+            id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'migration',
+            status TEXT NOT NULL DEFAULT 'in-progress',
+            timestamp TEXT NOT NULL,
+            group_id TEXT NOT NULL,
+            CONSTRAINT pk_reports PRIMARY KEY (id),
+            CONSTRAINT fk_reports_groups_group_id FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS ix_reports_group_id ON reports (group_id);
+        CREATE TABLE IF NOT EXISTS report_entries (
+            id TEXT NOT NULL,
+            report_id TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            success INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            exception TEXT,
+            CONSTRAINT pk_report_entries PRIMARY KEY (id),
+            CONSTRAINT fk_report_entries_reports_report_id FOREIGN KEY (report_id) REFERENCES reports (id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS ix_report_entries_report_id ON report_entries (report_id);
+    ");
 }
 await Mealie.Api.Commands.SeedCommand.RunAsync(app.Services);
 
