@@ -9,26 +9,30 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  IMAGE_NAME: mealie
-  # Set ACR_NAME in Azure DevOps Pipeline → Edit → Variables (without .azurecr.io)
+  IMAGE_NAME: ghcr.io/grrtt/mealie
 
 steps:
+  - task: Docker@2
+    displayName: Login to GHCR
+    inputs:
+      command: login
+      containerRegistry: GHCR_SERVICE_CONNECTION  # Replace with your ADO service connection name
+
   - task: Docker@2
     displayName: Build Docker image
     inputs:
       command: build
       dockerfile: docker/Dockerfile
-      repository: $(ACR_NAME).azurecr.io/$(IMAGE_NAME)
+      repository: $(IMAGE_NAME)
       tags: |
         $(Build.SourceVersion)
         latest
       arguments: --build-arg COMMIT=$(Build.SourceVersion)
 
   - task: Docker@2
-    displayName: Push to ACR
+    displayName: Push to GHCR
     inputs:
       command: push
-      containerRegistry: ACR_SERVICE_CONNECTION  # Replace with your ADO service connection name
       repository: $(IMAGE_NAME)
       tags: |
         $(Build.SourceVersion)
