@@ -1,0 +1,46 @@
+services:
+  mealie:
+    container_name: mealie
+    image: ghcr.io/grrtt/mealie:latest
+    restart: always
+    volumes:
+      - mealie-data:/app/data/
+    environment:
+      ALLOW_SIGNUP: "false"
+      LOG_LEVEL: "INFO"
+      DB_ENGINE: sqlite
+      # =====================================
+      # Postgres Config (if switching to postgres)
+      # DB_ENGINE: postgres
+      # POSTGRES_USER: mealie
+      # POSTGRES_PASSWORD: mealie
+      # POSTGRES_SERVER: postgres
+      # POSTGRES_PORT: 5432
+      # POSTGRES_DB: mealie
+      # =====================================
+      # Email Configuration
+      # SMTP_HOST:
+      # SMTP_PORT: 587
+      # SMTP_FROM_NAME: Mealie
+      # SMTP_AUTH_STRATEGY: TLS # Options: 'TLS', 'SSL', 'NONE'
+      # SMTP_FROM_EMAIL:
+      # SMTP_USER:
+      # SMTP_PASSWORD:
+
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - mealie
+
+volumes:
+  mealie-data:
+    driver: local
