@@ -7,11 +7,18 @@ namespace Mealie.Application.Services.Admin;
 
 public class AdminUserService(ApplicationDbContext db) : IAdminUserService
 {
-    public async Task<IList<AdminUserResponse>> GetAllUsersAsync(CancellationToken ct = default)
+    public async Task<object> GetAllUsersAsync(CancellationToken ct = default)
     {
-        return await db.Users.IgnoreQueryFilters()
-            .Select(u => MapToResponse(u))
-            .ToListAsync(ct);
+        var users = await db.Users.IgnoreQueryFilters().ToListAsync(ct);
+        var items = users.Select(MapToResponse).ToList();
+        return new
+        {
+            page = 1,
+            per_page = -1,
+            total = items.Count,
+            total_pages = 1,
+            items,
+        };
     }
 
     public async Task<AdminUserResponse?> GetUserAsync(Guid userId, CancellationToken ct = default)

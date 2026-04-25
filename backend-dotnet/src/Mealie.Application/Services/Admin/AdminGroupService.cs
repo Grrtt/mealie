@@ -97,20 +97,24 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
 
     // ── Households ──────────────────────────────────────────────────────────
 
-    public async Task<IList<AdminHouseholdResponse>> GetAllHouseholdsAsync(CancellationToken ct = default)
+    public async Task<object> GetAllHouseholdsAsync(CancellationToken ct = default)
     {
-        return await db.Households.IgnoreQueryFilters()
-            .Select(h => new AdminHouseholdResponse
-            {
-                Id = h.Id,
-                Name = h.Name,
-                Slug = h.Slug,
-                GroupId = h.GroupId,
-                CreatedAt = h.CreatedAt,
-                UpdateAt = h.UpdateAt,
-                UserCount = h.Users.Count,
-            })
+        var households = await db.Households.IgnoreQueryFilters()
+            .Include(h => h.Users)
+            .Include(h => h.Preferences)
+            .OrderBy(h => h.Name)
             .ToListAsync(ct);
+
+        var items = households.Select(MapHouseholdToResponse).ToList();
+
+        return new
+        {
+            page = 1,
+            per_page = -1,
+            total = items.Count,
+            total_pages = 1,
+            items,
+        };
     }
 
     public async Task<AdminHouseholdResponse?> GetHouseholdAsync(Guid householdId, CancellationToken ct = default)

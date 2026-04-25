@@ -10,7 +10,7 @@ public interface IAdminGroupService
     Task<AdminGroupResponse?> UpdateGroupAsync(Guid groupId, UpdateAdminGroupRequest request, CancellationToken ct = default);
     Task<bool> DeleteGroupAsync(Guid groupId, CancellationToken ct = default);
 
-    Task<IList<AdminHouseholdResponse>> GetAllHouseholdsAsync(CancellationToken ct = default);
+    Task<object> GetAllHouseholdsAsync(CancellationToken ct = default);
     Task<AdminHouseholdResponse?> GetHouseholdAsync(Guid householdId, CancellationToken ct = default);
     Task<AdminHouseholdResponse?> CreateHouseholdAsync(CreateAdminHouseholdRequest request, CancellationToken ct = default);
     Task<AdminHouseholdResponse?> UpdateHouseholdAsync(Guid householdId, UpdateAdminHouseholdRequest request, CancellationToken ct = default);

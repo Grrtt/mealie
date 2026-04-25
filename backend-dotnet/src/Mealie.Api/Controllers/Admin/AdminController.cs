@@ -56,7 +56,7 @@ public class AdminController(
     // ── Users ───────────────────────────────────────────────────────────────
 
     [HttpGet("users")]
-    public async Task<ActionResult<IList<AdminUserResponse>>> GetUsers(CancellationToken ct)
+    public async Task<IActionResult> GetUsers(CancellationToken ct)
         => Ok(await userService.GetAllUsersAsync(ct));
 
     [HttpGet("users/{userId:guid}")]
@@ -139,7 +139,7 @@ public class AdminController(
     // ── Households ──────────────────────────────────────────────────────────
 
     [HttpGet("households")]
-    public async Task<ActionResult<IList<AdminHouseholdResponse>>> GetHouseholds(CancellationToken ct)
+    public async Task<IActionResult> GetHouseholds(CancellationToken ct)
         => Ok(await groupService.GetAllHouseholdsAsync(ct));
 
     [HttpGet("households/{householdId:guid}")]
