@@ -1,11 +1,15 @@
 using Mealie.Domain.Entities.Core;
 using Mealie.Domain.Entities.Recipes;
+using Mealie.Domain.Entities.Settings;
 using Mealie.Infrastructure.Data;
 
 namespace Mealie.Api.Commands;
 
 public static class SeedCommand
 {
+    public const string DefaultEmail = "changeme@example.com";
+    public const string DefaultPassword = "MyPassword";
+
     public static async Task RunAsync(IServiceProvider services)
     {
         using var scope = services.CreateScope();
@@ -49,10 +53,10 @@ public static class SeedCommand
         var admin = new User
         {
             Id = userId,
-            FullName = "Admin",
-            Username = "admin",
-            Email = "admin@example.com",
-            Password = BCrypt.Net.BCrypt.HashPassword("admin"),
+            FullName = "Change Me",
+            Username = "changeme",
+            Email = DefaultEmail,
+            Password = BCrypt.Net.BCrypt.HashPassword(DefaultPassword),
             Admin = true,
             Advanced = true,
             GroupId = groupId,
@@ -61,41 +65,31 @@ public static class SeedCommand
             CanManageHousehold = true,
             CanInvite = true,
             CanOrganize = true,
-            AuthMethod = Domain.Entities.Core.AuthMethod.Mealie,
+            AuthMethod = AuthMethod.Mealie,
             CreatedAt = DateTime.UtcNow,
             UpdateAt = DateTime.UtcNow
         };
         db.Users.Add(admin);
 
-        // Sample recipes
-        var sampleRecipes = new[]
+        db.GroupPreferences.Add(new GroupPreferences
         {
-            ("Spaghetti Carbonara", "spaghetti-carbonara", "Classic Italian pasta dish"),
-            ("Chicken Tikka Masala", "chicken-tikka-masala", "Popular British-Indian curry"),
-            ("Avocado Toast", "avocado-toast", "Simple and healthy breakfast"),
-            ("Beef Tacos", "beef-tacos", "Quick and easy weeknight dinner"),
-            ("Caesar Salad", "caesar-salad", "Classic Caesar salad with homemade dressing"),
-        };
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            PrivateGroup = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
+        });
 
-        foreach (var (name, slug, description) in sampleRecipes)
+        db.HouseholdPreferences.Add(new HouseholdPreferences
         {
-            db.Recipes.Add(new Recipe
-            {
-                Id = Guid.NewGuid(),
-                Name = name,
-                Slug = slug,
-                Description = description,
-                GroupId = groupId,
-                HouseholdId = householdId,
-                CreatedAt = DateTime.UtcNow,
-                UpdateAt = DateTime.UtcNow
-            });
-        }
+            Id = Guid.NewGuid(),
+            HouseholdId = householdId,
+            PrivateHousehold = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
+        });
 
         await db.SaveChangesAsync();
-        logger.LogInformation("✅ Seed completed. Admin: admin@example.com / admin");
-        Console.WriteLine("✅ Database seeded successfully!");
-        Console.WriteLine("   Admin user: admin@example.com / admin");
-        Console.WriteLine("   API: http://localhost:9000");
+        logger.LogInformation("✅ Seed completed. Default admin: {Email} / {Password}", DefaultEmail, DefaultPassword);
     }
 }
