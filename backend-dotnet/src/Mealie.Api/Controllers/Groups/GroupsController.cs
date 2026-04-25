@@ -74,22 +74,22 @@ public class GroupsController(
     // ── Migrations ─────────────────────────────────────────────────────────
 
     [HttpPost("migrations")]
-    public async Task<ActionResult<ReportSummaryDto>> ImportRecipes(IFormFile file)
+    public async Task<ActionResult<ReportSummaryDto>> ImportRecipes(IFormFile archive)
     {
-        if (file is null || file.Length == 0)
+        if (archive is null || archive.Length == 0)
             return BadRequest(new { detail = "No file uploaded" });
 
         // Buffer the upload to a temp file so the request can complete
         // while the background service processes at its own pace.
-        var tempPath = Path.Combine(Path.GetTempPath(), $"mealie-migration-{Guid.NewGuid()}{Path.GetExtension(file.FileName)}");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"mealie-migration-{Guid.NewGuid()}{Path.GetExtension(archive.FileName)}");
         await using (var fs = System.IO.File.Create(tempPath))
-            await file.CopyToAsync(fs);
+            await archive.CopyToAsync(fs);
 
         // Create a DB report record with "in-progress" status and return it immediately.
         var report = new Report
         {
             Id = Guid.NewGuid(),
-            Name = $"Migration — {file.FileName}",
+            Name = $"Migration — {archive.FileName}",
             Category = "migration",
             Status = "in-progress",
             Timestamp = DateTime.UtcNow,
