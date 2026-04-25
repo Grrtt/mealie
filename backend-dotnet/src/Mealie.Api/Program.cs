@@ -7,13 +7,22 @@ using Mealie.Application.Services.Households;
 using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Services.MealPlans;
 using Mealie.Application.Services.Organizers;
+using Mealie.Application.Services.Parser;
 using Mealie.Application.Services.Recipes;
 using Mealie.Application.Services.ShoppingLists;
 using Mealie.Application.Services.Users;
+using Mealie.Application.Services.Webhooks;
+using Mealie.Infrastructure.Admin;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
+using Mealie.Infrastructure.Email;
+using Mealie.Infrastructure.Parser;
+using Mealie.Infrastructure.Scheduler;
+using Mealie.Infrastructure.Scheduler.Jobs;
 using Mealie.Infrastructure.Scraper;
+using Mealie.Infrastructure.Scraper.Importers;
+using Mealie.Infrastructure.Webhooks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -125,7 +134,10 @@ builder.Services.AddAuthentication(options =>
 })
 .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .SetDefaultPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build());
 
 // ── Infrastructure Services ────────────────────────────────────────────────
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -171,6 +183,30 @@ builder.Services.AddScoped<IUnitService, UnitService>();
 builder.Services.AddScoped<IMealPlanService, MealPlanService>();
 builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 
+// Phase 7: Background services
+builder.Services.AddHttpClient<IWebhookDeliveryService, WebhookDeliveryService>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddSingleton<IEventBus, EventBus>();
+builder.Services.AddScoped<IWebhookService, WebhookService>();
+builder.Services.AddScoped<IEventNotifierService, EventNotifierService>();
+builder.Services.AddScoped<IBackupService, BackupService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ScheduledBackupJob>();
+builder.Services.AddScoped<MealPlanNotificationJob>();
+builder.Services.AddHostedService<SchedulerHostedService>();
+
+// Phase 8: Ingredient parser
+builder.Services.AddScoped<UnitMatcher>();
+builder.Services.AddScoped<FoodMatcher>();
+builder.Services.AddScoped<IIngredientParserService, IngredientParserService>();
+
+// Phase 9: Migration importers
+builder.Services.AddSingleton<IMigrationParser, ChowdownMigrationParser>();
+builder.Services.AddSingleton<IMigrationParser, PaprikaMigrationParser>();
+builder.Services.AddSingleton<IMigrationParser, NextcloudCookbookMigrationParser>();
+builder.Services.AddSingleton<IMigrationParser, TandoorMigrationParser>();
+builder.Services.AddSingleton<IMigrationParser, MealieBackupImportParser>();
+builder.Services.AddScoped<MigrationImportService>();
+
 // ── FluentValidation ───────────────────────────────────────────────────────
 builder.Services.AddValidatorsFromAssembly(typeof(Mealie.Application.PlaceholderMarker).Assembly);
 builder.Services.AddFluentValidationAutoValidation();
@@ -184,26 +220,45 @@ builder.Services.AddControllers()
 
 // ── Swagger / OpenAPI ──────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddSwaggerGen(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Mealie API", Version = "v1" });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    options.SwaggerDoc("v1", new OpenApiInfo
     {
-        Description = "JWT Authorization header using the Bearer scheme.",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Title = "Mealie API",
+        Version = "v1",
+        Description = "Mealie Recipe Manager — C# Backend"
     });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+
+    // Match Python Pydantic model names exactly (strip "Dto" suffix for OpenAPI compatibility)
+    options.CustomSchemaIds(type =>
+    {
+        var name = type.Name;
+        if (name.EndsWith("Dto")) name = name[..^3];
+        return name;
+    });
+
+    // Add JWT bearer auth
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Enter JWT token"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
-            Array.Empty<string>()
+            []
         }
     });
-    c.CustomSchemaIds(type => type.Name.Replace("Dto", "").Replace("Request", "Request").Replace("Response", "Response"));
-    c.OperationFilter<Mealie.Api.Filters.PydanticValidationOperationFilter>();
+
+    options.OperationFilter<Mealie.Api.Filters.PydanticValidationOperationFilter>();
+
+    // Add XML comments if file exists
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath)) options.IncludeXmlComments(xmlPath);
 });
 
 // ── Health Checks ──────────────────────────────────────────────────────────
@@ -257,6 +312,25 @@ if (Directory.Exists(dataDir))
 app.MapControllers();
 app.MapHealthChecks("/healthz");
 app.MapHealthChecks("/readyz");
+
+// Handle CLI verbs
+if (args.Length > 0)
+{
+    switch (args[0].ToLower())
+    {
+        case "seed":
+            await Mealie.Api.Commands.SeedCommand.RunAsync(app.Services);
+            return;
+        case "migrate":
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<Mealie.Infrastructure.Data.ApplicationDbContext>();
+                await db.Database.MigrateAsync();
+                Console.WriteLine("✅ Migrations applied.");
+            }
+            return;
+    }
+}
 
 // Media file routes (T094)
 app.MapGet("/api/media/recipes/{recipeId}/images/{fileName}",

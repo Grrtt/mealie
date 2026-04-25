@@ -24,6 +24,8 @@
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="HtmlAgilityPack" />
     <PackageReference Include="AngleSharp" />
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="MimeKit" />
   </ItemGroup>
 
   <ItemGroup>

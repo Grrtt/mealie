@@ -1,3 +1,4 @@
+using Mealie.Infrastructure.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,25 +7,49 @@ namespace Mealie.Api.Controllers.Admin;
 [ApiController]
 [Route("api/admin/backups")]
 [Authorize(Roles = "admin")]
-public class BackupsController : ControllerBase
+public class BackupsController(IBackupService backupService) : ControllerBase
 {
     [HttpGet]
-    public IActionResult ListBackups()
-        => Ok(new { imports = Array.Empty<object>(), templates = Array.Empty<object>() });
+    public async Task<IActionResult> ListBackups()
+    {
+        var backups = await backupService.ListBackupsAsync();
+        return Ok(backups);
+    }
 
     [HttpPost]
-    public IActionResult CreateBackup()
-        => Ok(new { detail = "Backup functionality is not implemented in the .NET backend" });
+    public async Task<IActionResult> CreateBackup()
+    {
+        var fileName = await backupService.CreateBackupAsync();
+        return Ok(new { fileName });
+    }
 
     [HttpGet("{fileName}")]
     public IActionResult GetBackup(string fileName)
         => NotFound(new { detail = "Backup not found" });
 
     [HttpDelete("{fileName}")]
-    public IActionResult DeleteBackup(string fileName)
-        => Ok(new { detail = "Backup deleted" });
+    public async Task<IActionResult> DeleteBackup(string fileName)
+    {
+        await backupService.DeleteBackupAsync(fileName);
+        return Ok(new { detail = "Backup deleted" });
+    }
 
     [HttpPost("restore")]
-    public IActionResult RestoreBackup([FromBody] object request)
-        => StatusCode(501, new { detail = "Restore functionality is not implemented" });
+    public async Task<IActionResult> RestoreBackup([FromBody] RestoreBackupRequest request)
+    {
+        try
+        {
+            await backupService.RestoreBackupAsync(request.FileName);
+            return Ok(new { detail = "Backup restored successfully" });
+        }
+        catch (FileNotFoundException)
+        {
+            return NotFound(new { detail = $"Backup not found: {request.FileName}" });
+        }
+    }
+}
+
+public class RestoreBackupRequest
+{
+    public string FileName { get; set; } = string.Empty;
 }

@@ -1,5 +1,6 @@
 using Mealie.Application.Dtos.Groups;
 using Mealie.Application.Services.Groups;
+using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,7 +8,7 @@ namespace Mealie.Api.Controllers.Groups;
 
 [ApiController]
 [Route("api/groups")]
-public class GroupsController(IGroupService groupService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class GroupsController(IGroupService groupService, MigrationImportService migrationImportService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
 {
     [HttpGet("self")]
     public async Task<ActionResult<GroupResponse>> GetSelf()
@@ -52,5 +53,20 @@ public class GroupsController(IGroupService groupService, ITenantContext tenantC
         var success = await groupService.DeleteInviteTokenAsync(CurrentGroupId, tokenId);
         if (!success) return NotFoundOrForbidden();
         return Ok();
+    }
+
+    [HttpPost("migrations")]
+    public async Task<IActionResult> ImportRecipes(IFormFile file)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { detail = "No file uploaded" });
+
+        using var stream = file.OpenReadStream();
+        var report = await migrationImportService.ImportAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, stream);
+
+        if (report.Error is not null)
+            return BadRequest(new { detail = report.Error });
+
+        return Ok(report);
     }
 }

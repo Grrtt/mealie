@@ -1,23 +1,41 @@
-﻿{
+{
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
-    "http": {
+    "Development": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://localhost:5094",
+      "applicationUrl": "http://localhost:9000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_ENGINE": "sqlite",
+        "DATABASE_URL": "Data Source=../../../data/mealie.db",
+        "SECRET": "development-secret-do-not-use-in-production",
+        "DATA_DIR": "../../../data",
+        "LOG_LEVEL": "Debug",
+        "ALLOW_SIGNUP": "true"
       }
     },
-    "https": {
+    "Watch": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:7142;http://localhost:5094",
+      "hotReloadEnabled": true,
+      "applicationUrl": "http://localhost:9000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_ENGINE": "sqlite",
+        "DATABASE_URL": "Data Source=../../../data/mealie.db",
+        "SECRET": "development-secret-do-not-use-in-production",
+        "DATA_DIR": "../../../data"
       }
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchBrowser": false,
+      "dockerfileRelativePath": "../../docker/Dockerfile",
+      "dockerContext": "../../",
+      "dockerBuildArgs": {}
     }
   }
 }
