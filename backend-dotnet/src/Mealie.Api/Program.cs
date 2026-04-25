@@ -1,7 +1,19 @@
 using Mealie.Api.Middleware;
+using Mealie.Application.Services.Admin;
+using Mealie.Application.Services.Auth;
+using Mealie.Application.Services.Cookbooks;
+using Mealie.Application.Services.Groups;
+using Mealie.Application.Services.Households;
+using Mealie.Application.Services.Ingredients;
+using Mealie.Application.Services.MealPlans;
+using Mealie.Application.Services.Organizers;
+using Mealie.Application.Services.Recipes;
+using Mealie.Application.Services.ShoppingLists;
+using Mealie.Application.Services.Users;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
+using Mealie.Infrastructure.Scraper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -118,6 +130,47 @@ builder.Services.AddAuthorization();
 // ── Infrastructure Services ────────────────────────────────────────────────
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
+// Auth services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRegistrationService, RegistrationService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+builder.Services.AddScoped<ILdapAuthService, LdapAuthService>();
+
+// Application services — Recipes
+builder.Services.AddScoped<IRecipeService, RecipeService>();
+builder.Services.AddScoped<IRecipeCommentService, RecipeCommentService>();
+builder.Services.AddScoped<IRecipeTimelineService, RecipeTimelineService>();
+builder.Services.AddScoped<IRecipeAssetService, RecipeAssetService>();
+builder.Services.AddScoped<IRecipeShareService, RecipeShareService>();
+builder.Services.AddScoped<IRecipeExportService, RecipeExportService>();
+builder.Services.AddScoped<IRecipeImportService, RecipeImportService>();
+builder.Services.AddScoped<IRecipeScraperService, RecipeScraperService>();
+builder.Services.AddHttpClient<RecipeScraperService>(client =>
+    client.Timeout = TimeSpan.FromSeconds(30));
+
+// Application services — Admin
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IAdminGroupService, AdminGroupService>();
+
+// Application services — Users
+builder.Services.AddScoped<IUserService, UserService>();
+
+// Application services — Groups & Households
+builder.Services.AddScoped<IGroupService, GroupService>();
+builder.Services.AddScoped<IHouseholdService, HouseholdService>();
+
+// Application services — Organizers
+builder.Services.AddScoped<IOrganizerService, OrganizerService>();
+builder.Services.AddScoped<ICookbookService, CookbookService>();
+
+// Application services — Ingredients
+builder.Services.AddScoped<IFoodService, FoodService>();
+builder.Services.AddScoped<IUnitService, UnitService>();
+
+// Application services — Meal Plans & Shopping
+builder.Services.AddScoped<IMealPlanService, MealPlanService>();
+builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
+
 // ── FluentValidation ───────────────────────────────────────────────────────
 builder.Services.AddValidatorsFromAssembly(typeof(Mealie.Application.PlaceholderMarker).Assembly);
 builder.Services.AddFluentValidationAutoValidation();
@@ -204,6 +257,31 @@ if (Directory.Exists(dataDir))
 app.MapControllers();
 app.MapHealthChecks("/healthz");
 app.MapHealthChecks("/readyz");
+
+// Media file routes (T094)
+app.MapGet("/api/media/recipes/{recipeId}/images/{fileName}",
+    (string recipeId, string fileName, AppSettings settings) =>
+    {
+        var path = Path.Combine(settings.DataDir, "recipes", recipeId, "images", fileName);
+        if (!System.IO.File.Exists(path)) return Results.NotFound();
+        return Results.File(path);
+    });
+
+app.MapGet("/api/media/recipes/{recipeId}/assets/{fileName}",
+    (string recipeId, string fileName, AppSettings settings) =>
+    {
+        var path = Path.Combine(settings.DataDir, "recipes", recipeId, "assets", fileName);
+        if (!System.IO.File.Exists(path)) return Results.NotFound();
+        return Results.File(path);
+    });
+
+app.MapGet("/api/media/users/{userId}/images/{fileName}",
+    (string userId, string fileName, AppSettings settings) =>
+    {
+        var path = Path.Combine(settings.DataDir, "users", userId, fileName);
+        if (!System.IO.File.Exists(path)) return Results.NotFound();
+        return Results.File(path);
+    });
 
 app.Run();
 

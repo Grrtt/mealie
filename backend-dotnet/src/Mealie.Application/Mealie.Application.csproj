@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Mealie.Domain\Mealie.Domain.csproj" />
+    <ProjectReference Include="..\Mealie.Infrastructure\Mealie.Infrastructure.csproj" />
     <ProjectReference Include="..\Mealie.Shared\Mealie.Shared.csproj" />
   </ItemGroup>
 
@@ -12,6 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Riok.Mapperly" />
   </ItemGroup>

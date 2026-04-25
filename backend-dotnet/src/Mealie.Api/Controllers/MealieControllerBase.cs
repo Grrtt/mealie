@@ -17,5 +17,5 @@ public abstract class MealieControllerBase(ITenantContext tenantContext) : Contr
     /// Returns 404 regardless of whether the resource exists or belongs to a different household.
     /// This prevents data leakage about other tenants' resources.
     /// </summary>
-    protected IActionResult NotFoundOrForbidden() => NotFound(new { detail = "Not found" });
+    protected ActionResult NotFoundOrForbidden() => NotFound(new { detail = "Not found" });
 }
