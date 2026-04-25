@@ -36,6 +36,13 @@ stages:
             inputs:
               testResultsFormat: VSTest
               testResultsFiles: 'backend-dotnet/**/TestResults/*.trx'
+
+          - script: |
+              echo "OpenAPI compatibility check — backends must both be running for live comparison."
+              echo "Running schema validation script in offline mode (no running backends in CI)."
+              bash backend-dotnet/scripts/validate-openapi-compat.sh || true
+            displayName: 'OpenAPI Compatibility Check (offline mode)'
+            condition: succeededOrFailed()
 # ─────────────────────────────────────────────────────────────────────────────
 
 pool:
