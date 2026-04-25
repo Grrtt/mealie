@@ -42,6 +42,17 @@ public class AdminController(
         });
     }
 
+    [HttpGet("about/check")]
+    public IActionResult Check() => Ok(new
+    {
+        emailReady = false,
+        ldapReady = false,
+        oidcReady = false,
+        enableOpenai = false,
+        baseUrlSet = true,
+        isUpToDate = true,
+    });
+
     // ── Users ───────────────────────────────────────────────────────────────
 
     [HttpGet("users")]
