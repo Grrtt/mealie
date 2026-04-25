@@ -9,7 +9,9 @@ public class AdminUserResponse
     public bool Admin { get; set; }
     public bool Advanced { get; set; }
     public Guid GroupId { get; set; }
+    public string? Group { get; set; }
     public Guid? HouseholdId { get; set; }
+    public string? Household { get; set; }
     public bool CanManageHousehold { get; set; }
     public bool CanManage { get; set; }
     public bool CanInvite { get; set; }
@@ -39,6 +41,7 @@ public class UpdateAdminUserRequest
     public bool? Admin { get; set; }
     public bool? Advanced { get; set; }
     public Guid? HouseholdId { get; set; }
+    public string? Household { get; set; }
     public bool? CanManageHousehold { get; set; }
     public bool? CanManage { get; set; }
     public bool? CanInvite { get; set; }

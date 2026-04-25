@@ -9,7 +9,10 @@ public class AdminUserService(ApplicationDbContext db) : IAdminUserService
 {
     public async Task<object> GetAllUsersAsync(CancellationToken ct = default)
     {
-        var users = await db.Users.IgnoreQueryFilters().ToListAsync(ct);
+        var users = await db.Users.IgnoreQueryFilters()
+            .Include(u => u.Group)
+            .Include(u => u.Household)
+            .ToListAsync(ct);
         var items = users.Select(MapToResponse).ToList();
         return new
         {
@@ -23,7 +26,10 @@ public class AdminUserService(ApplicationDbContext db) : IAdminUserService
 
     public async Task<AdminUserResponse?> GetUserAsync(Guid userId, CancellationToken ct = default)
     {
-        var u = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var u = await db.Users.IgnoreQueryFilters()
+            .Include(u => u.Group)
+            .Include(u => u.Household)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
         return u is null ? null : MapToResponse(u);
     }
 
@@ -51,7 +57,10 @@ public class AdminUserService(ApplicationDbContext db) : IAdminUserService
 
     public async Task<AdminUserResponse?> UpdateUserAsync(Guid userId, UpdateAdminUserRequest request, CancellationToken ct = default)
     {
-        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await db.Users.IgnoreQueryFilters()
+            .Include(u => u.Group)
+            .Include(u => u.Household)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null) return null;
 
         if (request.FullName is not null) user.FullName = request.FullName;
@@ -59,7 +68,16 @@ public class AdminUserService(ApplicationDbContext db) : IAdminUserService
         if (request.Password is not null) user.Password = BCrypt.Net.BCrypt.HashPassword(request.Password);
         if (request.Admin.HasValue) user.Admin = request.Admin.Value;
         if (request.Advanced.HasValue) user.Advanced = request.Advanced.Value;
-        if (request.HouseholdId.HasValue) user.HouseholdId = request.HouseholdId.Value;
+        if (request.HouseholdId.HasValue)
+        {
+            user.HouseholdId = request.HouseholdId.Value;
+        }
+        else if (request.Household is not null)
+        {
+            var hh = await db.Households.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(h => h.Name == request.Household || h.Slug == request.Household, ct);
+            if (hh is not null) user.HouseholdId = hh.Id;
+        }
         if (request.CanManageHousehold.HasValue) user.CanManageHousehold = request.CanManageHousehold.Value;
         if (request.CanManage.HasValue) user.CanManage = request.CanManage.Value;
         if (request.CanInvite.HasValue) user.CanInvite = request.CanInvite.Value;
@@ -67,6 +85,8 @@ public class AdminUserService(ApplicationDbContext db) : IAdminUserService
         user.UpdateAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync(ct);
+        await db.Entry(user).Reference(u => u.Group).LoadAsync(ct);
+        await db.Entry(user).Reference(u => u.Household).LoadAsync(ct);
         return MapToResponse(user);
     }
 
@@ -100,7 +120,9 @@ public class AdminUserService(ApplicationDbContext db) : IAdminUserService
         Admin = u.Admin,
         Advanced = u.Advanced,
         GroupId = u.GroupId,
+        Group = u.Group?.Name,
         HouseholdId = u.HouseholdId,
+        Household = u.Household?.Name,
         CanManageHousehold = u.CanManageHousehold,
         CanManage = u.CanManage,
         CanInvite = u.CanInvite,
