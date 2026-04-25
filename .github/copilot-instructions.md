@@ -238,3 +238,9 @@ task docker:prod        # Build and run production Docker compose
 - [Documentation](https://docs.mealie.io/)
 - [Contributors Guide](https://nightly.mealie.io/contributors/developers-guide/code-contributions/)
 - [Discord](https://discord.gg/QuStdQGSGK)
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+at `specs/001-csharp-backend-migration/plan.md`.
+<!-- SPECKIT END -->
