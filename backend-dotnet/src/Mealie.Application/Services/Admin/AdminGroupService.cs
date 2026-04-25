@@ -244,6 +244,8 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         CreatedAt = h.CreatedAt,
         UpdateAt = h.UpdateAt,
         UserCount = h.Users.Count,
+        Users = h.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
+        Webhooks = [],
         Preferences = h.Preferences is null ? null : new HouseholdPreferencesDto
         {
             Id = h.Preferences.Id,

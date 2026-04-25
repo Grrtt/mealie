@@ -74,6 +74,8 @@ public class AdminHouseholdResponse
     public DateTime UpdateAt { get; set; }
     public int UserCount { get; set; }
     public HouseholdPreferencesDto? Preferences { get; set; }
+    public List<object> Users { get; set; } = [];
+    public List<object> Webhooks { get; set; } = [];
 }
 
 public class CreateAdminHouseholdRequest
