@@ -1,17 +1,18 @@
 using Mealie.Application.Common;
+using Mealie.Application.Contracts;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.IngredientParser;
-using Mealie.Application.Services.Search;
 using Mealie.Domain.Entities.Ingredients;
 using Mealie.Domain.Entities.Organizers;
 using Mealie.Domain.Entities.Recipes;
+using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
 using Mealie.Infrastructure.Scraper;
 using Mealie.Shared.Pagination;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Threading.Channels;
 
 namespace Mealie.Application.Services.Recipes;
 
@@ -19,8 +20,8 @@ public class RecipeService(
     ApplicationDbContext db,
     IngredientParserService ingredientParser,
     ImageScrapeQueue imageScrapeQueue,
-    RecipeSearchIndex recipeSearchIndex,
-    Channel<RecipeIndexEvent> indexChannel,
+    IRecipeSearchIndex searchIndex,
+    IMediator mediator,
     ILogger<RecipeService> logger) : IRecipeService
 {
     public async Task<IList<RecipeSummaryResponse>> GetAllAsync(CancellationToken ct = default)
@@ -42,19 +43,18 @@ public class RecipeService(
 
         if (!hasGuidFilters)
         {
-            var luceneResult = await Task.Run(() =>
-                recipeSearchIndex.Search(
-                    householdId,
-                    filter?.Search,
-                    filter?.Tags,
-                    filter?.Categories,
-                    pagination.Skip,
-                    pagination.PerPage), ct);
+            var searchQuery = new RecipeSearchQuery(
+                HouseholdId: householdId,
+                Text: filter?.Search,
+                Tags: filter?.Tags,
+                Categories: filter?.Categories,
+                Skip: pagination.Skip,
+                Take: pagination.PerPage);
+
+            var luceneResult = await searchIndex.SearchAsync(searchQuery, ct);
 
             // Fall back to EF if the index is empty and no filter was applied
-            bool noFilterApplied = string.IsNullOrWhiteSpace(filter?.Search)
-                && (filter?.Tags is not { Count: > 0 })
-                && (filter?.Categories is not { Count: > 0 });
+            bool noFilterApplied = filter is null || filter.IsEmpty;
 
             if (luceneResult.Total > 0 || !noFilterApplied)
             {
@@ -177,8 +177,7 @@ public class RecipeService(
         db.Recipes.Add(recipe);
         await db.SaveChangesAsync(ct);
 
-        await indexChannel.Writer.WriteAsync(
-            new RecipeIndexEvent(RecipeIndexEventType.Upsert, recipe.Id), ct);
+        await mediator.Publish(new RecipeCreatedEvent(recipe.Id, householdId), ct);
 
         return MapToDetail(recipe);
     }
@@ -329,8 +328,7 @@ public class RecipeService(
         recipe.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        await indexChannel.Writer.WriteAsync(
-            new RecipeIndexEvent(RecipeIndexEventType.Upsert, recipe.Id), ct);
+        await mediator.Publish(new RecipeUpdatedEvent(recipe.Id, recipe.HouseholdId), ct);
 
         // Reload navigation properties on newly-created ingredient entities so MapToDetail
         // returns populated Unit/Food objects rather than null (EF Core doesn't auto-load
@@ -355,8 +353,7 @@ public class RecipeService(
         db.Recipes.Remove(recipe);
         await db.SaveChangesAsync(ct);
 
-        await indexChannel.Writer.WriteAsync(
-            new RecipeIndexEvent(RecipeIndexEventType.Delete, recipeId), ct);
+        await mediator.Publish(new RecipeDeletedEvent(recipeId), ct);
 
         return true;
     }
@@ -428,8 +425,7 @@ public class RecipeService(
         db.Recipes.Add(copy);
         await db.SaveChangesAsync(ct);
 
-        await indexChannel.Writer.WriteAsync(
-            new RecipeIndexEvent(RecipeIndexEventType.Upsert, copy.Id), ct);
+        await mediator.Publish(new RecipeCreatedEvent(copy.Id, copy.HouseholdId), ct);
 
         return MapToDetail(copy);
     }
@@ -620,8 +616,7 @@ public class RecipeService(
             logger.LogWarning("No image URL or OrgUrl for recipe {RecipeId}, skipping image scrape", recipe.Id);
         }
 
-        await indexChannel.Writer.WriteAsync(
-            new RecipeIndexEvent(RecipeIndexEventType.Upsert, recipe.Id), CancellationToken.None);
+        await mediator.Publish(new RecipeCreatedEvent(recipe.Id, householdId), CancellationToken.None);
 
         return MapToSummary(recipe);
     }
@@ -631,8 +626,12 @@ public class RecipeService(
         var recipes = await db.Recipes
             .Where(r => slugs.Contains(r.Slug))
             .ToListAsync(ct);
+        var recipeIds = recipes.Select(r => r.Id).ToList();
         db.Recipes.RemoveRange(recipes);
         await db.SaveChangesAsync(ct);
+
+        if (recipeIds.Count > 0)
+            await mediator.Publish(new RecipesBulkDeletedEvent(recipeIds), ct);
     }
 
     public async Task BulkTagAsync(IList<string> slugs, IList<string> tagNames, Guid groupId, CancellationToken ct = default)
