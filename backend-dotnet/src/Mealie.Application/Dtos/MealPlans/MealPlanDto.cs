@@ -34,3 +34,9 @@ public class UpdateMealPlanRequest
     public DateOnly? Date { get; set; }
     public Guid? RecipeId { get; set; }
 }
+
+public class CreateRandomMealPlanRequest
+{
+    public DateOnly Date { get; set; }
+    public string EntryType { get; set; } = "breakfast";
+}

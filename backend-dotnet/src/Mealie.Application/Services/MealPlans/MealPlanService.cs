@@ -61,6 +61,37 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
         return MapToResponse(plan);
     }
 
+    public async Task<MealPlanResponse?> CreateRandomAsync(Guid groupId, Guid householdId, Guid userId, CreateRandomMealPlanRequest request, CancellationToken ct = default)
+    {
+        var recipeIds = await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.GroupId == groupId)
+            .Select(r => r.Id)
+            .ToListAsync(ct);
+
+        if (recipeIds.Count == 0) return null;
+
+        var randomId = recipeIds[Random.Shared.Next(recipeIds.Count)];
+
+        var plan = new MealPlan
+        {
+            Id = Guid.NewGuid(),
+            Title = string.Empty,
+            EntryType = request.EntryType,
+            Date = request.Date,
+            RecipeId = randomId,
+            GroupId = groupId,
+            HouseholdId = householdId,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow,
+        };
+        db.MealPlans.Add(plan);
+        await db.SaveChangesAsync(ct);
+
+        await db.Entry(plan).Reference(p => p.Recipe).LoadAsync(ct);
+        return MapToResponse(plan);
+    }
+
     public async Task<bool> DeleteAsync(Guid householdId, Guid id, CancellationToken ct = default)
     {
         var plan = await db.MealPlans.IgnoreQueryFilters()

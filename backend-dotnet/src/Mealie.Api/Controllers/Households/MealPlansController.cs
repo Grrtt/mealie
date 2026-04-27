@@ -22,6 +22,14 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
         return Ok(plan);
     }
 
+    [HttpPost("random")]
+    public async Task<ActionResult<MealPlanResponse>> CreateRandomMealPlan([FromBody] CreateRandomMealPlanRequest request, CancellationToken ct)
+    {
+        var plan = await mealPlanService.CreateRandomAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
+        if (plan is null) return BadRequest("No recipes available to pick from.");
+        return Ok(plan);
+    }
+
     [HttpPost]
     public async Task<ActionResult<MealPlanResponse>> CreateMealPlan([FromBody] CreateMealPlanRequest request, CancellationToken ct)
     {
