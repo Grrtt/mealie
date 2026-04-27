@@ -9,6 +9,7 @@ using Mealie.Application.Services.MealPlans;
 using Mealie.Application.Services.Organizers;
 using Mealie.Application.Services.Parser;
 using Mealie.Application.Services.Recipes;
+using Mealie.Application.Services.Search;
 using Mealie.Application.Services.ShoppingLists;
 using Mealie.Application.Services.Users;
 using Mealie.Application.Services.Webhooks;
@@ -31,6 +32,7 @@ using Serilog;
 using Serilog.Events;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 
@@ -223,6 +225,11 @@ builder.Services.AddHostedService<Mealie.Application.Services.Migrations.Migrati
 // Image scrape queue: singleton channel + hosted background processor
 builder.Services.AddSingleton<Mealie.Application.Services.ImageScrape.ImageScrapeQueue>();
 builder.Services.AddHostedService<Mealie.Application.Services.ImageScrape.ImageScrapeBackgroundService>();
+
+// Recipe search index: singleton Lucene FSDirectory index
+builder.Services.AddSingleton<RecipeSearchIndex>();
+builder.Services.AddSingleton(Channel.CreateUnbounded<RecipeIndexEvent>());
+builder.Services.AddHostedService<RecipeIndexingBackgroundService>();
 
 // Ingredient NLP parser: singleton Python subprocess bridge
 builder.Services.AddSingleton<Mealie.Application.Services.IngredientParser.IngredientParserService>();

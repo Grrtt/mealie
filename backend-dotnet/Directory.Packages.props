@@ -58,6 +58,12 @@
     <PackageVersion Include="System.CommandLine" Version="2.0.0-beta5.25277.114" />
     <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
   </ItemGroup>
+  <!-- Lucene.NET -->
+  <ItemGroup>
+    <PackageVersion Include="Lucene.Net" Version="4.8.0-beta00016" />
+    <PackageVersion Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00016" />
+    <PackageVersion Include="Lucene.Net.QueryParser" Version="4.8.0-beta00016" />
+  </ItemGroup>
   <!-- LDAP -->
   <ItemGroup>
     <PackageVersion Include="Novell.Directory.Ldap.NETStandard" Version="3.6.0" />
