@@ -1,5 +1,6 @@
 using Mealie.Application.Common;
 using Mealie.Application.Dtos.Recipes;
+using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.IngredientParser;
 using Mealie.Domain.Entities.Ingredients;
 using Mealie.Domain.Entities.Organizers;
@@ -8,10 +9,11 @@ using Mealie.Infrastructure.Data;
 using Mealie.Infrastructure.Scraper;
 using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Services.Recipes;
 
-public class RecipeService(ApplicationDbContext db, IngredientParserService ingredientParser) : IRecipeService
+public class RecipeService(ApplicationDbContext db, IngredientParserService ingredientParser, ImageScrapeQueue imageScrapeQueue, ILogger<RecipeService> logger) : IRecipeService
 {
     public async Task<IList<RecipeSummaryResponse>> GetAllAsync(CancellationToken ct = default)
     {
@@ -265,6 +267,18 @@ public class RecipeService(ApplicationDbContext db, IngredientParserService ingr
 
         recipe.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
+
+        // Reload navigation properties on newly-created ingredient entities so MapToDetail
+        // returns populated Unit/Food objects rather than null (EF Core doesn't auto-load
+        // nav props on entities that were just added via Add()).
+        foreach (var ing in recipe.RecipeIngredients)
+        {
+            if (ing.UnitId.HasValue && ing.Unit is null)
+                await db.Entry(ing).Reference(i => i.Unit).LoadAsync(ct);
+            if (ing.FoodId.HasValue && ing.Food is null)
+                await db.Entry(ing).Reference(i => i.Food).LoadAsync(ct);
+        }
+
         return MapToDetail(recipe);
     }
 
@@ -370,7 +384,6 @@ public class RecipeService(ApplicationDbContext db, IngredientParserService ingr
             Name = scraped.Name ?? "Untitled Recipe",
             Slug = uniqueSlug,
             Description = scraped.Description,
-            Image = scraped.Image,
             RecipeYield = scraped.RecipeYield,
             TotalTime = scraped.TotalTime,
             PrepTime = scraped.PrepTime,
@@ -515,6 +528,24 @@ public class RecipeService(ApplicationDbContext db, IngredientParserService ingr
 
         if (scraped.Keywords.Any() || scraped.Categories.Any())
             await db.SaveChangesAsync(ct);
+
+        // Queue image download: use the URL from scraper if available, otherwise fall back to scraping OrgUrl.
+        var hasDirectImage = !string.IsNullOrEmpty(scraped.Image);
+        var hasOrgUrl = !string.IsNullOrEmpty(scraped.OrgUrl);
+        logger.LogInformation("Image queue check for recipe {RecipeId}: hasDirectImage={HasDirectImage} ({DirectImageUrl}), hasOrgUrl={HasOrgUrl} ({OrgUrl})",
+            recipe.Id, hasDirectImage, scraped.Image, hasOrgUrl, scraped.OrgUrl);
+        if (hasDirectImage || hasOrgUrl)
+        {
+            logger.LogInformation("Queuing image scrape job for recipe {RecipeId}", recipe.Id);
+            await imageScrapeQueue.Writer.WriteAsync(new ImageScrapeJob(
+                recipe.Id,
+                OrgUrl: hasOrgUrl ? scraped.OrgUrl : null,
+                DirectImageUrl: hasDirectImage ? scraped.Image : null), CancellationToken.None);
+        }
+        else
+        {
+            logger.LogWarning("No image URL or OrgUrl for recipe {RecipeId}, skipping image scrape", recipe.Id);
+        }
 
         return MapToSummary(recipe);
     }

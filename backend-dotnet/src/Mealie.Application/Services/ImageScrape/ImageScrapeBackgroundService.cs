@@ -41,26 +41,41 @@ public class ImageScrapeBackgroundService(
     {
         try
         {
+            logger.LogInformation("Processing image scrape job for recipe {RecipeId} (DirectImageUrl={DirectImageUrl}, OrgUrl={OrgUrl})",
+                job.RecipeId, job.DirectImageUrl, job.OrgUrl);
             using var http = new HttpClient();
             http.Timeout = TimeSpan.FromSeconds(15);
             http.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
 
-            string html;
-            try
-            {
-                html = await http.GetStringAsync(job.OrgUrl, ct);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to fetch page for recipe {RecipeId} from {OrgUrl}", job.RecipeId, job.OrgUrl);
-                return;
-            }
-
-            var imageUrl = ExtractImageUrl(html);
+            // If caller already knows the image URL, download it directly.
+            // Otherwise, scrape the recipe page to find an og:image.
+            string? imageUrl = job.DirectImageUrl;
             if (imageUrl is null)
             {
-                logger.LogInformation("No image found for recipe {RecipeId} at {OrgUrl}", job.RecipeId, job.OrgUrl);
+                if (job.OrgUrl is null)
+                {
+                    logger.LogWarning("ImageScrapeJob for recipe {RecipeId} has neither DirectImageUrl nor OrgUrl", job.RecipeId);
+                    return;
+                }
+
+                string html;
+                try
+                {
+                    html = await http.GetStringAsync(job.OrgUrl, ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to fetch page for recipe {RecipeId} from {OrgUrl}", job.RecipeId, job.OrgUrl);
+                    return;
+                }
+
+                imageUrl = ExtractImageUrl(html);
+            }
+
+            if (imageUrl is null)
+            {
+                logger.LogInformation("No image found for recipe {RecipeId}", job.RecipeId);
                 return;
             }
 
@@ -87,9 +102,9 @@ public class ImageScrapeBackgroundService(
                 return;
             }
 
-            if (!string.IsNullOrEmpty(recipe.Image))
+            if (recipe.Image == "original.webp")
             {
-                logger.LogInformation("Recipe {RecipeId} already has an image, skipping", job.RecipeId);
+                logger.LogInformation("Recipe {RecipeId} already has a local image, skipping", job.RecipeId);
                 return;
             }
 
