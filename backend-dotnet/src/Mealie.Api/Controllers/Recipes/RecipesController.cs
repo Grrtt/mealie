@@ -131,7 +131,7 @@ public class RecipesController(
             return BadRequest(new { detail = "Could not scrape recipe from the provided URL" });
 
         var recipe = await recipeService.CreateFromScrapedAsync(
-            scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct);
+            scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct: ct);
         if (recipe is null) return BadRequest(new { detail = "Failed to create recipe" });
 
         return Ok(recipe);
@@ -152,7 +152,7 @@ public class RecipesController(
                     continue;
                 }
                 var recipe = await recipeService.CreateFromScrapedAsync(
-                    scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct);
+                    scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct: ct);
                 results.Add(new { url, success = recipe is not null, slug = recipe?.Slug });
             }
             catch (Exception ex)

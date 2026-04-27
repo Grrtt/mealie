@@ -83,6 +83,12 @@ const topLinks: SidebarLinks = [
     title: i18n.t("sidebar.backups"),
     restricted: true,
   },
+  {
+    icon: $globals.icons.tagArrowRight,
+    to: "/admin/manage/ingredient-aliases",
+    title: "Ingredient Aliases",
+    restricted: true,
+  },
 ];
 
 const developerLinks: SidebarLinks = [

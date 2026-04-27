@@ -4,9 +4,11 @@ using Mealie.Application.Services.Groups;
 using Mealie.Application.Services.Migrations;
 using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Auth;
+using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Mealie.Api.Controllers.Groups;
 
@@ -16,6 +18,7 @@ public class GroupsController(
     IGroupService groupService,
     MigrationQueue migrationQueue,
     ApplicationDbContext db,
+    IOptions<AppSettings> appSettings,
     ITenantContext tenantContext) : MealieControllerBase(tenantContext)
 {
     [HttpGet("self")]
@@ -49,6 +52,15 @@ public class GroupsController(
         return Ok(new { items = households, total = households.Count, page = 1, perPage = -1 });
     }
 
+    [HttpGet("households/{householdId:guid}")]
+    public async Task<ActionResult<HouseholdResponse>> GetHousehold(Guid householdId)
+    {
+        var households = await groupService.GetHouseholdsAsync(CurrentGroupId);
+        var household = households.FirstOrDefault(h => h.Id == householdId);
+        if (household is null) return NotFoundOrForbidden();
+        return Ok(household);
+    }
+
     [HttpGet("self/invitations")]
     public async Task<ActionResult<IList<InviteTokenResponse>>> GetInvitations()
     {
@@ -74,32 +86,39 @@ public class GroupsController(
     // ── Migrations ─────────────────────────────────────────────────────────
 
     [HttpPost("migrations")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue, ValueLengthLimit = int.MaxValue)]
     public async Task<ActionResult<ReportSummaryDto>> ImportRecipes(IFormFile archive)
     {
         if (archive is null || archive.Length == 0)
             return BadRequest(new { detail = "No file uploaded" });
 
-        // Buffer the upload to a temp file so the request can complete
-        // while the background service processes at its own pace.
-        var tempPath = Path.Combine(Path.GetTempPath(), $"mealie-migration-{Guid.NewGuid()}{Path.GetExtension(archive.FileName)}");
-        await using (var fs = System.IO.File.Create(tempPath))
+        // Save to the persistent queue dir so the job can be resumed after a restart.
+        var queueDir = Path.Combine(appSettings.Value.DataDir, "migration-queue");
+        Directory.CreateDirectory(queueDir);
+
+        var reportId = Guid.NewGuid();
+        var queuedPath = Path.Combine(queueDir, $"{reportId}{Path.GetExtension(archive.FileName)}");
+        await using (var fs = System.IO.File.Create(queuedPath))
             await archive.CopyToAsync(fs);
 
-        // Create a DB report record with "in-progress" status and return it immediately.
         var report = new Report
         {
-            Id = Guid.NewGuid(),
+            Id = reportId,
             Name = $"Migration — {archive.FileName}",
             Category = "migration",
-            Status = "in-progress",
+            Status = "queued",
             Timestamp = DateTime.UtcNow,
             GroupId = CurrentGroupId,
+            QueuedFilePath = queuedPath,
+            QueuedHouseholdId = CurrentHouseholdId,
+            QueuedUserId = CurrentUserId,
         };
         db.Reports.Add(report);
         await db.SaveChangesAsync();
 
         await migrationQueue.EnqueueAsync(new MigrationJobRequest(
-            report.Id, CurrentGroupId, CurrentHouseholdId, CurrentUserId, tempPath));
+            report.Id, CurrentGroupId, CurrentHouseholdId, CurrentUserId, queuedPath));
 
         return Ok(MapReportSummary(report));
     }
@@ -173,5 +192,7 @@ public class GroupsController(
         Status = r.Status,
         Timestamp = r.Timestamp.ToString("o"),
         GroupId = r.GroupId.ToString(),
+        TotalCount = r.TotalCount,
+        ProcessedCount = r.ProcessedCount,
     };
 }

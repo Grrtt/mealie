@@ -8,6 +8,8 @@ public class ReportSummaryDto
     public string Status { get; set; } = "";
     public string Timestamp { get; set; } = "";
     public string GroupId { get; set; } = "";
+    public int? TotalCount { get; set; }
+    public int ProcessedCount { get; set; }
 }
 
 public class ReportEntryDto

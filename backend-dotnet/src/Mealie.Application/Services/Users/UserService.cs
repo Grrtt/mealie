@@ -9,14 +9,22 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
 {
     public async Task<UserResponse?> GetProfileAsync(Guid userId, CancellationToken ct = default)
     {
-        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await db.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.Group)
+            .Include(u => u.Household)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null) return null;
         return MapToResponse(user);
     }
 
     public async Task<UserResponse?> UpdateProfileAsync(Guid userId, UpdateUserRequest request, CancellationToken ct = default)
     {
-        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var user = await db.Users
+            .IgnoreQueryFilters()
+            .Include(u => u.Group)
+            .Include(u => u.Household)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null) return null;
         if (request.FullName is not null) user.FullName = request.FullName;
         if (request.Email is not null) user.Email = request.Email;
@@ -141,7 +149,11 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
         Admin = user.Admin,
         Advanced = user.Advanced,
         GroupId = user.GroupId,
+        Group = user.Group?.Name ?? string.Empty,
+        GroupSlug = user.Group?.Slug ?? string.Empty,
         HouseholdId = user.HouseholdId,
+        Household = user.Household?.Name ?? string.Empty,
+        HouseholdSlug = user.Household?.Slug ?? string.Empty,
         CanManageHousehold = user.CanManageHousehold,
         CanManage = user.CanManage,
         CanInvite = user.CanInvite,

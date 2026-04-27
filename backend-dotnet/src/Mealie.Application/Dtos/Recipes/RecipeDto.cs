@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Mealie.Application.Dtos.Recipes;
 
 public class RecipeSummaryResponse
@@ -7,12 +9,15 @@ public class RecipeSummaryResponse
     public string Slug { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Image { get; set; }
+    public string? OrgUrl { get; set; }
     public int? Rating { get; set; }
     public Guid GroupId { get; set; }
     public Guid HouseholdId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdateAt { get; set; }
     public IList<OrganizerSimpleResponse> Tags { get; set; } = [];
+
+    [JsonPropertyName("recipeCategory")]
     public IList<OrganizerSimpleResponse> Categories { get; set; } = [];
 }
 
@@ -38,12 +43,18 @@ public class RecipeDetailResponse
     public DateTime? LastMade { get; set; }
     public NutritionDto? Nutrition { get; set; }
     public RecipeSettingsDto? Settings { get; set; }
+
+    [JsonPropertyName("recipeIngredient")]
     public IList<RecipeIngredientDto> RecipeIngredients { get; set; } = [];
+
     public IList<RecipeInstructionDto> RecipeInstructions { get; set; } = [];
     public IList<RecipeNoteDto> Notes { get; set; } = [];
     public IList<RecipeAssetDto> Assets { get; set; } = [];
     public IList<OrganizerSimpleResponse> Tags { get; set; } = [];
+
+    [JsonPropertyName("recipeCategory")]
     public IList<OrganizerSimpleResponse> Categories { get; set; } = [];
+
     public IList<OrganizerSimpleResponse> Tools { get; set; } = [];
 }
 
@@ -97,20 +108,42 @@ public class RecipeSettingsDto
     public bool Locked { get; set; }
 }
 
+public class RecipeIngredientFoodDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? PluralName { get; set; }
+    public string? Description { get; set; }
+}
+
+public class RecipeIngredientUnitDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? PluralName { get; set; }
+    public string? Description { get; set; }
+    public string? Abbreviation { get; set; }
+}
+
 public class RecipeIngredientDto
 {
+    [JsonPropertyName("referenceId")]
     public Guid? Id { get; set; }
     public int Position { get; set; }
     public string? Title { get; set; }
     public string? Note { get; set; }
     public decimal? Quantity { get; set; }
-    public Guid? UnitId { get; set; }
-    public Guid? FoodId { get; set; }
     public string? OriginalText { get; set; }
     public bool IsFood { get; set; }
     public bool DisableAmount { get; set; }
-    public string? UnitName { get; set; }
-    public string? FoodName { get; set; }
+    public RecipeIngredientUnitDto? Unit { get; set; }
+    public RecipeIngredientFoodDto? Food { get; set; }
+
+    // Accepted on write so callers can send just IDs without full objects
+    [JsonIgnore]
+    public Guid? UnitId => Unit?.Id;
+    [JsonIgnore]
+    public Guid? FoodId => Food?.Id;
 }
 
 public class RecipeInstructionDto

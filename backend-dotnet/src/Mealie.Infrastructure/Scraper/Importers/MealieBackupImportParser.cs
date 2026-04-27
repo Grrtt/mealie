@@ -27,12 +27,29 @@ public class MealieBackupImportParser : MigrationParserBase
         {
             using var stream = entry.Open();
             var doc = JsonDocument.Parse(stream).RootElement;
+
+            // The recipe folder is the parent directory of the .json file
+            var folderPrefix = entry.FullName[..entry.FullName.LastIndexOf('/')];
+
+            // Collect any image files sitting alongside the json (e.g. images/ subfolder)
+            var imageFiles = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            foreach (var imgEntry in zip.Entries.Where(e =>
+                e.FullName.StartsWith(folderPrefix + "/images/", StringComparison.OrdinalIgnoreCase)
+                && e.Length > 0))
+            {
+                using var imgStream = imgEntry.Open();
+                using var ms = new MemoryStream();
+                imgStream.CopyTo(ms);
+                imageFiles[imgEntry.Name] = ms.ToArray();
+            }
+
             yield return new ScrapedRecipeDto
             {
                 Name = doc.TryGetProperty("name", out var n) ? n.GetString() : null,
                 Description = doc.TryGetProperty("description", out var d) ? d.GetString() : null,
                 RecipeIngredient = [],
                 RecipeInstructions = [],
+                ImageFiles = imageFiles,
             };
         }
     }

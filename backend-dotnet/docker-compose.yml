@@ -1,0 +1,123 @@
+# Mealie C# Backend — Local Docker Compose
+#
+# Profiles:
+#   (default)  SQLite backend + Mailpit
+#   postgres   PostgreSQL backend + Mailpit
+#
+# Usage:
+#   SQLite  : docker compose up
+#   Postgres: docker compose --profile postgres up
+
+services:
+
+  # ── C# Backend (SQLite, default) ────────────────────────────────────────────
+  mealie-api:
+    container_name: mealie_api
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - mealie-data:/app/data
+    environment:
+      DB_ENGINE: sqlite
+      DATABASE_URL: "Data Source=/app/data/mealie.db"
+      SECRET: "local-dev-secret-change-me-32chars!!"
+      BASE_URL: "http://localhost:9000"
+      DATA_DIR: /app/data
+      LOG_LEVEL: Debug
+      ALLOW_SIGNUP: "true"
+      # Email — point at Mailpit
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_AUTH_STRATEGY: NONE
+      SMTP_FROM_EMAIL: "noreply@mealie.local"
+      SMTP_FROM_NAME: "Mealie (local)"
+    depends_on:
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/healthz"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    profiles: ["", "sqlite"]
+
+  # ── C# Backend (Postgres) ────────────────────────────────────────────────────
+  mealie-api-postgres:
+    container_name: mealie_api_pg
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - mealie-data:/app/data
+    environment:
+      DB_ENGINE: postgres
+      DATABASE_URL: "Host=postgres;Port=5432;Database=mealie;Username=mealie;Password=mealie"
+      SECRET: "local-dev-secret-change-me-32chars!!"
+      BASE_URL: "http://localhost:9000"
+      DATA_DIR: /app/data
+      LOG_LEVEL: Debug
+      ALLOW_SIGNUP: "true"
+      # Email — point at Mailpit
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_AUTH_STRATEGY: NONE
+      SMTP_FROM_EMAIL: "noreply@mealie.local"
+      SMTP_FROM_NAME: "Mealie (local)"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/healthz"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    profiles: ["postgres"]
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    container_name: mealie_postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: mealie
+      POSTGRES_DB: mealie
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mealie -d mealie"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles: ["postgres"]
+
+  # ── Mailpit (email testing UI) ───────────────────────────────────────────────
+  mailpit:
+    container_name: mealie_mailpit
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"   # Web UI  → http://localhost:8025
+      - "1025:1025"   # SMTP
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+
+volumes:
+  mealie-data:
+    driver: local
+  postgres-data:
+    driver: local

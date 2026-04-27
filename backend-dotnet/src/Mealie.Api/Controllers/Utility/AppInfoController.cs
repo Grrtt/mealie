@@ -1,28 +1,67 @@
+using Mealie.Api.Commands;
+using Mealie.Infrastructure.Configuration;
+using Mealie.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Mealie.Api.Controllers.Utility;
 
 [ApiController]
 [AllowAnonymous]
-public class AppInfoController : ControllerBase
+public class AppInfoController(IOptions<AppSettings> settings, ApplicationDbContext db) : ControllerBase
 {
     [HttpGet("/api/app/about")]
-    public IActionResult About() => Ok(new
+    public IActionResult About()
     {
-        production = true,
-        version = "2.0.0",
-        versionLatest = "2.0.0",
-        demoStatus = false,
-        allowSignup = false,
-        isFirstLogin = false,
-        enableOidc = false,
-        oidcRedirect = (string?)null,
-        oidcProviderName = (string?)null,
+        var isFirstLogin = db.Users.Any(u => u.Email == SeedCommand.DefaultEmail);
+
+        return Ok(new
+        {
+            production = true,
+            version = "2.0.0",
+            versionLatest = "2.0.0",
+            demoStatus = false,
+            allowSignup = settings.Value.AllowSignup,
+            allowPasswordLogin = true,
+            isFirstLogin,
+            enableOidc = settings.Value.OidcEnabled,
+            oidcRedirect = (string?)null,
+            oidcProviderName = (string?)null,
+            tokenTime = 48,
+            enableOpenai = settings.Value.OpenAiApiKey is not null,
+            enableOpenaiImageServices = false,
+        });
+    }
+
+    [HttpGet("/api/app/about/startup-info")]
+    public IActionResult StartupInfo()
+    {
+        var isFirstLogin = db.Users.Any(u => u.Email == SeedCommand.DefaultEmail);
+        return Ok(new { isFirstLogin, isDemo = false });
+    }
+
+    [HttpGet("/api/app/about/theme")]
+    public IActionResult Theme() => Ok(new
+    {
+        lightPrimary   = "#E58325",
+        lightAccent    = "#007A99",
+        lightSecondary = "#973542",
+        lightSuccess   = "#43A047",
+        lightInfo      = "#1976D2",
+        lightWarning   = "#FF6D00",
+        lightError     = "#EF5350",
+        darkPrimary    = "#E58325",
+        darkAccent     = "#007A99",
+        darkSecondary  = "#973542",
+        darkSuccess    = "#43A047",
+        darkInfo       = "#1976D2",
+        darkWarning    = "#FF6D00",
+        darkError      = "#EF5350",
     });
 
     [HttpGet("/api/app/about/oidc")]
-    public IActionResult AboutOidc() => Ok(new { enabled = false });
+    public IActionResult AboutOidc() => Ok(new { enabled = settings.Value.OidcEnabled });
 
     [HttpGet("/api/debug/version")]
     public IActionResult DebugVersion() => Ok(new { version = "2.0.0" });

@@ -13,6 +13,18 @@ public class RecipeTimelineController(
     IRecipeTimelineService timelineService,
     ITenantContext tenantContext) : ControllerBase
 {
+    // GET /api/recipes/timeline/events  (global, group-scoped)
+    [HttpGet("timeline/events")]
+    public async Task<IActionResult> GetAllEvents(
+        [FromQuery] int page = 1,
+        [FromQuery] int perPage = 32,
+        [FromQuery] string? queryFilter = null,
+        CancellationToken ct = default)
+    {
+        var result = await timelineService.GetAllEventsAsync(tenantContext.GroupId, page, perPage, ct);
+        return Ok(result);
+    }
+
     [HttpGet("{slug}/timeline")]
     public async Task<ActionResult<IList<TimelineEventResponse>>> GetTimeline(string slug, CancellationToken ct)
     {

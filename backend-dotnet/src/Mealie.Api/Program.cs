@@ -220,6 +220,13 @@ builder.Services.AddScoped<MigrationImportService>();
 builder.Services.AddSingleton<Mealie.Application.Services.Migrations.MigrationQueue>();
 builder.Services.AddHostedService<Mealie.Application.Services.Migrations.MigrationBackgroundService>();
 
+// Image scrape queue: singleton channel + hosted background processor
+builder.Services.AddSingleton<Mealie.Application.Services.ImageScrape.ImageScrapeQueue>();
+builder.Services.AddHostedService<Mealie.Application.Services.ImageScrape.ImageScrapeBackgroundService>();
+
+// Ingredient NLP parser: singleton Python subprocess bridge
+builder.Services.AddSingleton<Mealie.Application.Services.IngredientParser.IngredientParserService>();
+
 // ── FluentValidation ───────────────────────────────────────────────────────
 builder.Services.AddValidatorsFromAssembly(typeof(Mealie.Application.PlaceholderMarker).Assembly);
 builder.Services.AddFluentValidationAutoValidation();
@@ -380,30 +387,6 @@ using (var scope = app.Services.CreateScope())
 }
 await Mealie.Api.Commands.SeedCommand.RunAsync(app.Services);
 
-// Media file routes (T094)
-app.MapGet("/api/media/recipes/{recipeId}/images/{fileName}",
-    (string recipeId, string fileName, AppSettings settings) =>
-    {
-        var path = Path.Combine(settings.DataDir, "recipes", recipeId, "images", fileName);
-        if (!System.IO.File.Exists(path)) return Results.NotFound();
-        return Results.File(path);
-    });
-
-app.MapGet("/api/media/recipes/{recipeId}/assets/{fileName}",
-    (string recipeId, string fileName, AppSettings settings) =>
-    {
-        var path = Path.Combine(settings.DataDir, "recipes", recipeId, "assets", fileName);
-        if (!System.IO.File.Exists(path)) return Results.NotFound();
-        return Results.File(path);
-    });
-
-app.MapGet("/api/media/users/{userId}/images/{fileName}",
-    (string userId, string fileName, AppSettings settings) =>
-    {
-        var path = Path.Combine(settings.DataDir, "users", userId, fileName);
-        if (!System.IO.File.Exists(path)) return Results.NotFound();
-        return Results.File(path);
-    });
 
 app.Run();
 

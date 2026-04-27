@@ -11,7 +11,7 @@ namespace Mealie.Api.Controllers.Auth;
 public class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("token")]
-    [Consumes("application/x-www-form-urlencoded")]
+    [Consumes("application/x-www-form-urlencoded", "multipart/form-data")]
     public async Task<ActionResult<TokenResponse>> Login([FromForm] LoginRequest request)
     {
         var result = await authService.LoginAsync(request.Username, request.Password);
@@ -29,13 +29,19 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("mealie.access_token");
+        return Ok(new { message = "Logged out" });
+    }
+
     [HttpGet("oauth")]
     public IActionResult OAuthRedirect() => Redirect("/api/auth/oauth/login");
 
     [HttpGet("oauth/callback")]
     public async Task<ActionResult<TokenResponse>> OAuthCallback([FromQuery] string code, [FromQuery] string state)
     {
-        // OIDC callback — handled by OpenIdConnect middleware in production
         await Task.CompletedTask;
         return BadRequest(new { detail = "OIDC not configured" });
     }

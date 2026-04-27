@@ -16,6 +16,32 @@
     <template #[`item.status`]="{ item }">
       {{ capitalize(item.status!) }}
     </template>
+    <template #[`item.progress`]="{ item }">
+      <div
+        v-if="item.status === 'queued'"
+        class="text-medium-emphasis"
+      >
+        {{ $t('general.queued') }}
+      </div>
+      <div
+        v-else-if="item.status === 'in-progress'"
+        style="min-width: 140px;"
+      >
+        <div class="d-flex justify-space-between text-caption mb-1">
+          <span>{{ item.processedCount ?? 0 }} / {{ item.totalCount ?? '?' }}</span>
+        </div>
+        <v-progress-linear
+          :model-value="item.totalCount ? ((item.processedCount ?? 0) / item.totalCount) * 100 : null"
+          :indeterminate="!item.totalCount"
+          color="primary"
+          rounded
+          height="6"
+        />
+      </div>
+      <span v-else-if="item.totalCount != null">
+        {{ item.processedCount }} / {{ item.totalCount }}
+      </span>
+    </template>
     <template #[`item.actions`]="{ item }">
       <v-btn
         icon
@@ -49,11 +75,12 @@ const headers = [
   { title: i18n.t("general.name"), value: "name", key: "name" },
   { title: i18n.t("general.timestamp"), value: "timestamp", key: "timestamp" },
   { title: i18n.t("general.status"), value: "status", key: "status" },
+  { title: i18n.t("general.progress"), value: "progress", key: "progress", sortable: false },
   { title: i18n.t("general.delete"), value: "actions", key: "actions" },
 ];
 
 function handleRowClick(item: ReportSummary) {
-  if (item.status === "in-progress") {
+  if (item.status === "in-progress" || item.status === "queued") {
     return;
   }
 

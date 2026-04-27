@@ -65,7 +65,8 @@ public class UsersController(
     public async Task<ActionResult<UserResponse>> GetSelf()
     {
         var user = await userService.GetProfileAsync(tenantContext.UserId);
-        if (user is null) return NotFound();
+        // Return 401 so the frontend re-authenticates rather than looping on 404
+        if (user is null) return Unauthorized(new { detail = "User not found — please log in again" });
         return Ok(user);
     }
 
@@ -79,6 +80,16 @@ public class UsersController(
     }
 
     [HttpPut("self/password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePasswordSelf([FromBody] ChangePasswordRequest request)
+    {
+        var success = await userService.ChangePasswordAsync(tenantContext.UserId, request.CurrentPassword, request.NewPassword);
+        if (!success) return BadRequest(new { detail = "Current password is incorrect" });
+        return Ok(new { detail = "Password updated successfully" });
+    }
+
+    // Alias: frontend calls PUT /api/users/password (not /api/users/self/password)
+    [HttpPut("password")]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
@@ -123,6 +134,15 @@ public class UsersController(
         return Ok(user);
     }
 
+    [HttpPut("{userId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request)
+    {
+        var user = await userService.UpdateProfileAsync(userId, request);
+        if (user is null) return NotFound();
+        return Ok(user);
+    }
+
     [HttpPut("{userId:guid}/favorites/{slug}")]
     [Authorize]
     public async Task<IActionResult> AddFavorite(Guid userId, string slug)
@@ -137,6 +157,14 @@ public class UsersController(
     {
         await userService.RemoveFavoriteAsync(userId, slug);
         return Ok();
+    }
+
+    [HttpGet("self/ratings")]
+    [Authorize]
+    public async Task<ActionResult<IList<UserRatingResponse>>> GetSelfRatings()
+    {
+        var ratings = await userService.GetRatingsAsync(tenantContext.UserId);
+        return Ok(ratings);
     }
 
     [HttpGet("{userId:guid}/ratings")]

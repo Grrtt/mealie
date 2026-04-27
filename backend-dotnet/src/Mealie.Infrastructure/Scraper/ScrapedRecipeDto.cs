@@ -12,8 +12,16 @@ public class ScrapedRecipeDto
     public IList<string> RecipeIngredient { get; set; } = [];
     public IList<string> RecipeInstructions { get; set; } = [];
     public IList<string> Keywords { get; set; } = [];
+    public IList<string> Categories { get; set; } = [];
+    public string? OrgUrl { get; set; }
     public NutritionDto? Nutrition { get; set; }
     public bool ScrapingNotSupported { get; set; }
+
+    /// <summary>
+    /// Image files extracted from the source archive: filename → raw bytes.
+    /// Written to {DataDir}/recipes/{slug}/images/ after the recipe is created.
+    /// </summary>
+    public Dictionary<string, byte[]> ImageFiles { get; set; } = [];
 }
 
 public class NutritionDto

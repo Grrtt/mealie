@@ -3,6 +3,7 @@ using System;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Mealie.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260426011323_AddReportQueueFields")]
+    partial class AddReportQueueFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
@@ -188,9 +191,6 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("ProcessedCount")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("QueuedFilePath")
                         .HasColumnType("TEXT");
 
@@ -206,9 +206,6 @@ namespace Mealie.Infrastructure.Data.Migrations
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("TEXT");
-
-                    b.Property<int?>("TotalCount")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

@@ -55,11 +55,23 @@
             :accept="content.acceptedFileType || '.zip'"
             class="mb-2"
             :post="false"
+            :multiple="true"
             file-name="file"
             :text-btn="false"
-            @uploaded="setFileObject"
+            @uploaded="setFileObjects"
           />
-          {{ state.fileObject.name || $t('migration.no-file-selected') }}
+          <div v-if="state.fileObjects.length > 0">
+            <v-chip
+              v-for="(f, i) in state.fileObjects"
+              :key="i"
+              class="mr-1 mb-1"
+              closable
+              @click:close="removeFile(i)"
+            >
+              {{ f.name }}
+            </v-chip>
+          </div>
+          <span v-else>{{ $t('migration.no-file-selected') }}</span>
         </v-card-text>
 
         <v-card-text>
@@ -76,7 +88,7 @@
 
         <v-card-actions class="justify-end">
           <BaseButton
-            :disabled="!state.fileObject.name"
+            :disabled="state.fileObjects.length === 0"
             submit
             @click="startMigration"
           >
@@ -145,7 +157,7 @@ const state = reactive({
   loading: false,
   treeState: true,
   migrationType: MIGRATIONS.mealie as SupportedMigrations,
-  fileObject: {} as File,
+  fileObjects: [] as File[],
   reports: [] as ReportSummary[],
 });
 
@@ -455,27 +467,36 @@ for (const key in _content) {
   }
 }
 
-console.log(_content);
+function setFileObjects(files: File | File[] | unknown | null) {
+  if (Array.isArray(files)) {
+    state.fileObjects = [...state.fileObjects, ...files];
+  }
+  else if (files instanceof File) {
+    state.fileObjects = [...state.fileObjects, files];
+  }
+}
 
-function setFileObject(fileObject: File) {
-  state.fileObject = fileObject;
+function removeFile(index: number) {
+  state.fileObjects.splice(index, 1);
 }
 
 async function startMigration() {
   state.loading = true;
-  const payload = {
-    addMigrationTag: state.addMigrationTag,
-    migrationType: state.migrationType,
-    archive: state.fileObject,
-  };
 
-  const { data } = await api.groupMigration.startMigration(payload);
-
-  state.loading = false;
-
-  if (data) {
-    state.reports.unshift(data);
+  for (const file of state.fileObjects) {
+    const payload = {
+      addMigrationTag: state.addMigrationTag,
+      migrationType: state.migrationType,
+      archive: file,
+    };
+    const { data } = await api.groupMigration.startMigration(payload);
+    if (data) {
+      state.reports.unshift(data);
+    }
   }
+
+  state.fileObjects = [];
+  state.loading = false;
 }
 
 async function getMigrationReports() {
@@ -493,6 +514,27 @@ async function deleteReport(id: string) {
 
 onMounted(() => {
   getMigrationReports();
+});
+
+const hasActiveJobs = computed(() =>
+  state.reports.some(r => r.status === "queued" || r.status === "in-progress"),
+);
+
+// Poll while any job is queued or in-progress
+watch(hasActiveJobs, (active) => {
+  if (active) {
+    pollInterval = window.setInterval(getMigrationReports, 3000);
+  }
+  else if (pollInterval !== null) {
+    window.clearInterval(pollInterval);
+    pollInterval = null;
+  }
+}, { immediate: true });
+
+let pollInterval: number | null = null;
+
+onUnmounted(() => {
+  if (pollInterval !== null) window.clearInterval(pollInterval);
 });
 
 const content = computed(() => {

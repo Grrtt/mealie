@@ -28,7 +28,7 @@ public class MigrationImportService(
                     continue;
                 }
 
-                await recipeService.CreateFromScrapedAsync(scraped, householdId, groupId, ct);
+                await recipeService.CreateFromScrapedAsync(scraped, householdId, groupId, ct: ct);
                 report.Created++;
             }
             catch (Exception ex)

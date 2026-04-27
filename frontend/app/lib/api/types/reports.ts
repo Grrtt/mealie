@@ -6,7 +6,7 @@
 */
 
 export type ReportCategory = "backup" | "restore" | "migration" | "bulk_import";
-export type ReportSummaryStatus = "in-progress" | "success" | "failure" | "partial";
+export type ReportSummaryStatus = "queued" | "in-progress" | "success" | "failure" | "partial";
 
 export interface ReportCreate {
   timestamp?: string;
@@ -38,6 +38,8 @@ export interface ReportOut {
   status?: ReportSummaryStatus;
   id: string;
   entries?: ReportEntryOut[];
+  totalCount?: number;
+  processedCount?: number;
 }
 export interface ReportSummary {
   timestamp?: string;
@@ -46,4 +48,6 @@ export interface ReportSummary {
   name: string;
   status?: ReportSummaryStatus;
   id: string;
+  totalCount?: number;
+  processedCount?: number;
 }

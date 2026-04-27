@@ -33,6 +33,14 @@ public class GroupService(ApplicationDbContext db, ILogger<GroupService> logger)
             .ToListAsync(ct);
     }
 
+    public async Task<IList<HouseholdResponse>> GetHouseholdsAsync(Guid groupId, CancellationToken ct = default)
+    {
+        return await db.Households.IgnoreQueryFilters()
+            .Where(h => h.GroupId == groupId)
+            .Select(h => new HouseholdResponse { Id = h.Id, Name = h.Name, Slug = h.Slug, GroupId = h.GroupId })
+            .ToListAsync(ct);
+    }
+
     public async Task<InviteTokenResponse> CreateInviteTokenAsync(Guid groupId, Guid? householdId, CancellationToken ct = default)
     {
         var token = new GroupInviteToken

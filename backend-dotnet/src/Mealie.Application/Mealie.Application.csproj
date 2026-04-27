@@ -15,7 +15,10 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="FluentValidation" />
+    <PackageReference Include="HtmlAgilityPack" />
     <PackageReference Include="Riok.Mapperly" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
   </ItemGroup>
 
 </Project>

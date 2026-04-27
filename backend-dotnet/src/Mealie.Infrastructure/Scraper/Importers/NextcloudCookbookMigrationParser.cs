@@ -54,7 +54,9 @@ public class NextcloudCookbookMigrationParser : MigrationParserBase
                         : null,
                     RecipeIngredient = GetStringArray(doc, "recipeIngredient"),
                     RecipeInstructions = GetInstructionSteps(doc),
-                    Keywords = GetStringArray(doc, "keywords"),
+                    Keywords = GetStringOrArray(doc, "keywords"),
+                    Categories = GetStringOrArray(doc, "recipeCategory"),
+                    OrgUrl = doc.TryGetProperty("url", out var u) ? u.GetString() : null,
                 });
             }
             catch { /* skip malformed */ }
@@ -70,6 +72,32 @@ public class NextcloudCookbookMigrationParser : MigrationParserBase
                 .Select(e => e.GetString() ?? "")
                 .Where(s => !string.IsNullOrEmpty(s))
                 .ToList();
+        return [];
+    }
+
+    /// <summary>
+    /// Schema.org fields like "keywords" and "recipeCategory" can be either an array of strings
+    /// OR a single comma-separated string. This handles both.
+    /// </summary>
+    private static IList<string> GetStringOrArray(JsonElement el, string key)
+    {
+        if (!el.TryGetProperty(key, out var val)) return [];
+
+        if (val.ValueKind == JsonValueKind.Array)
+            return val.EnumerateArray()
+                .Select(e => e.GetString()?.Trim() ?? "")
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToList();
+
+        if (val.ValueKind == JsonValueKind.String)
+        {
+            var str = val.GetString();
+            if (string.IsNullOrWhiteSpace(str)) return [];
+            return str.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToList();
+        }
+
         return [];
     }
 

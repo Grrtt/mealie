@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Mealie.Application.Dtos.Users;
 
 public class UserResponse
@@ -10,7 +12,11 @@ public class UserResponse
     public bool Admin { get; set; }
     public bool Advanced { get; set; }
     public Guid GroupId { get; set; }
+    public string Group { get; set; } = string.Empty;
+    public string GroupSlug { get; set; } = string.Empty;
     public Guid? HouseholdId { get; set; }
+    public string Household { get; set; } = string.Empty;
+    public string HouseholdSlug { get; set; } = string.Empty;
     public bool CanManageHousehold { get; set; }
     public bool CanManage { get; set; }
     public bool CanInvite { get; set; }

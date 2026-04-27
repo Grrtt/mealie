@@ -1,4 +1,6 @@
 using Mealie.Application.Dtos.Recipes;
+using Mealie.Application.Services.IngredientParser;
+using Mealie.Domain.Entities.Ingredients;
 using Mealie.Infrastructure.Scraper;
 using Mealie.Shared.Pagination;
 
@@ -10,7 +12,12 @@ public interface IRecipeService
     Task<PaginatedResponse<RecipeSummaryResponse>> GetPaginatedAsync(Guid householdId, PaginationParams pagination, RecipeFilter? filter = null, CancellationToken ct = default);
     Task<RecipeDetailResponse?> GetDetailBySlugAsync(Guid groupId, string slug, CancellationToken ct = default);
     Task<RecipeSummaryResponse?> GetBySlugAsync(string slug, CancellationToken ct = default);
-    Task<RecipeSummaryResponse?> CreateFromScrapedAsync(ScrapedRecipeDto scraped, Guid householdId, Guid groupId, CancellationToken ct = default);
+    Task<RecipeSummaryResponse?> CreateFromScrapedAsync(
+        ScrapedRecipeDto scraped, Guid householdId, Guid groupId,
+        IReadOnlyList<ParsedIngredientResult>? parsedIngredients = null,
+        List<IngredientFood>? cachedFoods = null,
+        List<IngredientUnit>? cachedUnits = null,
+        CancellationToken ct = default);
     Task<RecipeDetailResponse> CreateAsync(Guid groupId, Guid householdId, Guid userId, CreateRecipeRequest request, CancellationToken ct = default);
     Task<RecipeDetailResponse?> UpdateAsync(Guid groupId, string slug, UpdateRecipeRequest request, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid groupId, string slug, CancellationToken ct = default);
