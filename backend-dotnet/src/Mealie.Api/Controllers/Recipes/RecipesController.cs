@@ -6,6 +6,7 @@ using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Mealie.Api.Controllers.Recipes;
 
@@ -72,7 +73,7 @@ public class RecipesController(
     {
         var deleted = await recipeService.DeleteAsync(tenantContext.GroupId, slug, ct);
         if (!deleted) return NotFound(new { detail = "Recipe not found" });
-        return NoContent();
+        return Ok(new { slug });
     }
 
     [HttpPost("{slug}/duplicate")]
@@ -120,8 +121,51 @@ public class RecipesController(
         return Ok(new { exported = results.Count, files = results });
     }
 
-    // ── Scraper Endpoints (T086) ────────────────────────────────────────────
+    // ── Scraper Endpoints ───────────────────────────────────────────────────
 
+    /// <summary>Streaming SSE endpoint: scrape a recipe from a URL.</summary>
+    [HttpPost("create/url/stream")]
+    public async Task CreateFromUrlStream([FromBody] RecipeScraperRequest request, CancellationToken ct)
+    {
+        await StreamSseAsync(async onProgress =>
+        {
+            await onProgress("Fetching recipe...");
+            var scraped = await scraperService.ScrapeAsync(request.Url, ct);
+            if (scraped.ScrapingNotSupported)
+                throw new InvalidOperationException("Could not scrape recipe from the provided URL");
+
+            if (!request.IncludeTags) scraped.Keywords.Clear();
+            if (!request.IncludeCategories) scraped.Categories.Clear();
+
+            await onProgress("Saving recipe...");
+            var recipe = await recipeService.CreateFromScrapedAsync(
+                scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct: ct);
+            return recipe?.Slug;
+        }, ct);
+    }
+
+    /// <summary>Streaming SSE endpoint: scrape a recipe from raw HTML or JSON-LD.</summary>
+    [HttpPost("create/html-or-json/stream")]
+    public async Task CreateFromHtmlOrJsonStream([FromBody] ScrapeFromHtmlRequest request, CancellationToken ct)
+    {
+        await StreamSseAsync(async onProgress =>
+        {
+            await onProgress("Parsing recipe data...");
+            var scraped = await scraperService.ScrapeFromHtmlAsync(request.Data, request.Url, ct);
+            if (scraped.ScrapingNotSupported)
+                throw new InvalidOperationException("Could not parse recipe from the provided data");
+
+            if (!request.IncludeTags) scraped.Keywords.Clear();
+            if (!request.IncludeCategories) scraped.Categories.Clear();
+
+            await onProgress("Saving recipe...");
+            var recipe = await recipeService.CreateFromScrapedAsync(
+                scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct: ct);
+            return recipe?.Slug;
+        }, ct);
+    }
+
+    /// <summary>Non-streaming URL scrape (legacy / simple clients).</summary>
     [HttpPost("create-url")]
     public async Task<ActionResult<RecipeSummaryResponse>> CreateFromUrl(
         [FromBody] RecipeScraperRequest request, CancellationToken ct)
@@ -137,7 +181,8 @@ public class RecipesController(
         return Ok(recipe);
     }
 
-    [HttpPost("create-url/bulk")]
+    [HttpPost("create/url/bulk")]
+    [HttpPost("create-url/bulk")] // legacy alias
     public async Task<IActionResult> CreateFromUrls([FromBody] BulkScrapeRequest request, CancellationToken ct)
     {
         var results = new List<object>();
@@ -151,6 +196,8 @@ public class RecipesController(
                     results.Add(new { url, success = false, detail = "Scraping not supported" });
                     continue;
                 }
+                if (!request.IncludeTags) scraped.Keywords.Clear();
+                if (!request.IncludeCategories) scraped.Categories.Clear();
                 var recipe = await recipeService.CreateFromScrapedAsync(
                     scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct: ct);
                 results.Add(new { url, success = recipe is not null, slug = recipe?.Slug });
@@ -182,7 +229,8 @@ public class RecipesController(
 
     // ── Import Endpoints (T088) ─────────────────────────────────────────────
 
-    [HttpPost("create-zip")]
+    [HttpPost("create/zip")]
+    [HttpPost("create-zip")] // legacy alias
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> ImportFromZip(IFormFile file, CancellationToken ct)
     {
@@ -198,4 +246,40 @@ public class RecipesController(
     [HttpPost("create-image-ocr")]
     public IActionResult CreateFromImageOcr()
         => StatusCode(501, new { detail = "OCR import is not implemented" });
+
+    // ── SSE helper ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Writes an SSE response. <paramref name="work"/> receives an onProgress callback and
+    /// returns the recipe slug on success (or null to emit an error event).
+    /// </summary>
+    private async Task StreamSseAsync(Func<Func<string, Task>, Task<string?>> work, CancellationToken ct)
+    {
+        Response.Headers["Content-Type"] = "text/event-stream";
+        Response.Headers["Cache-Control"] = "no-cache";
+        Response.Headers["Connection"] = "keep-alive";
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        async Task SendEvent(string eventName, object data)
+        {
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            await Response.WriteAsync($"event: {eventName}\ndata: {json}\n\n", ct);
+            await Response.Body.FlushAsync(ct);
+        }
+
+        try
+        {
+            var slug = await work(msg => SendEvent("progress", new { message = msg }));
+            if (slug is null)
+                await SendEvent("error", new { message = "Failed to create recipe" });
+            else
+                await SendEvent("done", new { slug });
+        }
+        catch (Exception ex)
+        {
+            try { await SendEvent("error", new { message = ex.Message }); } catch { /* client disconnected */ }
+        }
+    }
 }
+
+

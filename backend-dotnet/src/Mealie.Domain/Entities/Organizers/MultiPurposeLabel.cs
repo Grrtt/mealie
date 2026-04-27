@@ -1,4 +1,5 @@
 using Mealie.Domain.Entities.Core;
+using Mealie.Domain.Entities.Ingredients;
 using Mealie.Domain.Entities.Planning;
 
 namespace Mealie.Domain.Entities.Organizers;
@@ -14,4 +15,5 @@ public class MultiPurposeLabel
 
     public Group Group { get; set; } = null!;
     public ICollection<ShoppingListItem> ShoppingItems { get; set; } = [];
+    public ICollection<IngredientFood> Foods { get; set; } = [];
 }

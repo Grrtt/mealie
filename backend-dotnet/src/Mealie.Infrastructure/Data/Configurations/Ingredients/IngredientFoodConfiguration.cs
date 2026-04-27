@@ -23,5 +23,9 @@ public class IngredientFoodConfiguration : IEntityTypeConfiguration<IngredientFo
                .WithOne(a => a.Food)
                .HasForeignKey(a => a.FoodId)
                .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(f => f.Label)
+               .WithMany(l => l.Foods)
+               .HasForeignKey(f => f.LabelId)
+               .OnDelete(DeleteBehavior.SetNull);
     }
 }

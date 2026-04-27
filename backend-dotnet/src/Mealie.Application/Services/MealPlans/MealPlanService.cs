@@ -7,25 +7,25 @@ namespace Mealie.Application.Services.MealPlans;
 
 public class MealPlanService(ApplicationDbContext db) : IMealPlanService
 {
+    private static IQueryable<MealPlan> WithRecipe(IQueryable<MealPlan> q) =>
+        q.Include(m => m.Recipe).ThenInclude(r => r!.Tags)
+         .Include(m => m.Recipe).ThenInclude(r => r!.Categories);
+
     public async Task<IList<MealPlanResponse>> GetMealPlansAsync(Guid householdId, DateOnly? startDate = null, DateOnly? endDate = null, CancellationToken ct = default)
     {
-        var query = db.MealPlans.IgnoreQueryFilters()
-            .Where(m => m.HouseholdId == householdId)
-            .Include(m => m.Recipe)
-            .AsQueryable();
+        var query = WithRecipe(db.MealPlans.IgnoreQueryFilters()
+            .Where(m => m.HouseholdId == householdId));
 
         if (startDate.HasValue) query = query.Where(m => m.Date >= startDate.Value);
         if (endDate.HasValue) query = query.Where(m => m.Date <= endDate.Value);
 
-        return await query.OrderBy(m => m.Date)
-            .Select(m => MapToResponse(m))
-            .ToListAsync(ct);
+        var plans = await query.OrderBy(m => m.Date).ToListAsync(ct);
+        return plans.Select(MapToResponse).ToList();
     }
 
     public async Task<MealPlanResponse?> GetByIdAsync(Guid householdId, Guid id, CancellationToken ct = default)
     {
-        var m = await db.MealPlans.IgnoreQueryFilters()
-            .Include(m => m.Recipe)
+        var m = await WithRecipe(db.MealPlans.IgnoreQueryFilters())
             .FirstOrDefaultAsync(m => m.HouseholdId == householdId && m.Id == id, ct);
         if (m is null) return null;
         return MapToResponse(m);
@@ -43,12 +43,13 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
         };
         db.MealPlans.Add(plan);
         await db.SaveChangesAsync(ct);
+        await LoadRecipeNav(plan, ct);
         return MapToResponse(plan);
     }
 
     public async Task<MealPlanResponse?> UpdateAsync(Guid householdId, Guid id, UpdateMealPlanRequest request, CancellationToken ct = default)
     {
-        var plan = await db.MealPlans.IgnoreQueryFilters()
+        var plan = await WithRecipe(db.MealPlans.IgnoreQueryFilters())
             .FirstOrDefaultAsync(m => m.HouseholdId == householdId && m.Id == id, ct);
         if (plan is null) return null;
         if (request.Title is not null) plan.Title = request.Title;
@@ -58,6 +59,7 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
         if (request.RecipeId.HasValue) plan.RecipeId = request.RecipeId;
         plan.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
+        await LoadRecipeNav(plan, ct);
         return MapToResponse(plan);
     }
 
@@ -87,8 +89,7 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
         };
         db.MealPlans.Add(plan);
         await db.SaveChangesAsync(ct);
-
-        await db.Entry(plan).Reference(p => p.Recipe).LoadAsync(ct);
+        await LoadRecipeNav(plan, ct);
         return MapToResponse(plan);
     }
 
@@ -102,11 +103,51 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
         return true;
     }
 
+    private async Task LoadRecipeNav(MealPlan plan, CancellationToken ct)
+    {
+        if (plan.RecipeId is null) return;
+        await db.Entry(plan).Reference(p => p.Recipe).LoadAsync(ct);
+        if (plan.Recipe is not null)
+        {
+            await db.Entry(plan.Recipe).Collection(r => r.Tags).LoadAsync(ct);
+            await db.Entry(plan.Recipe).Collection(r => r.Categories).LoadAsync(ct);
+        }
+    }
+
     private static MealPlanResponse MapToResponse(MealPlan m) => new()
     {
-        Id = m.Id, Title = m.Title, Text = m.Text, EntryType = m.EntryType, Date = m.Date,
-        RecipeId = m.RecipeId, RecipeSlug = m.Recipe?.Slug, RecipeName = m.Recipe?.Name,
-        GroupId = m.GroupId, HouseholdId = m.HouseholdId, UserId = m.UserId,
-        CreatedAt = m.CreatedAt, UpdateAt = m.UpdateAt,
+        Id = m.Id,
+        Title = m.Title,
+        Text = m.Text,
+        EntryType = m.EntryType,
+        Date = m.Date,
+        RecipeId = m.RecipeId,
+        Recipe = m.Recipe is null ? null : new MealPlanRecipeSummary
+        {
+            Id = m.Recipe.Id.ToString(),
+            Name = m.Recipe.Name,
+            Slug = m.Recipe.Slug,
+            Image = m.Recipe.Image,
+            Description = m.Recipe.Description,
+            Tags = m.Recipe.Tags.Select(t => new MealPlanRecipeTagSummary
+            {
+                Id = t.Id.ToString(),
+                GroupId = t.GroupId.ToString(),
+                Name = t.Name,
+                Slug = t.Slug,
+            }).ToList(),
+            RecipeCategory = m.Recipe.Categories.Select(c => new MealPlanRecipeTagSummary
+            {
+                Id = c.Id.ToString(),
+                GroupId = c.GroupId.ToString(),
+                Name = c.Name,
+                Slug = c.Slug,
+            }).ToList(),
+        },
+        GroupId = m.GroupId,
+        HouseholdId = m.HouseholdId,
+        UserId = m.UserId,
+        CreatedAt = m.CreatedAt,
+        UpdateAt = m.UpdateAt,
     };
 }

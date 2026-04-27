@@ -181,12 +181,22 @@ public class RecipeScraperRequest
 {
     public string Url { get; set; } = string.Empty;
     public bool IncludeTags { get; set; } = true;
+    public bool IncludeCategories { get; set; } = true;
+}
+
+public class ScrapeFromHtmlRequest
+{
+    public string Data { get; set; } = string.Empty;
+    public string? Url { get; set; }
+    public bool IncludeTags { get; set; } = true;
+    public bool IncludeCategories { get; set; } = true;
 }
 
 public class BulkScrapeRequest
 {
     public IList<string> Urls { get; set; } = [];
     public bool IncludeTags { get; set; } = true;
+    public bool IncludeCategories { get; set; } = true;
 }
 
 public class ExportFileInfo

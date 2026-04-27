@@ -14,14 +14,30 @@ public class IngredientParserService(
         var (unit, afterUnit) = await unitMatcher.MatchAsync(groupId, afterQuantity, ct);
         var (food, note) = await foodMatcher.MatchAsync(groupId, afterUnit, ct);
 
+        var quantityConf = quantity.HasValue ? 1.0 : 0.0;
+        var unitConf = unit is not null ? 1.0 : 0.0;
+        var foodConf = food is not null ? 1.0 : 0.0;
+        var average = (quantityConf + unitConf + foodConf) / 3.0;
+
         return new ParsedIngredientDto
         {
             Input = ingredientString,
-            Quantity = quantity,
-            Unit = unit is not null ? new ParsedIngredientUnitDto { Id = unit.Id, Name = unit.Name } : null,
-            Food = food is not null ? new ParsedIngredientFoodDto { Id = food.Id, Name = food.Name } : null,
-            Note = string.IsNullOrEmpty(note) ? null : note,
-            Confidence = quantity.HasValue && (unit is not null || food is not null) ? "high" : "low"
+            Confidence = new IngredientConfidenceDto
+            {
+                Average = average,
+                Quantity = quantityConf,
+                Unit = unitConf,
+                Food = foodConf,
+            },
+            Ingredient = new ParsedIngredientIngredientDto
+            {
+                Quantity = quantity,
+                Unit = unit is not null ? new ParsedIngredientUnitDto { Id = unit.Id, Name = unit.Name } : null,
+                Food = food is not null ? new ParsedIngredientFoodDto { Id = food.Id, Name = food.Name } : null,
+                Note = string.IsNullOrEmpty(note) ? null : note,
+                Display = ingredientString,
+                OriginalText = ingredientString,
+            }
         };
     }
 

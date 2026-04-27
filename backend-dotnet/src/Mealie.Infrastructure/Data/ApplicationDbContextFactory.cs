@@ -17,11 +17,11 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         if (dbEngine.Equals("postgres", StringComparison.OrdinalIgnoreCase) ||
             dbEngine.Equals("postgresql", StringComparison.OrdinalIgnoreCase))
         {
-            options.UseNpgsql(databaseUrl);
+            options.UseNpgsql(databaseUrl).UseSnakeCaseNamingConvention();
         }
         else
         {
-            options.UseSqlite(databaseUrl);
+            options.UseSqlite(databaseUrl).UseSnakeCaseNamingConvention();
         }
 
         // Pass a no-op TenantFilter for design-time

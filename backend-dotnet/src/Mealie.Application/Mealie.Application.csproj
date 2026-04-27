@@ -13,6 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\Seed\foods\locales\*.json" />
+    <EmbeddedResource Include="Resources\Seed\units\locales\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="HtmlAgilityPack" />

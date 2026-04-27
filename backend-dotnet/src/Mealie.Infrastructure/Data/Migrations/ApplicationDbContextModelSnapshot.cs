@@ -20,14 +20,18 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("CategoryCookbook", b =>
                 {
                     b.Property<Guid>("CategoriesId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("categories_id");
 
                     b.Property<Guid>("CookbookId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("cookbook_id");
 
-                    b.HasKey("CategoriesId", "CookbookId");
+                    b.HasKey("CategoriesId", "CookbookId")
+                        .HasName("pk_cookbooks_to_categories");
 
-                    b.HasIndex("CookbookId");
+                    b.HasIndex("CookbookId")
+                        .HasDatabaseName("ix_cookbooks_to_categories_cookbook_id");
 
                     b.ToTable("cookbooks_to_categories", (string)null);
                 });
@@ -35,14 +39,18 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("CategoryRecipe", b =>
                 {
                     b.Property<Guid>("CategoriesId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("categories_id");
 
                     b.Property<Guid>("RecipesId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipes_id");
 
-                    b.HasKey("CategoriesId", "RecipesId");
+                    b.HasKey("CategoriesId", "RecipesId")
+                        .HasName("pk_recipes_to_categories");
 
-                    b.HasIndex("RecipesId");
+                    b.HasIndex("RecipesId")
+                        .HasDatabaseName("ix_recipes_to_categories_recipes_id");
 
                     b.ToTable("recipes_to_categories", (string)null);
                 });
@@ -50,14 +58,18 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("CookbookTag", b =>
                 {
                     b.Property<Guid>("CookbookId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("cookbook_id");
 
                     b.Property<Guid>("TagsId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tags_id");
 
-                    b.HasKey("CookbookId", "TagsId");
+                    b.HasKey("CookbookId", "TagsId")
+                        .HasName("pk_cookbooks_to_tags");
 
-                    b.HasIndex("TagsId");
+                    b.HasIndex("TagsId")
+                        .HasDatabaseName("ix_cookbooks_to_tags_tags_id");
 
                     b.ToTable("cookbooks_to_tags", (string)null);
                 });
@@ -65,14 +77,18 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("CookbookTool", b =>
                 {
                     b.Property<Guid>("CookbookId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("cookbook_id");
 
                     b.Property<Guid>("ToolsId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tools_id");
 
-                    b.HasKey("CookbookId", "ToolsId");
+                    b.HasKey("CookbookId", "ToolsId")
+                        .HasName("pk_cookbooks_to_tools");
 
-                    b.HasIndex("ToolsId");
+                    b.HasIndex("ToolsId")
+                        .HasDatabaseName("ix_cookbooks_to_tools_tools_id");
 
                     b.ToTable("cookbooks_to_tools", (string)null);
                 });
@@ -81,31 +97,40 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("token");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_long_live_tokens");
 
-                    b.HasIndex("Token");
+                    b.HasIndex("Token")
+                        .HasDatabaseName("ix_long_live_tokens_token");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_long_live_tokens_user_id");
 
                     b.ToTable("long_live_tokens", (string)null);
                 });
@@ -114,29 +139,37 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("Slug")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_groups");
 
                     b.HasIndex("Name")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_groups_name");
 
                     b.HasIndex("Slug")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_groups_slug");
 
                     b.ToTable("groups", (string)null);
                 });
@@ -145,28 +178,36 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("Slug")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_households");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_households_group_id");
 
                     b.ToTable("households", (string)null);
                 });
@@ -175,157 +216,205 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("category");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<int>("ProcessedCount")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("processed_count");
 
                     b.Property<string>("QueuedFilePath")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("queued_file_path");
 
                     b.Property<Guid?>("QueuedHouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("queued_household_id");
 
                     b.Property<Guid?>("QueuedUserId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("queued_user_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("status");
 
                     b.Property<DateTime>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("timestamp");
 
                     b.Property<int?>("TotalCount")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("total_count");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_reports");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_reports_group_id");
 
-                    b.ToTable("Reports");
+                    b.ToTable("reports", (string)null);
                 });
 
             modelBuilder.Entity("Mealie.Domain.Entities.Core.ReportEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("Exception")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("exception");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("message");
 
                     b.Property<Guid>("ReportId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("report_id");
 
                     b.Property<bool>("Success")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("success");
 
                     b.Property<DateTime>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("timestamp");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_report_entries");
 
-                    b.HasIndex("ReportId");
+                    b.HasIndex("ReportId")
+                        .HasDatabaseName("ix_report_entries_report_id");
 
-                    b.ToTable("ReportEntries");
+                    b.ToTable("report_entries", (string)null);
                 });
 
             modelBuilder.Entity("Mealie.Domain.Entities.Core.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<bool>("Admin")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("admin");
 
                     b.Property<bool>("Advanced")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("advanced");
 
                     b.Property<string>("AuthMethod")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("auth_method");
 
                     b.Property<string>("CacheKey")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("cache_key");
 
                     b.Property<bool>("CanInvite")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("can_invite");
 
                     b.Property<bool>("CanManage")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("can_manage");
 
                     b.Property<bool>("CanManageHousehold")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("can_manage_household");
 
                     b.Property<bool>("CanOrganize")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("can_organize");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Email")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("email");
 
                     b.Property<string>("FullName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("full_name");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid?>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("LastReadAnnouncement")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_read_announcement");
 
                     b.Property<DateTime?>("LockedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("locked_at");
 
                     b.Property<int>("LoginAttempts")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("login_attempts");
 
                     b.Property<string>("Password")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("password");
 
                     b.Property<bool>("ShowAnnouncements")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("show_announcements");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
                     b.Property<string>("Username")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("username");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_users");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_email");
 
-                    b.HasIndex("FullName");
+                    b.HasIndex("FullName")
+                        .HasDatabaseName("ix_users_full_name");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_users_group_id");
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_users_household_id");
 
                     b.HasIndex("Username")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_username");
 
                     b.ToTable("users", (string)null);
                 });
@@ -334,38 +423,57 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("description");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
+
+                    b.Property<Guid?>("LabelId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<bool>("OnHand")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("on_hand");
 
                     b.Property<string>("PluralName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("plural_name");
 
                     b.Property<Guid?>("UnitId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("unit_id");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_ingredient_foods");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_ingredient_foods_group_id");
 
-                    b.HasIndex("UnitId");
+                    b.HasIndex("LabelId")
+                        .HasDatabaseName("ix_ingredient_foods_label_id");
+
+                    b.HasIndex("UnitId")
+                        .HasDatabaseName("ix_ingredient_foods_unit_id");
 
                     b.ToTable("ingredient_foods", (string)null);
                 });
@@ -374,18 +482,23 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("FoodId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("food_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_ingredient_foods_aliases");
 
-                    b.HasIndex("FoodId");
+                    b.HasIndex("FoodId")
+                        .HasDatabaseName("ix_ingredient_foods_aliases_food_id");
 
                     b.ToTable("ingredient_foods_aliases", (string)null);
                 });
@@ -394,42 +507,55 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("Abbreviation")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("abbreviation");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("description");
 
                     b.Property<bool>("Fraction")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("fraction");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("PluralAbbreviation")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("plural_abbreviation");
 
                     b.Property<string>("PluralName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("plural_name");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
                     b.Property<bool>("UseAbbreviation")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("use_abbreviation");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_ingredient_units");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_ingredient_units_group_id");
 
                     b.ToTable("ingredient_units", (string)null);
                 });
@@ -438,28 +564,36 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_categories");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_categories_group_id");
 
                     b.ToTable("categories", (string)null);
                 });
@@ -468,44 +602,58 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("description");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Image")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("image");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("position");
 
                     b.Property<bool>("Public")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("public");
 
                     b.Property<bool>("RequireAllCategories")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("require_all_categories");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_cookbooks");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_cookbooks_group_id");
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_cookbooks_household_id");
 
                     b.ToTable("cookbooks", (string)null);
                 });
@@ -514,27 +662,35 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid?>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("token");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_invite_tokens");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_invite_tokens_group_id");
 
                     b.ToTable("invite_tokens", (string)null);
                 });
@@ -543,27 +699,35 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("Color")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("color");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_multi_purpose_labels");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_multi_purpose_labels_group_id");
 
                     b.ToTable("multi_purpose_labels", (string)null);
                 });
@@ -572,28 +736,36 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_tags");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_tags_group_id");
 
                     b.ToTable("tags", (string)null);
                 });
@@ -602,31 +774,40 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<bool>("OnHand")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("on_hand");
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_tools");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_tools_group_id");
 
                     b.ToTable("tools", (string)null);
                 });
@@ -635,51 +816,68 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<DateOnly>("Date")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("date");
 
                     b.Property<string>("EntryType")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("entry_type");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<Guid?>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<string>("Text")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("title");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_group_meal_plans");
 
-                    b.HasIndex("Date");
+                    b.HasIndex("Date")
+                        .HasDatabaseName("ix_group_meal_plans_date");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_group_meal_plans_group_id");
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_group_meal_plans_household_id");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_group_meal_plans_recipe_id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_group_meal_plans_user_id");
 
                     b.ToTable("group_meal_plans", (string)null);
                 });
@@ -688,29 +886,38 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_shopping_lists");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_shopping_lists_group_id");
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_shopping_lists_household_id");
 
                     b.ToTable("shopping_lists", (string)null);
                 });
@@ -719,53 +926,71 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<bool>("Checked")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("checked");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<bool>("DisableAmount")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("disable_amount");
 
                     b.Property<Guid?>("FoodId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("food_id");
 
                     b.Property<bool>("IsFood")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_food");
 
                     b.Property<Guid?>("LabelId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label_id");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("note");
 
                     b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("position");
 
                     b.Property<decimal?>("Quantity")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("quantity");
 
                     b.Property<Guid>("ShoppingListId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("shopping_list_id");
 
                     b.Property<Guid?>("UnitId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("unit_id");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_shopping_list_items");
 
-                    b.HasIndex("FoodId");
+                    b.HasIndex("FoodId")
+                        .HasDatabaseName("ix_shopping_list_items_food_id");
 
-                    b.HasIndex("LabelId");
+                    b.HasIndex("LabelId")
+                        .HasDatabaseName("ix_shopping_list_items_label_id");
 
-                    b.HasIndex("ShoppingListId");
+                    b.HasIndex("ShoppingListId")
+                        .HasDatabaseName("ix_shopping_list_items_shopping_list_id");
 
-                    b.HasIndex("UnitId");
+                    b.HasIndex("UnitId")
+                        .HasDatabaseName("ix_shopping_list_items_unit_id");
 
                     b.ToTable("shopping_list_items", (string)null);
                 });
@@ -774,28 +999,37 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<decimal>("RecipeQuantity")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_quantity");
 
                     b.Property<Guid?>("RecipeQuantityId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_quantity_id");
 
                     b.Property<decimal>("RecipeScale")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_scale");
 
                     b.Property<Guid>("ShoppingListItemId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("shopping_list_item_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_shopping_list_item_recipe_reference");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_shopping_list_item_recipe_reference_recipe_id");
 
-                    b.HasIndex("ShoppingListItemId");
+                    b.HasIndex("ShoppingListItemId")
+                        .HasDatabaseName("ix_shopping_list_item_recipe_reference_shopping_list_item_id");
 
                     b.ToTable("shopping_list_item_recipe_reference", (string)null);
                 });
@@ -804,22 +1038,29 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<decimal>("RecipeScale")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_scale");
 
                     b.Property<Guid>("ShoppingListId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("shopping_list_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_shopping_list_recipe_reference");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_shopping_list_recipe_reference_recipe_id");
 
-                    b.HasIndex("ShoppingListId");
+                    b.HasIndex("ShoppingListId")
+                        .HasDatabaseName("ix_shopping_list_recipe_reference_shopping_list_id");
 
                     b.ToTable("shopping_list_recipe_reference", (string)null);
                 });
@@ -828,74 +1069,97 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("CookTime")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("cook_time");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("description");
 
                     b.Property<bool>("DisableAmount")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("disable_amount");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Image")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("image");
 
                     b.Property<bool>("IsOcr")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_ocr");
 
                     b.Property<DateTime?>("LastMade")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("last_made");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("OrgUrl")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("org_url");
 
                     b.Property<string>("PerformTime")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("perform_time");
 
                     b.Property<string>("PrepTime")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("prep_time");
 
                     b.Property<int?>("Rating")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("rating");
 
                     b.Property<string>("RecipeYield")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_yield");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("slug");
 
                     b.Property<string>("TotalTime")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("total_time");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_recipes");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_recipes_group_id");
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_recipes_household_id");
 
                     b.HasIndex("Slug", "GroupId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_recipes_slug_group_id");
 
                     b.ToTable("recipes", (string)null);
                 });
@@ -904,26 +1168,33 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("Extension")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("extension");
 
                     b.Property<string>("Icon")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("icon");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_recipe_assets");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_recipe_assets_recipe_id");
 
                     b.ToTable("recipe_assets", (string)null);
                 });
@@ -932,29 +1203,38 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("text");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_recipe_comments");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_recipe_comments_recipe_id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_recipe_comments_user_id");
 
                     b.ToTable("recipe_comments", (string)null);
                 });
@@ -963,45 +1243,60 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<bool>("DisableAmount")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("disable_amount");
 
                     b.Property<Guid?>("FoodId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("food_id");
 
                     b.Property<bool>("IsFood")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_food");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("note");
 
                     b.Property<string>("OriginalText")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("original_text");
 
                     b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("position");
 
                     b.Property<decimal?>("Quantity")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("quantity");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<string>("Title")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("title");
 
                     b.Property<Guid?>("UnitId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("unit_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_recipes_ingredients");
 
-                    b.HasIndex("FoodId");
+                    b.HasIndex("FoodId")
+                        .HasDatabaseName("ix_recipes_ingredients_food_id");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_recipes_ingredients_recipe_id");
 
-                    b.HasIndex("UnitId");
+                    b.HasIndex("UnitId")
+                        .HasDatabaseName("ix_recipes_ingredients_unit_id");
 
                     b.ToTable("recipes_ingredients", (string)null);
                 });
@@ -1010,31 +1305,39 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("IngredientReferencesJson")
                         .HasColumnType("TEXT")
                         .HasColumnName("ingredient_references");
 
                     b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("position");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<string>("Summary")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("summary");
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("text");
 
                     b.Property<string>("Title")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("title");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_recipe_instructions");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_recipe_instructions_recipe_id");
 
                     b.ToTable("recipe_instructions", (string)null);
                 });
@@ -1043,22 +1346,28 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("title");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_notes");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_notes_recipe_id");
 
                     b.ToTable("notes", (string)null);
                 });
@@ -1067,25 +1376,33 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("expires_at");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_recipe_share_tokens");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_recipe_share_tokens_group_id");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_recipe_share_tokens_recipe_id");
 
                     b.ToTable("recipe_share_tokens", (string)null);
                 });
@@ -1094,35 +1411,46 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("EventMessage")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("event_message");
 
                     b.Property<string>("EventType")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("event_type");
 
                     b.Property<Guid>("RecipeId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_id");
 
                     b.Property<string>("Subject")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("subject");
 
                     b.Property<DateTime>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("timestamp");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
                     b.Property<Guid?>("UserId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_recipe_timeline_events");
 
-                    b.HasIndex("RecipeId");
+                    b.HasIndex("RecipeId")
+                        .HasDatabaseName("ix_recipe_timeline_events_recipe_id");
 
                     b.ToTable("recipe_timeline_events", (string)null);
                 });
@@ -1131,36 +1459,47 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<string>("ApprisUrl")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("appris_url");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<bool>("Enabled")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("enabled");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_group_events_notifiers");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_group_events_notifiers_group_id");
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_group_events_notifiers_household_id");
 
                     b.ToTable("group_events_notifiers", (string)null);
                 });
@@ -1169,27 +1508,35 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("FirstDayOfWeek")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("first_day_of_week");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<bool>("PrivateGroup")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("private_group");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_group_preferences");
 
                     b.HasIndex("GroupId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_group_preferences_group_id");
 
                     b.ToTable("group_preferences", (string)null);
                 });
@@ -1198,45 +1545,59 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("FirstDayOfWeek")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("first_day_of_week");
 
                     b.Property<Guid>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<bool>("PrivateHousehold")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("private_household");
 
                     b.Property<string>("RecipeDisableAmount")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_disable_amount");
 
                     b.Property<string>("RecipeDisableComments")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_disable_comments");
 
                     b.Property<string>("RecipeLandscapeView")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_landscape_view");
 
                     b.Property<string>("RecipePublic")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_public");
 
                     b.Property<string>("RecipeShowAssets")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_show_assets");
 
                     b.Property<string>("RecipeShowNutrition")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipe_show_nutrition");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_household_preferences");
 
                     b.HasIndex("HouseholdId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("ix_household_preferences_household_id");
 
                     b.ToTable("household_preferences", (string)null);
                 });
@@ -1245,31 +1606,40 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<Guid?>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid?>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Log")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("log");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("Status")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("status");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_server_tasks");
 
                     b.ToTable("server_tasks", (string)null);
                 });
@@ -1278,42 +1648,55 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
 
                     b.Property<bool>("Enabled")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("enabled");
 
                     b.Property<Guid>("GroupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("group_id");
 
                     b.Property<Guid>("HouseholdId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
 
                     b.Property<string>("Method")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("method");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
 
                     b.Property<string>("ScheduledTime")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("scheduled_time");
 
                     b.Property<DateTime>("UpdateAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("update_at");
 
                     b.Property<string>("Url")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("url");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("pk_webhook_urls");
 
-                    b.HasIndex("GroupId");
+                    b.HasIndex("GroupId")
+                        .HasDatabaseName("ix_webhook_urls_group_id");
 
-                    b.HasIndex("HouseholdId");
+                    b.HasIndex("HouseholdId")
+                        .HasDatabaseName("ix_webhook_urls_household_id");
 
                     b.ToTable("webhook_urls", (string)null);
                 });
@@ -1321,14 +1704,18 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("RecipeTag", b =>
                 {
                     b.Property<Guid>("RecipesId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipes_id");
 
                     b.Property<Guid>("TagsId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tags_id");
 
-                    b.HasKey("RecipesId", "TagsId");
+                    b.HasKey("RecipesId", "TagsId")
+                        .HasName("pk_recipes_to_tags");
 
-                    b.HasIndex("TagsId");
+                    b.HasIndex("TagsId")
+                        .HasDatabaseName("ix_recipes_to_tags_tags_id");
 
                     b.ToTable("recipes_to_tags", (string)null);
                 });
@@ -1336,14 +1723,18 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("RecipeTool", b =>
                 {
                     b.Property<Guid>("RecipesId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipes_id");
 
                     b.Property<Guid>("ToolsId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tools_id");
 
-                    b.HasKey("RecipesId", "ToolsId");
+                    b.HasKey("RecipesId", "ToolsId")
+                        .HasName("pk_recipes_to_tools");
 
-                    b.HasIndex("ToolsId");
+                    b.HasIndex("ToolsId")
+                        .HasDatabaseName("ix_recipes_to_tools_tools_id");
 
                     b.ToTable("recipes_to_tools", (string)null);
                 });
@@ -1351,14 +1742,18 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("RecipeUser", b =>
                 {
                     b.Property<Guid>("FavoriteRecipesId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("favorite_recipes_id");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("user_id");
 
-                    b.HasKey("FavoriteRecipesId", "UserId");
+                    b.HasKey("FavoriteRecipesId", "UserId")
+                        .HasName("pk_users_to_recipes");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_users_to_recipes_user_id");
 
                     b.ToTable("users_to_recipes", (string)null);
                 });
@@ -1369,13 +1764,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CategoriesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_to_categories_categories_categories_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Cookbook", null)
                         .WithMany()
                         .HasForeignKey("CookbookId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_to_categories_cookbooks_cookbook_id");
                 });
 
             modelBuilder.Entity("CategoryRecipe", b =>
@@ -1384,13 +1781,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CategoriesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_categories_categories_categories_id");
 
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
                         .WithMany()
                         .HasForeignKey("RecipesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_categories_recipes_recipes_id");
                 });
 
             modelBuilder.Entity("CookbookTag", b =>
@@ -1399,13 +1798,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CookbookId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_to_tags_cookbooks_cookbook_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_to_tags_tags_tags_id");
                 });
 
             modelBuilder.Entity("CookbookTool", b =>
@@ -1414,13 +1815,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CookbookId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_to_tools_cookbooks_cookbook_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Tool", null)
                         .WithMany()
                         .HasForeignKey("ToolsId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_to_tools_tools_tools_id");
                 });
 
             modelBuilder.Entity("Mealie.Domain.Entities.Core.ApiKey", b =>
@@ -1429,7 +1832,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("ApiKeys")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_long_live_tokens_users_user_id");
 
                     b.Navigation("User");
                 });
@@ -1440,7 +1844,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Households")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_households_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1451,7 +1856,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_reports_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1462,7 +1868,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Entries")
                         .HasForeignKey("ReportId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_report_entries_reports_report_id");
 
                     b.Navigation("Report");
                 });
@@ -1473,12 +1880,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Users")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_users_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany("Users")
                         .HasForeignKey("HouseholdId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_users_households_household_id");
 
                     b.Navigation("Group");
 
@@ -1491,14 +1900,24 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Foods")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_ingredient_foods_groups_group_id");
+
+                    b.HasOne("Mealie.Domain.Entities.Organizers.MultiPurposeLabel", "Label")
+                        .WithMany("Foods")
+                        .HasForeignKey("LabelId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ingredient_foods_labels_label_id");
 
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientUnit", "Unit")
                         .WithMany("Foods")
                         .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ingredient_foods_units_unit_id");
 
                     b.Navigation("Group");
+
+                    b.Navigation("Label");
 
                     b.Navigation("Unit");
                 });
@@ -1509,7 +1928,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Aliases")
                         .HasForeignKey("FoodId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_ingredient_foods_aliases_foods_food_id");
 
                     b.Navigation("Food");
                 });
@@ -1520,7 +1940,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Units")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_ingredient_units_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1531,7 +1952,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Categories")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_categories_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1542,13 +1964,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Cookbooks")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany("Cookbooks")
                         .HasForeignKey("HouseholdId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_cookbooks_households_household_id");
 
                     b.Navigation("Group");
 
@@ -1561,7 +1985,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("InviteTokens")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_invite_tokens_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1572,7 +1997,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Labels")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_multi_purpose_labels_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1583,7 +2009,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Tags")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_tags_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1594,7 +2021,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Tools")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_tools_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -1605,24 +2033,28 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("MealPlans")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_group_meal_plans_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany("MealPlans")
                         .HasForeignKey("HouseholdId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_group_meal_plans_households_household_id");
 
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany()
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_group_meal_plans_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_group_meal_plans_users_user_id");
 
                     b.Navigation("Group");
 
@@ -1639,13 +2071,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("ShoppingLists")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_lists_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany("ShoppingLists")
                         .HasForeignKey("HouseholdId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_lists_households_household_id");
 
                     b.Navigation("Group");
 
@@ -1657,23 +2091,27 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientFood", "Food")
                         .WithMany()
                         .HasForeignKey("FoodId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_shopping_list_items_foods_food_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.MultiPurposeLabel", "Label")
                         .WithMany("ShoppingItems")
                         .HasForeignKey("LabelId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_shopping_list_items_labels_label_id");
 
                     b.HasOne("Mealie.Domain.Entities.Planning.ShoppingList", "ShoppingList")
                         .WithMany("Items")
                         .HasForeignKey("ShoppingListId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_list_items_shopping_lists_shopping_list_id");
 
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientUnit", "Unit")
                         .WithMany()
                         .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_shopping_list_items_units_unit_id");
 
                     b.Navigation("Food");
 
@@ -1690,13 +2128,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_list_item_recipe_reference_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Planning.ShoppingListItem", "ShoppingListItem")
                         .WithMany("RecipeReferences")
                         .HasForeignKey("ShoppingListItemId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_list_item_recipe_reference_shopping_list_items_shopping_list_item_id");
 
                     b.Navigation("Recipe");
 
@@ -1709,13 +2149,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_list_recipe_reference_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Planning.ShoppingList", "ShoppingList")
                         .WithMany("RecipeReferences")
                         .HasForeignKey("ShoppingListId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_list_recipe_reference_shopping_lists_shopping_list_id");
 
                     b.Navigation("Recipe");
 
@@ -1728,18 +2170,21 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Recipes")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany()
                         .HasForeignKey("HouseholdId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_households_household_id");
 
                     b.OwnsOne("Mealie.Domain.Entities.Recipes.Nutrition", "Nutrition", b1 =>
                         {
                             b1.Property<Guid>("RecipeId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("TEXT")
+                                .HasColumnName("id");
 
                             b1.Property<string>("Calories")
                                 .HasColumnType("TEXT")
@@ -1774,13 +2219,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                             b1.ToTable("recipes");
 
                             b1.WithOwner()
-                                .HasForeignKey("RecipeId");
+                                .HasForeignKey("RecipeId")
+                                .HasConstraintName("fk_recipes_recipes_id");
                         });
 
                     b.OwnsOne("Mealie.Domain.Entities.Recipes.RecipeSettings", "Settings", b1 =>
                         {
                             b1.Property<Guid>("RecipeId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("TEXT")
+                                .HasColumnName("id");
 
                             b1.Property<bool>("DisableAmount")
                                 .HasColumnType("INTEGER")
@@ -1815,7 +2262,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                             b1.ToTable("recipes");
 
                             b1.WithOwner()
-                                .HasForeignKey("RecipeId");
+                                .HasForeignKey("RecipeId")
+                                .HasConstraintName("fk_recipes_recipes_id");
                         });
 
                     b.Navigation("Group");
@@ -1833,7 +2281,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Assets")
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_assets_recipes_recipe_id");
 
                     b.Navigation("Recipe");
                 });
@@ -1844,13 +2293,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Comments")
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_comments_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.User", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_comments_users_user_id");
 
                     b.Navigation("Recipe");
 
@@ -1862,18 +2313,21 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientFood", "Food")
                         .WithMany()
                         .HasForeignKey("FoodId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_recipes_ingredients_ingredient_foods_food_id");
 
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("RecipeIngredients")
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_ingredients_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientUnit", "Unit")
                         .WithMany()
                         .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_recipes_ingredients_ingredient_units_unit_id");
 
                     b.Navigation("Food");
 
@@ -1888,7 +2342,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("RecipeInstructions")
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_instructions_recipes_recipe_id");
 
                     b.Navigation("Recipe");
                 });
@@ -1899,7 +2354,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Notes")
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_notes_recipes_recipe_id");
 
                     b.Navigation("Recipe");
                 });
@@ -1910,13 +2366,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_share_tokens_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("ShareTokens")
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_share_tokens_recipes_recipe_id");
 
                     b.Navigation("Group");
 
@@ -1929,7 +2387,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("TimelineEvents")
                         .HasForeignKey("RecipeId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipe_timeline_events_recipes_recipe_id");
 
                     b.Navigation("Recipe");
                 });
@@ -1940,52 +2399,66 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_group_events_notifiers_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany("EventNotifiers")
                         .HasForeignKey("HouseholdId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_group_events_notifiers_households_household_id");
 
                     b.OwnsOne("Mealie.Domain.Entities.Settings.EventNotifierOptions", "Options", b1 =>
                         {
                             b1.Property<Guid>("EventNotifierId")
-                                .HasColumnType("TEXT");
+                                .HasColumnType("TEXT")
+                                .HasColumnName("id");
 
                             b1.Property<bool>("MealplanEntryCreated")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("mealplan_entry_created");
 
                             b1.Property<bool>("RecipeCreated")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("recipe_created");
 
                             b1.Property<bool>("RecipeDeleted")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("recipe_deleted");
 
                             b1.Property<bool>("RecipeUpdated")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("recipe_updated");
 
                             b1.Property<bool>("ShoppingListCreated")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("shopping_list_created");
 
                             b1.Property<bool>("ShoppingListDeleted")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("shopping_list_deleted");
 
                             b1.Property<bool>("ShoppingListUpdated")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("shopping_list_updated");
 
                             b1.Property<bool>("TestMessage")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("test_message");
 
                             b1.Property<bool>("UserSignup")
-                                .HasColumnType("INTEGER");
+                                .HasColumnType("INTEGER")
+                                .HasColumnName("user_signup");
 
-                            b1.HasKey("EventNotifierId");
+                            b1.HasKey("EventNotifierId")
+                                .HasName("pk_group_events_notifier_options");
 
                             b1.ToTable("group_events_notifier_options", (string)null);
 
                             b1.WithOwner()
-                                .HasForeignKey("EventNotifierId");
+                                .HasForeignKey("EventNotifierId")
+                                .HasConstraintName("fk_group_events_notifier_options_group_events_notifiers_id");
                         });
 
                     b.Navigation("Group");
@@ -2001,7 +2474,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithOne("Preferences")
                         .HasForeignKey("Mealie.Domain.Entities.Settings.GroupPreferences", "GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_group_preferences_groups_group_id");
 
                     b.Navigation("Group");
                 });
@@ -2012,7 +2486,8 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithOne("Preferences")
                         .HasForeignKey("Mealie.Domain.Entities.Settings.HouseholdPreferences", "HouseholdId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_household_preferences_households_household_id");
 
                     b.Navigation("Household");
                 });
@@ -2023,13 +2498,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany("Webhooks")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_webhook_urls_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany("Webhooks")
                         .HasForeignKey("HouseholdId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_webhook_urls_households_household_id");
 
                     b.Navigation("Group");
 
@@ -2042,13 +2519,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("RecipesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tags_recipes_recipes_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tags_tags_tags_id");
                 });
 
             modelBuilder.Entity("RecipeTool", b =>
@@ -2057,13 +2536,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("RecipesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tools_recipes_recipes_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Tool", null)
                         .WithMany()
                         .HasForeignKey("ToolsId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tools_tools_tools_id");
                 });
 
             modelBuilder.Entity("RecipeUser", b =>
@@ -2072,13 +2553,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("FavoriteRecipesId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_users_to_recipes_recipes_favorite_recipes_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_users_to_recipes_users_user_id");
                 });
 
             modelBuilder.Entity("Mealie.Domain.Entities.Core.Group", b =>
@@ -2155,6 +2638,8 @@ namespace Mealie.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Mealie.Domain.Entities.Organizers.MultiPurposeLabel", b =>
                 {
+                    b.Navigation("Foods");
+
                     b.Navigation("ShoppingItems");
                 });
 

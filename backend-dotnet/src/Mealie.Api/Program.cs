@@ -3,6 +3,7 @@ using Mealie.Application.Services.Admin;
 using Mealie.Application.Services.Auth;
 using Mealie.Application.Services.Cookbooks;
 using Mealie.Application.Services.Groups;
+using Mealie.Application.Services.Seeder;
 using Mealie.Application.Services.Households;
 using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Services.MealPlans;
@@ -180,6 +181,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddScoped<IHouseholdService, HouseholdService>();
 
+// Application services — Seeder
+builder.Services.AddScoped<ISeederService, SeederService>();
+
 // Application services — Organizers
 builder.Services.AddScoped<IOrganizerService, OrganizerService>();
 builder.Services.AddScoped<ICookbookService, CookbookService>();
@@ -223,6 +227,10 @@ builder.Services.AddHostedService<Mealie.Application.Services.Migrations.Migrati
 // Image scrape queue: singleton channel + hosted background processor
 builder.Services.AddSingleton<Mealie.Application.Services.ImageScrape.ImageScrapeQueue>();
 builder.Services.AddHostedService<Mealie.Application.Services.ImageScrape.ImageScrapeBackgroundService>();
+
+// Seed queue: singleton channel + hosted background processor
+builder.Services.AddSingleton<Mealie.Application.Services.Seeder.SeedQueue>();
+builder.Services.AddHostedService<Mealie.Application.Services.Seeder.SeedBackgroundService>();
 
 // Ingredient NLP parser: singleton Python subprocess bridge
 builder.Services.AddSingleton<Mealie.Application.Services.IngredientParser.IngredientParserService>();
