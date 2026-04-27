@@ -5,7 +5,7 @@ using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
-using Mealie.Application.Contracts;
+using Mealie.Application.Contracts.Search;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -49,20 +49,20 @@ public sealed class LuceneRecipeSearchIndex : IRecipeSearchIndex, IDisposable
         _searcherManager = new SearcherManager(_writer, applyAllDeletes: true, searcherFactory: null);
     }
 
-    public async Task IndexRecipeAsync(Guid recipeId, CancellationToken ct = default)
+    public async Task IndexAsync(Guid id, CancellationToken ct = default)
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var recipe = await db.Recipes.IgnoreQueryFilters()
-            .Where(r => r.Id == recipeId)
+            .Where(r => r.Id == id)
             .Include(r => r.Tags)
             .Include(r => r.Categories)
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
         {
-            _logger.LogWarning("Recipe {RecipeId} not found for indexing", recipeId);
+            _logger.LogWarning("Recipe {RecipeId} not found for indexing", id);
             return;
         }
 
@@ -92,15 +92,15 @@ public sealed class LuceneRecipeSearchIndex : IRecipeSearchIndex, IDisposable
         _writer.Commit();
         _searcherManager.MaybeRefreshBlocking();
 
-        _logger.LogDebug("Indexed recipe {RecipeId} ({Slug})", recipeId, recipe.Slug);
+        _logger.LogDebug("Indexed recipe {RecipeId} ({Slug})", id, recipe.Slug);
     }
 
-    public Task RemoveRecipeAsync(Guid recipeId, CancellationToken ct = default)
+    public Task RemoveAsync(Guid id, CancellationToken ct = default)
     {
-        _writer.DeleteDocuments(new Term("id", recipeId.ToString()));
+        _writer.DeleteDocuments(new Term("id", id.ToString()));
         _writer.Commit();
         _searcherManager.MaybeRefreshBlocking();
-        _logger.LogDebug("Removed recipe {RecipeId} from index", recipeId);
+        _logger.LogDebug("Removed recipe {RecipeId} from index", id);
         return Task.CompletedTask;
     }
 

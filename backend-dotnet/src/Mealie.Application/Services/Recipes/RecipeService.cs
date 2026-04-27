@@ -1,5 +1,5 @@
 using Mealie.Application.Common;
-using Mealie.Application.Contracts;
+using Mealie.Application.Contracts.Search;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.IngredientParser;

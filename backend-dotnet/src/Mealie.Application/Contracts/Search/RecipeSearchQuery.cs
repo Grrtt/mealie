@@ -1,4 +1,4 @@
-namespace Mealie.Application.Contracts;
+namespace Mealie.Application.Contracts.Search;
 
 public record RecipeSearchQuery(
     Guid HouseholdId,

@@ -1,12 +1,14 @@
+using MediatR;
 using Mealie.Application.Dtos.Ingredients;
 using Mealie.Domain.Entities.Ingredients;
+using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
 using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Services.Ingredients;
 
-public class FoodService(ApplicationDbContext db) : IFoodService
+public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodService
 {
     public async Task<PaginatedResponse<FoodResponse>> GetFoodsAsync(Guid groupId, PaginationParams pagination, CancellationToken ct = default)
     {
@@ -37,6 +39,7 @@ public class FoodService(ApplicationDbContext db) : IFoodService
         };
         db.Foods.Add(food);
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new FoodCreatedEvent(food.Id, groupId), ct);
         return MapToResponse(food);
     }
 
@@ -51,6 +54,7 @@ public class FoodService(ApplicationDbContext db) : IFoodService
         if (request.OnHand.HasValue) food.OnHand = request.OnHand.Value;
         food.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new FoodUpdatedEvent(food.Id, groupId), ct);
         return MapToResponse(food);
     }
 
@@ -60,6 +64,7 @@ public class FoodService(ApplicationDbContext db) : IFoodService
         if (food is null) return false;
         db.Foods.Remove(food);
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new FoodDeletedEvent(id), ct);
         return true;
     }
 

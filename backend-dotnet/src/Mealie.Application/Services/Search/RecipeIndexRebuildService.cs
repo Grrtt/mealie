@@ -1,22 +1,26 @@
-using Mealie.Application.Contracts;
+using Mealie.Application.Contracts.Search;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Services.Search;
 
 /// <summary>
-/// Rebuilds the recipe search index once on startup to ensure it is up-to-date.
+/// Rebuilds both recipe and food search indexes once on startup to ensure they are up-to-date.
 /// </summary>
-public class RecipeIndexRebuildService(
-    IRecipeSearchIndex index,
-    ILogger<RecipeIndexRebuildService> logger) : BackgroundService
+public class SearchIndexRebuildService(
+    IRecipeSearchIndex recipeIndex,
+    IFoodSearchIndex foodIndex,
+    ILogger<SearchIndexRebuildService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
-            logger.LogInformation("Starting recipe search index rebuild on startup");
-            await index.RebuildAsync(stoppingToken);
+            logger.LogInformation("Rebuilding search indexes on startup...");
+            await Task.WhenAll(
+                recipeIndex.RebuildAsync(stoppingToken),
+                foodIndex.RebuildAsync(stoppingToken));
+            logger.LogInformation("Search indexes ready");
         }
         catch (OperationCanceledException)
         {
@@ -24,7 +28,7 @@ public class RecipeIndexRebuildService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to rebuild recipe search index on startup");
+            logger.LogError(ex, "Failed to rebuild search indexes on startup");
         }
     }
 }
