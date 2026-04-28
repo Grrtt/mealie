@@ -25,8 +25,9 @@ public sealed class RecipeListCachePolicy : IOutputCachePolicy
         context.AllowLocking = true;
         context.ResponseExpirationTimeSpan = TimeSpan.FromMinutes(5);
 
-        // Vary by every query param so pagination/search/filter combinations are cached separately.
-        context.CacheVaryByRules.QueryKeys = "*";
+        // Vary only by params the backend actually reads — seeds, requireAll*, orderByNullPosition
+        // etc. are ignored by the controller so must not bust the cache key.
+        context.CacheVaryByRules.QueryKeys = new[] { "page", "perPage", "search", "tags", "categories" };
         // Vary by household so different households never share a cache entry.
         context.CacheVaryByRules.VaryByValues.Add("householdId", tenant.HouseholdId.ToString());
 
