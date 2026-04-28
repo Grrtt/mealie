@@ -65,6 +65,12 @@ public class ApplicationDbContext : DbContext
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<ReportEntry> ReportEntries => Set<ReportEntry>();
 
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<Guid>().HaveConversion<UppercaseGuidConverter>();
+        configurationBuilder.Properties<Guid?>().HaveConversion<UppercaseGuidConverter>();
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
