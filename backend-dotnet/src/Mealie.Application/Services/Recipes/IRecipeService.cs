@@ -36,4 +36,9 @@ public class RecipeFilter
     public IList<string>? Foods { get; set; }
     public bool? RequireAllCategories { get; set; }
     public bool? RequireAllTags { get; set; }
+
+    public bool IsEmpty =>
+        string.IsNullOrEmpty(Search) &&
+        (Tags is null || Tags.Count == 0) &&
+        (Categories is null || Categories.Count == 0);
 }

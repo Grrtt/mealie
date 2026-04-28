@@ -209,7 +209,7 @@ builder.Services.AddHostedService<SchedulerHostedService>();
 
 // Phase 8: Ingredient parser
 builder.Services.AddScoped<UnitMatcher>();
-builder.Services.AddScoped<FoodMatcher>();
+builder.Services.AddScoped<Mealie.Application.Services.Parser.FoodMatcher>();
 builder.Services.AddScoped<IIngredientParserService, IngredientParserService>();
 
 // Phase 9: Migration importers
@@ -231,6 +231,15 @@ builder.Services.AddHostedService<Mealie.Application.Services.ImageScrape.ImageS
 // Seed queue: singleton channel + hosted background processor
 builder.Services.AddSingleton<Mealie.Application.Services.Seeder.SeedQueue>();
 builder.Services.AddHostedService<Mealie.Application.Services.Seeder.SeedBackgroundService>();
+
+// MediatR — scan Application assembly for handlers (RecipeSearchIndexHandler etc.)
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(Mealie.Application.Services.Search.RecipeSearchIndexHandler).Assembly));
+
+// Search indexes: singleton Lucene implementations + startup rebuild
+builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IRecipeSearchIndex, Mealie.Application.Services.Search.LuceneRecipeSearchIndex>();
+builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IFoodSearchIndex, Mealie.Application.Services.Search.LuceneFoodSearchIndex>();
+builder.Services.AddHostedService<Mealie.Application.Services.Search.SearchIndexRebuildService>();
 
 // Ingredient NLP parser: singleton Python subprocess bridge
 builder.Services.AddSingleton<Mealie.Application.Services.IngredientParser.IngredientParserService>();
