@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.MealPlans;
 using Mealie.Application.Services.MealPlans;
 using Mealie.Infrastructure.Auth;
+using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mealie.Api.Controllers.Households;
@@ -10,9 +11,21 @@ namespace Mealie.Api.Controllers.Households;
 public class MealPlansController(IMealPlanService mealPlanService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
 {
     [HttpGet]
-    public async Task<ActionResult<IList<MealPlanResponse>>> GetMealPlans(
-        [FromQuery] DateOnly? startDate, [FromQuery] DateOnly? endDate, CancellationToken ct)
-        => Ok(await mealPlanService.GetMealPlansAsync(CurrentHouseholdId, startDate, endDate, ct));
+    public async Task<ActionResult<PaginatedResponse<MealPlanResponse>>> GetMealPlans(
+        [FromQuery(Name = "start_date")] DateOnly? startDate,
+        [FromQuery(Name = "end_date")] DateOnly? endDate,
+        CancellationToken ct)
+    {
+        var items = await mealPlanService.GetMealPlansAsync(CurrentHouseholdId, startDate, endDate, ct);
+        return Ok(new PaginatedResponse<MealPlanResponse>
+        {
+            Page = 1,
+            PerPage = items.Count,
+            Total = items.Count,
+            TotalPages = 1,
+            Items = [.. items],
+        });
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<MealPlanResponse>> GetMealPlan(Guid id, CancellationToken ct)
