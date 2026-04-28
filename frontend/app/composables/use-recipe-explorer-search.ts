@@ -133,7 +133,6 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
   const passedQueryWithSeed = computed(() => {
     return {
       ...passedQuery.value,
-      _searchSeed: Date.now().toString(),
       _randomSeed: state.value.randomSeed,
     };
   });
@@ -148,7 +147,7 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
   function waitUntilAndExecute(
     condition: () => boolean,
     callback: () => void,
-    opts = { timeout: 2000, interval: 500 },
+    opts = { timeout: 2000, interval: 50 },
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const state = {
@@ -165,6 +164,8 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
         }
       };
 
+      // Check immediately before starting the interval poll
+      check();
       state.interval = setInterval(check, opts.interval) as unknown as number;
       state.timeout = setTimeout(() => {
         clearInterval(state.interval);
@@ -226,7 +227,7 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
         requireAllFoods: passedQuery.value.requireAllFoods ? "true" : undefined,
       },
     };
-    await router.push({ query });
+    router.push({ query });
     searchQuerySession.value.recipe = JSON.stringify(query);
   }
 
