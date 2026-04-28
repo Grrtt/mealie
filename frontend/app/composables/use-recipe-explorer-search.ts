@@ -295,7 +295,7 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
     if (query.categories?.length) {
       promises.push(
         waitUntilAndExecute(
-          () => categories.store.value.length > 0,
+          () => !categories.loading.value,
           () => {
             const result = categories.store.value.filter(item =>
               (query.categories as string[]).includes(item.id as string),
@@ -312,7 +312,7 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
     if (query.tags?.length) {
       promises.push(
         waitUntilAndExecute(
-          () => tags.store.value.length > 0,
+          () => !tags.loading.value,
           () => {
             const result = tags.store.value.filter(item => (query.tags as string[]).includes(item.id as string));
             selectedTags.value = result as NoUndefinedField<RecipeTag>[];
@@ -327,7 +327,7 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
     if (query.tools?.length) {
       promises.push(
         waitUntilAndExecute(
-          () => tools.store.value.length > 0,
+          () => !tools.loading.value,
           () => {
             const result = tools.store.value.filter(item => (query.tools as string[]).includes(item.id));
             selectedTools.value = result as NoUndefinedField<RecipeTool>[];
@@ -342,12 +342,7 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
     if (query.foods?.length) {
       promises.push(
         waitUntilAndExecute(
-          () => {
-            if (foods.store.value) {
-              return foods.store.value.length > 0;
-            }
-            return false;
-          },
+          () => !foods.loading.value,
           () => {
             const result = foods.store.value?.filter(item => (query.foods as string[]).includes(item.id));
             selectedFoods.value = result ?? [];
@@ -362,12 +357,7 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
     if (query.households?.length) {
       promises.push(
         waitUntilAndExecute(
-          () => {
-            if (households.store.value) {
-              return households.store.value.length > 0;
-            }
-            return false;
-          },
+          () => !households.loading.value,
           () => {
             const result = households.store.value?.filter(item => (query.households as string[]).includes(item.id));
             selectedHouseholds.value = result as NoUndefinedField<HouseholdSummary>[] ?? [];

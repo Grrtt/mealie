@@ -35,7 +35,7 @@ export const useReadOnlyStore = function <T extends BoundT>(
     actions.refresh();
   }
 
-  return { store, actions };
+  return { store, loading, actions };
 };
 
 export const useStore = function <T extends BoundT>(
@@ -61,5 +61,5 @@ export const useStore = function <T extends BoundT>(
     actions.refresh();
   }
 
-  return { store, actions };
+  return { store, loading, actions };
 };
