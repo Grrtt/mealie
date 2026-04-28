@@ -353,7 +353,7 @@ public class RecipeService(
         db.Recipes.Remove(recipe);
         await db.SaveChangesAsync(ct);
 
-        await mediator.Publish(new RecipeDeletedEvent(recipeId), ct);
+        await mediator.Publish(new RecipeDeletedEvent(recipeId, recipe.HouseholdId), ct);
 
         return true;
     }

@@ -232,9 +232,12 @@ builder.Services.AddHostedService<Mealie.Application.Services.ImageScrape.ImageS
 builder.Services.AddSingleton<Mealie.Application.Services.Seeder.SeedQueue>();
 builder.Services.AddHostedService<Mealie.Application.Services.Seeder.SeedBackgroundService>();
 
-// MediatR — scan Application assembly for handlers (RecipeSearchIndexHandler etc.)
+// MediatR — scan Application + Api assemblies for handlers
 builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(Mealie.Application.Services.Search.RecipeSearchIndexHandler).Assembly));
+{
+    cfg.RegisterServicesFromAssembly(typeof(Mealie.Application.Services.Search.RecipeSearchIndexHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+});
 
 // Search indexes: singleton Lucene implementations + startup rebuild
 builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IRecipeSearchIndex, Mealie.Application.Services.Search.LuceneRecipeSearchIndex>();
@@ -298,6 +301,10 @@ builder.Services.AddSwaggerGen(options =>
     if (File.Exists(xmlPath)) options.IncludeXmlComments(xmlPath);
 });
 
+// ── Output Cache ───────────────────────────────────────────────────────────
+builder.Services.AddOutputCache(options =>
+    options.AddPolicy(Mealie.Api.Caching.RecipeListCachePolicy.Name, Mealie.Api.Caching.RecipeListCachePolicy.Instance));
+
 // ── Health Checks ──────────────────────────────────────────────────────────
 builder.Services.AddHealthChecks();
 
@@ -319,6 +326,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TenantContextMiddleware>();
+app.UseOutputCache();
 app.UseMiddleware<ValidationExceptionMiddleware>();
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 

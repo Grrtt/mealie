@@ -6,6 +6,7 @@ using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using System.Text.Json;
 
 namespace Mealie.Api.Controllers.Recipes;
@@ -23,6 +24,7 @@ public class RecipesController(
     // ── CRUD Endpoints (T057-T061) ──────────────────────────────────────────
 
     [HttpGet]
+    [OutputCache(PolicyName = Mealie.Api.Caching.RecipeListCachePolicy.Name)]
     public async Task<ActionResult<PaginatedResponse<RecipeSummaryResponse>>> GetRecipes(
         [FromQuery] PaginationParams pagination, [FromQuery] string? search,
         [FromQuery] string[]? tags, [FromQuery] string[]? categories,
