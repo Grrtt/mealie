@@ -741,9 +741,10 @@ public class RecipeService(
 
         foreach (var recipe in recipes)
         {
-            // Get unique foods used in recipe ingredients
+            // Get unique foods used in recipe ingredients (check FoodId only — IsFood flag
+            // may be false even when a food is linked after scraping/normalization)
             var recipeFoodIds = recipe.RecipeIngredients
-                .Where(i => i.IsFood && i.FoodId.HasValue)
+                .Where(i => i.FoodId.HasValue)
                 .Select(i => i.FoodId!.Value)
                 .Distinct()
                 .ToHashSet();
