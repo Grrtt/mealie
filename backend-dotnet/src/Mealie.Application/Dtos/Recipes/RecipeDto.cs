@@ -205,3 +205,42 @@ public class ExportFileInfo
     public long Size { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public class RecipeSuggestionItem
+{
+    public RecipeSummaryResponse Recipe { get; set; } = null!;
+    public IList<RecipeIngredientFoodDto> MissingFoods { get; set; } = [];
+    public IList<OrganizerSimpleResponse> MissingTools { get; set; } = [];
+}
+
+public class RecipeSuggestionsResponse
+{
+    public IList<RecipeSuggestionItem> Items { get; set; } = [];
+}
+
+public class SlugResponse
+{
+    public string Slug { get; set; } = string.Empty;
+}
+
+public class LastMadeResponse
+{
+    public DateTime? Timestamp { get; set; }
+}
+
+public class UpdateLastMadeRequest
+{
+    public DateTime Timestamp { get; set; }
+}
+
+public class BulkUpdateSettingsRequest
+{
+    public IList<string> Recipes { get; set; } = [];
+    public RecipeSettingsDto Settings { get; set; } = null!;
+}
+
+public class BulkUpdateRecipesRequest
+{
+    public IList<string> Recipes { get; set; } = [];
+    public UpdateRecipeRequest Update { get; set; } = null!;
+}

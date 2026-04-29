@@ -1,12 +1,15 @@
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;
+using Mealie.Infrastructure.Data;
 using Mealie.Infrastructure.Scraper;
 using Mealie.Shared.Pagination;
+using Mealie.Application.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace Mealie.Api.Controllers.Recipes;
@@ -19,7 +22,8 @@ public class RecipesController(
     IRecipeScraperService scraperService,
     IRecipeExportService exportService,
     IRecipeImportService importService,
-    ITenantContext tenantContext) : ControllerBase
+    ITenantContext tenantContext,
+    ApplicationDbContext db) : ControllerBase
 {
     // ── CRUD Endpoints (T057-T061) ──────────────────────────────────────────
 
@@ -32,6 +36,27 @@ public class RecipesController(
     {
         var filter = new RecipeFilter { Search = search, Tags = tags, Categories = categories };
         var result = await recipeService.GetPaginatedAsync(tenantContext.HouseholdId, pagination, filter, ct);
+        return Ok(result);
+    }
+
+    [HttpGet("suggestions")]
+    public async Task<ActionResult<RecipeSuggestionsResponse>> GetSuggestions(
+        [FromQuery] int limit = 20,
+        [FromQuery] string? queryFilter = null,
+        [FromQuery] int maxMissingFoods = 20,
+        [FromQuery] int maxMissingTools = 20,
+        [FromQuery] bool includeFoodsOnHand = false,
+        [FromQuery] bool includeToolsOnHand = false,
+        [FromQuery] Guid[]? foods = null,
+        [FromQuery] Guid[]? tools = null,
+        CancellationToken ct = default)
+    {
+        var foodIds = foods?.ToList() ?? [];
+        var toolIds = tools?.ToList() ?? [];
+        var result = await recipeService.GetSuggestionsAsync(
+            tenantContext.HouseholdId, tenantContext.GroupId, limit, queryFilter,
+            maxMissingFoods, maxMissingTools, includeFoodsOnHand, includeToolsOnHand,
+            foodIds, toolIds, ct);
         return Ok(result);
     }
 
@@ -123,7 +148,249 @@ public class RecipesController(
         return Ok(new { exported = results.Count, files = results });
     }
 
+    [HttpPost("bulk-actions/settings")]
+    public async Task<IActionResult> BulkUpdateSettings(
+        [FromBody] BulkUpdateSettingsRequest request, CancellationToken ct)
+    {
+        var count = 0;
+        foreach (var slug in request.Recipes)
+        {
+            var updateReq = new UpdateRecipeRequest { Settings = request.Settings };
+            var result = await recipeService.UpdateAsync(tenantContext.GroupId, slug, updateReq, ct);
+            if (result is not null) count++;
+        }
+        return Ok(new { detail = $"Updated settings for {count} recipes" });
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> BulkUpdateRecipes(
+        [FromBody] BulkUpdateRecipesRequest request, CancellationToken ct)
+    {
+        var count = 0;
+        foreach (var slug in request.Recipes)
+        {
+            var result = await recipeService.UpdateAsync(tenantContext.GroupId, slug, request.Update, ct);
+            if (result is not null) count++;
+        }
+        return Ok(new { detail = $"Updated {count} recipes" });
+    }
+
+    [HttpPatch]
+    public async Task<IActionResult> BulkPatchRecipes(
+        [FromBody] BulkUpdateRecipesRequest request, CancellationToken ct)
+    {
+        var count = 0;
+        foreach (var slug in request.Recipes)
+        {
+            var result = await recipeService.UpdateAsync(tenantContext.GroupId, slug, request.Update, ct);
+            if (result is not null) count++;
+        }
+        return Ok(new { detail = $"Updated {count} recipes" });
+    }
+
+    [HttpDelete("bulk-actions/export/purge")]
+    public async Task<IActionResult> PurgePendingExports(CancellationToken ct)
+    {
+        var exportDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "exports");
+        if (Directory.Exists(exportDir))
+        {
+            var files = Directory.GetFiles(exportDir);
+            int deleted = 0;
+            foreach (var file in files)
+            {
+                try
+                {
+                    System.IO.File.Delete(file);
+                    deleted++;
+                }
+                catch { /* ignore errors */ }
+            }
+            return Ok(new { detail = $"Purged {deleted} export files" });
+        }
+        return Ok(new { detail = "No exports to purge" });
+    }
+
+    [HttpGet("bulk-actions/export")]
+    public async Task<IActionResult> GetPendingExports(CancellationToken ct)
+    {
+        var exportDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "exports");
+        var files = new List<ExportFileInfo>();
+        if (Directory.Exists(exportDir))
+        {
+            foreach (var file in Directory.GetFiles(exportDir))
+            {
+                var info = new System.IO.FileInfo(file);
+                files.Add(new ExportFileInfo
+                {
+                    FileName = info.Name,
+                    Size = info.Length,
+                    CreatedAt = info.CreationTimeUtc
+                });
+            }
+        }
+        return Ok(files);
+    }
+
+    // ── Recipe Image Endpoints ──────────────────────────────────────────────
+
+    [HttpPost("{slug}/image")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadRecipeImage(
+        string slug, IFormFile image, CancellationToken ct)
+    {
+        var recipe = await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.Slug == slug && r.GroupId == tenantContext.GroupId)
+            .FirstOrDefaultAsync(ct);
+
+        if (recipe is null)
+            return NotFound(new { detail = "Recipe not found" });
+
+        if (image is null || image.Length == 0)
+            return BadRequest(new { detail = "No image provided" });
+
+        var recipeDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "recipes", slug);
+        var imageDir = Path.Combine(recipeDir, "images");
+        Directory.CreateDirectory(imageDir);
+
+        var imagePath = Path.Combine(imageDir, "original.webp");
+
+        await using var stream = image.OpenReadStream();
+        await using var file = System.IO.File.Create(imagePath);
+        await stream.CopyToAsync(file, ct);
+
+        recipe.Image = $"/api/media/recipes/{slug}/images/original.webp";
+        recipe.UpdateAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        return Ok(new { detail = "Image uploaded", image = recipe.Image });
+    }
+
+    [HttpPut("{slug}/image")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> ReplaceRecipeImage(
+        string slug, IFormFile image, CancellationToken ct)
+    {
+        return await UploadRecipeImage(slug, image, ct);
+    }
+
+    [HttpDelete("{slug}/image")]
+    public async Task<IActionResult> DeleteRecipeImage(string slug, CancellationToken ct)
+    {
+        var recipe = await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.Slug == slug && r.GroupId == tenantContext.GroupId)
+            .FirstOrDefaultAsync(ct);
+
+        if (recipe is null)
+            return NotFound(new { detail = "Recipe not found" });
+
+        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "data", "recipes", slug, "images", "original.webp");
+        if (System.IO.File.Exists(imagePath))
+        {
+            System.IO.File.Delete(imagePath);
+        }
+
+        recipe.Image = null;
+        recipe.UpdateAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        return Ok(new { detail = "Image deleted" });
+    }
+
     // ── Scraper Endpoints ───────────────────────────────────────────────────
+
+    /// <summary>Test scrape a URL without saving the recipe.</summary>
+    [HttpGet("test-scrape-url")]
+    public async Task<ActionResult<object>> TestScrapeUrl(
+        [FromQuery] string url, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return BadRequest(new { detail = "URL is required" });
+
+        var scraped = await scraperService.ScrapeAsync(url, ct);
+        if (scraped.ScrapingNotSupported)
+            return BadRequest(new { detail = "Could not scrape recipe from the provided URL" });
+
+        var preview = new
+        {
+            name = scraped.Name,
+            description = scraped.Description,
+            recipeYield = scraped.RecipeYield,
+            totalTime = scraped.TotalTime,
+            recipeIngredients = scraped.RecipeIngredient,
+            recipeInstructions = scraped.RecipeInstructions,
+            keywords = scraped.Keywords,
+            categories = scraped.Categories
+        };
+
+        return Ok(preview);
+    }
+
+    /// <summary>Generate a unique recipe slug.</summary>
+    [HttpGet("create")]
+    public async Task<ActionResult<SlugResponse>> GenerateSlug(CancellationToken ct)
+    {
+        var baseSlug = SlugHelper.Generate($"recipe-{Guid.NewGuid().ToString().Substring(0, 8)}");
+        var uniqueSlug = await EnsureUniqueSlugAsync(baseSlug, ct);
+        return Ok(new SlugResponse { Slug = uniqueSlug });
+    }
+
+    private async Task<string> EnsureUniqueSlugAsync(string slug, CancellationToken ct)
+    {
+        var candidate = slug;
+        var counter = 1;
+        while (await db.Recipes.IgnoreQueryFilters().AnyAsync(r => r.Slug == candidate, ct))
+            candidate = $"{slug}-{counter++}";
+        return candidate;
+    }
+
+    /// <summary>Get recipes by category slug.</summary>
+    [HttpGet("category")]
+    public async Task<ActionResult<PaginatedResponse<RecipeSummaryResponse>>> GetRecipesByCategory(
+        [FromQuery] string category,
+        [FromQuery] PaginationParams pagination,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(category))
+            return BadRequest(new { detail = "Category slug is required" });
+
+        var filter = new RecipeFilter { Categories = [category] };
+        var result = await recipeService.GetPaginatedAsync(tenantContext.HouseholdId, pagination, filter, ct);
+        return Ok(result);
+    }
+
+    /// <summary>Get when a recipe was last made.</summary>
+    [HttpGet("{slug}/last-made")]
+    public async Task<ActionResult<LastMadeResponse>> GetLastMade(string slug, CancellationToken ct)
+    {
+        var recipe = await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.Slug == slug && r.GroupId == tenantContext.GroupId)
+            .Select(r => new { r.LastMade })
+            .FirstOrDefaultAsync(ct);
+
+        if (recipe is null)
+            return NotFound(new { detail = "Recipe not found" });
+
+        return Ok(new LastMadeResponse { Timestamp = recipe.LastMade });
+    }
+
+    /// <summary>Update when a recipe was last made.</summary>
+    [HttpPatch("{slug}/last-made")]
+    public async Task<IActionResult> UpdateLastMade(
+        string slug, [FromBody] UpdateLastMadeRequest request, CancellationToken ct)
+    {
+        var recipe = await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.Slug == slug && r.GroupId == tenantContext.GroupId)
+            .FirstOrDefaultAsync(ct);
+
+        if (recipe is null)
+            return NotFound(new { detail = "Recipe not found" });
+
+        recipe.LastMade = request.Timestamp;
+        recipe.UpdateAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        return Ok(new { detail = "Last made timestamp updated" });
+    }
 
     /// <summary>Streaming SSE endpoint: scrape a recipe from a URL.</summary>
     [HttpPost("create/url/stream")]

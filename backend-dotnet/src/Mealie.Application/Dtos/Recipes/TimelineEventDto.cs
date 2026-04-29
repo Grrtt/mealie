@@ -15,6 +15,7 @@ public class TimelineEventResponse
 
 public class CreateTimelineEventRequest
 {
+    public string? RecipeSlug { get; set; }
     public string? Subject { get; set; }
     public string? EventType { get; set; }
     public string? EventMessage { get; set; }
