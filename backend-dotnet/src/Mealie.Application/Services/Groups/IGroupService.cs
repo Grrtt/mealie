@@ -11,4 +11,6 @@ public interface IGroupService
     Task<InviteTokenResponse> CreateInviteTokenAsync(Guid groupId, Guid? householdId, CancellationToken ct = default);
     Task<IList<InviteTokenResponse>> GetInviteTokensAsync(Guid groupId, CancellationToken ct = default);
     Task<bool> DeleteInviteTokenAsync(Guid groupId, Guid tokenId, CancellationToken ct = default);
+    Task<GroupPreferencesResponse?> GetGroupPreferencesAsync(Guid groupId, CancellationToken ct = default);
+    Task<GroupPreferencesResponse?> UpdateGroupPreferencesAsync(Guid groupId, UpdateGroupPreferencesRequest request, CancellationToken ct = default);
 }

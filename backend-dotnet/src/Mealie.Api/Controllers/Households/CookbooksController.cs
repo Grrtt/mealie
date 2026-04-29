@@ -31,6 +31,7 @@ public class CookbooksController(ICookbookService cookbookService, ITenantContex
     }
 
     [HttpPut("{id:guid}")]
+    [HttpPatch("{id:guid}")]
     public async Task<ActionResult<CookbookResponse>> UpdateCookbook(Guid id, [FromBody] UpdateCookbookRequest request, CancellationToken ct)
     {
         var cookbook = await cookbookService.UpdateAsync(CurrentHouseholdId, id, request, ct);
@@ -44,5 +45,13 @@ public class CookbooksController(ICookbookService cookbookService, ITenantContex
         var deleted = await cookbookService.DeleteAsync(CurrentHouseholdId, id, ct);
         if (!deleted) return NotFoundOrForbidden();
         return NoContent();
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> ReorderCookbooks([FromBody] IEnumerable<CookbookReorderRequest> reorderRequests, CancellationToken ct)
+    {
+        var success = await cookbookService.ReorderAsync(CurrentHouseholdId, reorderRequests, ct);
+        if (!success) return BadRequest();
+        return Ok();
     }
 }

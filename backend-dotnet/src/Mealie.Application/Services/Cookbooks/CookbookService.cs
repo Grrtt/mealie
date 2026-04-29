@@ -63,6 +63,20 @@ public class CookbookService(ApplicationDbContext db) : ICookbookService
         return true;
     }
 
+    public async Task<bool> ReorderAsync(Guid householdId, IEnumerable<CookbookReorderRequest> reorderRequests, CancellationToken ct = default)
+    {
+        var requests = reorderRequests.ToList();
+        foreach (var req in requests)
+        {
+            var cookbook = await db.Cookbooks.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.HouseholdId == householdId && c.Id == req.Id, ct);
+            if (cookbook is null) return false;
+            cookbook.Position = req.Position;
+        }
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     private static CookbookResponse MapToResponse(Cookbook c) => new()
     {
         Id = c.Id, Name = c.Name, Description = c.Description, Image = c.Image,

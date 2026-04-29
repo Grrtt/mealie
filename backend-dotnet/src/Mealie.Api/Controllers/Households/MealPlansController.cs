@@ -51,6 +51,7 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
     }
 
     [HttpPut("{id:guid}")]
+    [HttpPatch("{id:guid}")]
     public async Task<ActionResult<MealPlanResponse>> UpdateMealPlan(Guid id, [FromBody] UpdateMealPlanRequest request, CancellationToken ct)
     {
         var plan = await mealPlanService.UpdateAsync(CurrentHouseholdId, id, request, ct);
