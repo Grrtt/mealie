@@ -15,6 +15,13 @@ public class ParserController(IIngredientParserService parserService, ITenantCon
         return Ok(result);
     }
 
+    [HttpGet("ingredient")]
+    public async Task<ActionResult<ParsedIngredientDto>> ParseIngredientGet([FromQuery] string ingredient)
+    {
+        var result = await parserService.ParseAsync(CurrentGroupId, ingredient);
+        return Ok(result);
+    }
+
     [HttpPost("ingredients")]
     public async Task<ActionResult<IList<ParsedIngredientDto>>> ParseIngredients([FromBody] ParseIngredientsRequest request)
     {

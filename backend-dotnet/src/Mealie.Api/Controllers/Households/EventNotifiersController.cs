@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
-[Route("api/households/self/event-notifications")]
+[Route("api/households/events/notifications")]
 public class EventNotifiersController(IEventNotifierService notifierService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
 {
     [HttpGet]

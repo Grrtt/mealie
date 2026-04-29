@@ -42,6 +42,12 @@ public class AdminController(
         });
     }
 
+    [HttpGet("about/statistics")]
+    public async Task<IActionResult> AboutStatistics(CancellationToken ct)
+    {
+        return await Statistics(ct);
+    }
+
     [HttpGet("about/check")]
     public IActionResult Check() => Ok(new
     {
@@ -102,6 +108,13 @@ public class AdminController(
         var user = await userService.UpdateUserAsync(userId, request, ct);
         if (user is null) return NotFound(new { detail = "User not found" });
         return Ok(user);
+    }
+
+    [HttpPatch("users/{userId:guid}")]
+    public async Task<ActionResult<AdminUserResponse>> PatchUser(
+        Guid userId, [FromBody] UpdateAdminUserRequest request, CancellationToken ct)
+    {
+        return await UpdateUser(userId, request, ct);
     }
 
     [HttpDelete("users/{userId:guid}")]
@@ -173,6 +186,13 @@ public class AdminController(
         return Ok(group);
     }
 
+    [HttpPatch("groups/{groupId:guid}")]
+    public async Task<ActionResult<AdminGroupResponse>> PatchGroup(
+        Guid groupId, [FromBody] UpdateAdminGroupRequest request, CancellationToken ct)
+    {
+        return await UpdateGroup(groupId, request, ct);
+    }
+
     [HttpDelete("groups/{groupId:guid}")]
     public async Task<IActionResult> DeleteGroup(Guid groupId, CancellationToken ct)
     {
@@ -207,6 +227,13 @@ public class AdminController(
         var household = await groupService.UpdateHouseholdAsync(householdId, request, ct);
         if (household is null) return NotFound(new { detail = "Household not found" });
         return Ok(household);
+    }
+
+    [HttpPatch("households/{householdId:guid}")]
+    public async Task<ActionResult<AdminHouseholdResponse>> PatchHousehold(
+        Guid householdId, [FromBody] UpdateAdminHouseholdRequest request, CancellationToken ct)
+    {
+        return await UpdateHousehold(householdId, request, ct);
     }
 
     [HttpDelete("households/{householdId:guid}")]

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
-[Route("api/households/self/webhooks")]
+[Route("api/households/webhooks")]
 public class WebhooksController(IWebhookService webhookService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
 {
     [HttpGet]
@@ -39,8 +39,8 @@ public class WebhooksController(IWebhookService webhookService, ITenantContext t
         return Ok();
     }
 
-    [HttpPost("test")]
-    public async Task<IActionResult> Test([FromBody] TestWebhookRequest request)
+    [HttpPost("{id:guid}/test")]
+    public async Task<IActionResult> Test(Guid id, [FromBody] TestWebhookRequest request)
     {
         await webhookService.TestAsync(request.Url);
         return Ok(new { detail = "Test webhook delivered" });

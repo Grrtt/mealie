@@ -23,6 +23,14 @@ public class ToolsController(IOrganizerService organizerService, ITenantContext 
         return Ok(tool);
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<ToolResponse>> GetToolBySlug(string slug, CancellationToken ct)
+    {
+        var tool = await organizerService.GetToolBySlugAsync(CurrentGroupId, slug, ct);
+        if (tool is null) return NotFoundOrForbidden();
+        return Ok(tool);
+    }
+
     [HttpPost]
     public async Task<ActionResult<ToolResponse>> CreateTool([FromBody] CreateToolRequest request, CancellationToken ct)
     {
@@ -37,6 +45,10 @@ public class ToolsController(IOrganizerService organizerService, ITenantContext 
         if (tool is null) return NotFoundOrForbidden();
         return Ok(tool);
     }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<ToolResponse>> PatchTool(Guid id, [FromBody] UpdateToolRequest request, CancellationToken ct)
+        => await UpdateTool(id, request, ct);
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteTool(Guid id, CancellationToken ct)

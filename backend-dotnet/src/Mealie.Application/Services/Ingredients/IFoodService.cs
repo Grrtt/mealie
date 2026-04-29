@@ -10,4 +10,5 @@ public interface IFoodService
     Task<FoodResponse> CreateAsync(Guid groupId, CreateFoodRequest request, CancellationToken ct = default);
     Task<FoodResponse?> UpdateAsync(Guid groupId, Guid id, UpdateFoodRequest request, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default);
+    Task<bool> MergeAsync(Guid groupId, Guid fromFoodId, Guid toFoodId, CancellationToken ct = default);
 }

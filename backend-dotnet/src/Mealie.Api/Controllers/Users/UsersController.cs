@@ -114,9 +114,26 @@ public class UsersController(
         return Ok(key);
     }
 
+    [HttpPost("api-tokens")]
+    [Authorize]
+    public async Task<ActionResult<ApiKeyResponse>> CreateApiTokenAlias([FromBody] CreateApiKeyRequest request)
+    {
+        var key = await userService.CreateApiKeyAsync(tenantContext.UserId, request.Name);
+        return Ok(key);
+    }
+
     [HttpDelete("self/api-tokens/{tokenId:int}")]
     [Authorize]
     public async Task<IActionResult> DeleteApiToken(int tokenId)
+    {
+        var success = await userService.DeleteApiKeyAsync(tenantContext.UserId, tokenId);
+        if (!success) return NotFound();
+        return Ok(new { detail = "API token deleted" });
+    }
+
+    [HttpDelete("api-tokens/{tokenId:int}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteApiTokenAlias(int tokenId)
     {
         var success = await userService.DeleteApiKeyAsync(tenantContext.UserId, tokenId);
         if (!success) return NotFound();
@@ -149,6 +166,14 @@ public class UsersController(
     {
         await userService.AddFavoriteAsync(userId, slug);
         return Ok();
+    }
+
+    [HttpGet("{userId:guid}/favorites")]
+    [Authorize]
+    public async Task<ActionResult<IList<string>>> GetFavorites(Guid userId)
+    {
+        var favorites = await userService.GetFavoritesAsync(userId);
+        return Ok(favorites);
     }
 
     [HttpDelete("{userId:guid}/favorites/{slug}")]
