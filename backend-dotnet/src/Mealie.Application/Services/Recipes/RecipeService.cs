@@ -8,6 +8,7 @@ using Mealie.Domain.Entities.Organizers;
 using Mealie.Domain.Entities.Recipes;
 using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
+using Mealie.Infrastructure.Parser;
 using Mealie.Infrastructure.Scraper;
 using Mealie.Shared.Pagination;
 using MediatR;
@@ -464,9 +465,18 @@ public class RecipeService(
             UpdateAt = DateTime.UtcNow,
         };
 
+        // Normalize ingredient strings: strip checkbox glyphs and drop any lines
+        // that are empty after normalization (e.g. bare "▢" markers).
+        var ingredientStrings = (parsedIngredients is null)
+            ? scraped.RecipeIngredient
+                .Select(IngredientNormalizer.Normalize)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .ToList()
+            : scraped.RecipeIngredient;
+
         // Use pre-parsed results when provided (batch migration path); otherwise parse now.
         var parsed = parsedIngredients
-            ?? await ingredientParser.ParseBatchAsync(scraped.RecipeIngredient, ct);
+            ?? await ingredientParser.ParseBatchAsync(ingredientStrings, ct);
 
         // Use caller-provided mutable lists (migration batch path) or load fresh from DB.
         // Mutable so newly created foods/units are visible to subsequent ingredients in the same batch.
