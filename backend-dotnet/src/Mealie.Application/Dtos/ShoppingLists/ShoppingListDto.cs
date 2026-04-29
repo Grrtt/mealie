@@ -71,3 +71,58 @@ public class UpdateShoppingListItemRequest
     public Guid? FoodId { get; set; }
     public Guid? LabelId { get; set; }
 }
+
+public class BulkCreateShoppingListItemRequest
+{
+    public IList<CreateShoppingListItemWithListRequest> Items { get; set; } = [];
+}
+
+public class CreateShoppingListItemWithListRequest
+{
+    public string? Note { get; set; }
+    public bool IsFood { get; set; }
+    public bool DisableAmount { get; set; }
+    public decimal? Quantity { get; set; }
+    public Guid? UnitId { get; set; }
+    public Guid? FoodId { get; set; }
+    public Guid? LabelId { get; set; }
+    public Guid ListId { get; set; }
+}
+
+public class BulkUpdateShoppingListItemRequest
+{
+    public IList<BulkUpdateShoppingListItem> Items { get; set; } = [];
+}
+
+public class BulkUpdateShoppingListItem
+{
+    public Guid Id { get; set; }
+    public string? Note { get; set; }
+    public bool? Checked { get; set; }
+    public bool? DisableAmount { get; set; }
+    public decimal? Quantity { get; set; }
+    public Guid? UnitId { get; set; }
+    public Guid? FoodId { get; set; }
+    public Guid? LabelId { get; set; }
+}
+
+public class BulkDeleteShoppingListItemRequest
+{
+    public IList<Guid> Ids { get; set; } = [];
+}
+
+public class AddRecipeToShoppingListRequest
+{
+    public Guid RecipeId { get; set; }
+    public decimal RecipeIncrementQuantity { get; set; } = 1m;
+}
+
+public class RemoveRecipeFromShoppingListRequest
+{
+    public Guid RecipeId { get; set; }
+}
+
+public class UpdateShoppingListLabelSettingsRequest
+{
+    public string? LabelSettings { get; set; }
+}

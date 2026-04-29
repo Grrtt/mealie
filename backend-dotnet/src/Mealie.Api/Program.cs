@@ -179,6 +179,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 
 // Application services — Groups & Households
 builder.Services.AddScoped<IGroupService, GroupService>();
+builder.Services.AddScoped<IGroupLabelService, GroupLabelService>();
 builder.Services.AddScoped<IHouseholdService, HouseholdService>();
 
 // Application services — Seeder

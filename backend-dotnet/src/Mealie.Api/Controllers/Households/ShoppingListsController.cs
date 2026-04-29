@@ -38,6 +38,14 @@ public class ShoppingListsController(IShoppingListService shoppingListService, I
         return Ok(list);
     }
 
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<ShoppingListResponse>> PatchShoppingList(Guid id, [FromBody] UpdateShoppingListRequest request, CancellationToken ct)
+    {
+        var list = await shoppingListService.UpdateAsync(CurrentHouseholdId, id, request, ct);
+        if (list is null) return NotFoundOrForbidden();
+        return Ok(list);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteShoppingList(Guid id, CancellationToken ct)
     {
@@ -67,5 +75,29 @@ public class ShoppingListsController(IShoppingListService shoppingListService, I
         var deleted = await shoppingListService.DeleteItemAsync(CurrentHouseholdId, id, itemId, ct);
         if (!deleted) return NotFoundOrForbidden();
         return NoContent();
+    }
+
+    [HttpPost("{id:guid}/recipe")]
+    public async Task<ActionResult<ShoppingListResponse>> AddRecipe(Guid id, [FromBody] AddRecipeToShoppingListRequest request, CancellationToken ct)
+    {
+        var list = await shoppingListService.AddRecipeAsync(CurrentHouseholdId, id, request, ct);
+        if (list is null) return NotFoundOrForbidden();
+        return Ok(list);
+    }
+
+    [HttpPost("{id:guid}/recipe/{recipeId:guid}/delete")]
+    public async Task<IActionResult> RemoveRecipe(Guid id, Guid recipeId, CancellationToken ct)
+    {
+        var deleted = await shoppingListService.RemoveRecipeAsync(CurrentHouseholdId, id, recipeId, ct);
+        if (!deleted) return NotFoundOrForbidden();
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/label-settings")]
+    public async Task<ActionResult<ShoppingListResponse>> UpdateLabelSettings(Guid id, [FromBody] UpdateShoppingListLabelSettingsRequest request, CancellationToken ct)
+    {
+        var list = await shoppingListService.UpdateLabelSettingsAsync(CurrentHouseholdId, id, request, ct);
+        if (list is null) return NotFoundOrForbidden();
+        return Ok(list);
     }
 }
