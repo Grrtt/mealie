@@ -173,11 +173,11 @@ async function rebuildIndex(name: string) {
   rebuilding.value = name;
   try {
     const { data, error } = await api.indexes.rebuild(name);
-    if (error.value) {
+    if (error) {
       showSnackbar("Rebuild failed", "error");
     }
     else {
-      showSnackbar(data.value?.detail ?? "Rebuild started", "success");
+      showSnackbar(data?.detail ?? "Rebuild started", "success");
       await loadIndexes();
     }
   }
@@ -198,7 +198,7 @@ async function deleteIndex(name: string) {
   try {
     const { error } = await api.indexes.delete(name);
     deleteDialog.open = false;
-    if (error.value) {
+    if (error) {
       showSnackbar("Delete failed", "error");
     }
     else {
@@ -241,11 +241,11 @@ async function runSearch() {
       query: searchState.query || null,
       maxResults: searchState.maxResults,
     });
-    if (error.value) {
+    if (error) {
       showSnackbar("Search failed", "error");
     }
     else {
-      searchResult.value = data.value ?? null;
+      searchResult.value = data ?? null;
     }
   }
   finally {
