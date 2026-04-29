@@ -508,7 +508,7 @@ const attrs = computed(() => {
 });
 
 const foodStore = isOwnGroup.value ? useFoodStore() : usePublicFoodStore(groupSlug.value);
-const foods = foodStore.store.value;
+const foods = foodStore.store;
 const selectedFoods = ref<IngredientFood[]>([]);
 function addFood(food: IngredientFood) {
   selectedFoods.value = [...selectedFoods.value, food];
@@ -530,7 +530,7 @@ watch(
 );
 
 const toolStore = isOwnGroup.value ? useToolStore() : usePublicToolStore(groupSlug.value);
-const tools = toolStore.store.value;
+const tools = toolStore.store;
 const selectedTools = ref<RecipeTool[]>([]);
 function addTool(tool: RecipeTool) {
   selectedTools.value = [...selectedTools.value, tool];
