@@ -10,7 +10,8 @@ public class IngredientParserService(
 {
     public async Task<ParsedIngredientDto> ParseAsync(Guid groupId, string ingredientString, CancellationToken ct = default)
     {
-        var (quantity, afterQuantity) = QuantityTokenizer.Tokenize(ingredientString);
+        var normalized = IngredientNormalizer.Normalize(ingredientString);
+        var (quantity, afterQuantity) = QuantityTokenizer.Tokenize(normalized);
         var (unit, afterUnit) = await unitMatcher.MatchAsync(groupId, afterQuantity, ct);
         var (food, note) = await foodMatcher.MatchAsync(groupId, afterUnit, ct);
 
@@ -35,7 +36,7 @@ public class IngredientParserService(
                 Unit = unit is not null ? new ParsedIngredientUnitDto { Id = unit.Id, Name = unit.Name } : null,
                 Food = food is not null ? new ParsedIngredientFoodDto { Id = food.Id, Name = food.Name } : null,
                 Note = string.IsNullOrEmpty(note) ? null : note,
-                Display = ingredientString,
+                Display = normalized,
                 OriginalText = ingredientString,
             }
         };
