@@ -696,6 +696,143 @@ public class RecipeService(
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<RecipeSuggestionsResponse> GetSuggestionsAsync(
+        Guid householdId, Guid groupId, int limit, string? queryFilter, 
+        int maxMissingFoods, int maxMissingTools, bool includeFoodsOnHand, 
+        bool includeToolsOnHand, IList<Guid> foodIds, IList<Guid> toolIds, 
+        CancellationToken ct = default)
+    {
+        // Start with user-provided food and tool IDs
+        var selectedFoodIds = new HashSet<Guid>(foodIds);
+        var selectedToolIds = new HashSet<Guid>(toolIds);
+
+        // If includeFoodsOnHand, add foods marked as "on hand" in this group
+        if (includeFoodsOnHand)
+        {
+            var onHandFoods = await db.Foods.IgnoreQueryFilters()
+                .Where(f => f.GroupId == groupId && f.OnHand)
+                .Select(f => f.Id)
+                .ToListAsync(ct);
+            foreach (var foodId in onHandFoods)
+                selectedFoodIds.Add(foodId);
+        }
+
+        // If includeToolsOnHand, add tools marked as "on hand" in this group
+        if (includeToolsOnHand)
+        {
+            var onHandTools = await db.Tools.IgnoreQueryFilters()
+                .Where(t => t.GroupId == groupId && t.OnHand)
+                .Select(t => t.Id)
+                .ToListAsync(ct);
+            foreach (var toolId in onHandTools)
+                selectedToolIds.Add(toolId);
+        }
+
+        // Fetch all recipes in the household with their ingredients and tools
+        var recipes = await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.HouseholdId == householdId)
+            .Include(r => r.RecipeIngredients).ThenInclude(i => i.Food)
+            .Include(r => r.Tools)
+            .Include(r => r.Tags)
+            .Include(r => r.Categories)
+            .ToListAsync(ct);
+
+        var suggestions = new List<RecipeSuggestionItem>();
+
+        foreach (var recipe in recipes)
+        {
+            // Get unique foods used in recipe ingredients
+            var recipeFoodIds = recipe.RecipeIngredients
+                .Where(i => i.IsFood && i.FoodId.HasValue)
+                .Select(i => i.FoodId!.Value)
+                .Distinct()
+                .ToHashSet();
+
+            // Get unique tools in recipe
+            var recipeToolIds = recipe.Tools
+                .Select(t => t.Id)
+                .Distinct()
+                .ToHashSet();
+
+            // Count missing foods (foods in recipe but not in selected set)
+            var missingFoods = recipeFoodIds.Where(fid => !selectedFoodIds.Contains(fid)).ToList();
+            int missingFoodsCount = missingFoods.Count;
+
+            // Count missing tools (tools in recipe but not in selected set)
+            var missingTools = recipeToolIds.Where(tid => !selectedToolIds.Contains(tid)).ToList();
+            int missingToolsCount = missingTools.Count;
+
+            // Filter by thresholds
+            if (missingFoodsCount > maxMissingFoods || missingToolsCount > maxMissingTools)
+                continue;
+
+            // If user provided foods, filter to recipes that have at least 1 user-provided food
+            if (foodIds.Count > 0)
+            {
+                var hasUserFood = recipeFoodIds.Any(fid => foodIds.Contains(fid));
+                if (!hasUserFood)
+                    continue;
+            }
+
+            // Filter by queryFilter (search in recipe name or description)
+            if (!string.IsNullOrWhiteSpace(queryFilter))
+            {
+                var q = queryFilter.ToLowerInvariant();
+                bool matchesName = recipe.Name.ToLowerInvariant().Contains(q);
+                bool matchesDesc = recipe.Description?.ToLowerInvariant().Contains(q) ?? false;
+                if (!matchesName && !matchesDesc)
+                    continue;
+            }
+
+            // Fetch detailed food and tool info for response
+            var missingFoodDetails = await db.Foods.IgnoreQueryFilters()
+                .Where(f => missingFoods.Contains(f.Id))
+                .Select(f => new RecipeIngredientFoodDto
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    PluralName = f.PluralName,
+                    Description = f.Description
+                })
+                .ToListAsync(ct);
+
+            var missingToolDetails = await db.Tools.IgnoreQueryFilters()
+                .Where(t => missingTools.Contains(t.Id))
+                .Select(t => new OrganizerSimpleResponse
+                {
+                    Id = t.Id,
+                    Name = t.Name,
+                    Slug = t.Slug
+                })
+                .ToListAsync(ct);
+
+            suggestions.Add(new RecipeSuggestionItem
+            {
+                Recipe = MapToSummary(recipe),
+                MissingFoods = missingFoodDetails,
+                MissingTools = missingToolDetails
+            });
+        }
+
+        // Sort: fewer missing tools first, then fewer missing foods, then more matched user foods first
+        suggestions = suggestions
+            .OrderBy(s => s.MissingTools.Count)
+            .ThenBy(s => s.MissingFoods.Count)
+            .ThenByDescending(s => 
+            {
+                var recipeFoodIds = recipes.First(r => r.Id == s.Recipe.Id)
+                    .RecipeIngredients
+                    .Where(i => i.IsFood && i.FoodId.HasValue)
+                    .Select(i => i.FoodId!.Value)
+                    .ToHashSet();
+                return recipeFoodIds.Count(fid => foodIds.Contains(fid));
+            })
+            .Take(limit)
+            .ToList();
+
+        return new RecipeSuggestionsResponse { Items = suggestions };
+    }
+
     private async Task<string> EnsureUniqueSlugAsync(string slug, CancellationToken ct)
     {
         var candidate = slug;
