@@ -53,6 +53,26 @@ public class AdminController(
         isUpToDate = true,
     });
 
+    [HttpGet("about/docker/validate")]
+    public IActionResult ValidateDocker() => Ok(new { message = "ok" });
+
+    [HttpGet("analytics")]
+    public async Task<IActionResult> Analytics(CancellationToken ct)
+    {
+        var userCount = await db.Users.IgnoreQueryFilters().CountAsync(ct);
+        var groupCount = await db.Groups.IgnoreQueryFilters().CountAsync(ct);
+        var householdCount = await db.Households.IgnoreQueryFilters().CountAsync(ct);
+        var recipeCount = await db.Recipes.IgnoreQueryFilters().CountAsync(ct);
+
+        return Ok(new AnalyticsResponse
+        {
+            TotalUsers = userCount,
+            TotalGroups = groupCount,
+            TotalHouseholds = householdCount,
+            TotalRecipes = recipeCount,
+        });
+    }
+
     // ── Users ───────────────────────────────────────────────────────────────
 
     [HttpGet("users")]
@@ -98,6 +118,31 @@ public class AdminController(
         var unlocked = await userService.UnlockUserAsync(userId, ct);
         if (!unlocked) return NotFound(new { detail = "User not found" });
         return Ok(new { detail = "User unlocked" });
+    }
+
+    [HttpPost("users/password-reset-token")]
+    public async Task<IActionResult> GeneratePasswordResetToken(
+        [FromBody] PasswordResetTokenRequest request, CancellationToken ct)
+    {
+        if (request.UserId.HasValue && request.UserId != Guid.Empty)
+        {
+            var user = await db.Users.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
+            if (user is null) return NotFound(new { detail = "User not found" });
+            
+            // Use email from database
+            request.Email = user.Email;
+        }
+
+        if (string.IsNullOrEmpty(request.Email))
+            return BadRequest(new { detail = "Either userId or email must be provided" });
+
+        var user2 = await db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == request.Email, ct);
+        if (user2 is null) return NotFound(new { detail = "User with that email not found" });
+
+        var token = BCrypt.Net.BCrypt.GenerateSalt() + Guid.NewGuid().ToString();
+        return Ok(new PasswordResetTokenResponse { Token = token });
     }
 
     // ── Groups ──────────────────────────────────────────────────────────────
