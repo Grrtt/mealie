@@ -1,5 +1,6 @@
 using Mealie.Application.Dtos.Groups;
 using Mealie.Domain.Entities.Organizers;
+using Mealie.Domain.Entities.Settings;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -74,4 +75,36 @@ public class GroupService(ApplicationDbContext db, ILogger<GroupService> logger)
         await db.SaveChangesAsync(ct);
         return true;
     }
+
+    public async Task<GroupPreferencesResponse?> GetGroupPreferencesAsync(Guid groupId, CancellationToken ct = default)
+    {
+        var prefs = await db.GroupPreferences.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.GroupId == groupId, ct);
+        if (prefs is null) return null;
+        return MapToGroupPreferencesResponse(prefs);
+    }
+
+    public async Task<GroupPreferencesResponse?> UpdateGroupPreferencesAsync(Guid groupId, UpdateGroupPreferencesRequest request, CancellationToken ct = default)
+    {
+        var prefs = await db.GroupPreferences.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.GroupId == groupId, ct);
+        if (prefs is null) return null;
+        
+        if (request.PrivateGroup.HasValue)
+            prefs.PrivateGroup = request.PrivateGroup.Value;
+        if (request.FirstDayOfWeek is not null)
+            prefs.FirstDayOfWeek = request.FirstDayOfWeek;
+        
+        prefs.UpdateAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return MapToGroupPreferencesResponse(prefs);
+    }
+
+    private static GroupPreferencesResponse MapToGroupPreferencesResponse(GroupPreferences prefs) => new()
+    {
+        Id = prefs.Id,
+        GroupId = prefs.GroupId,
+        PrivateGroup = prefs.PrivateGroup,
+        FirstDayOfWeek = prefs.FirstDayOfWeek,
+    };
 }

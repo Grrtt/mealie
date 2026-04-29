@@ -11,4 +11,8 @@ public interface IHouseholdService
     Task<bool> DeleteHouseholdAsync(Guid householdId, CancellationToken ct = default);
     Task<IList<UserSummaryDto>> GetMembersAsync(Guid householdId, CancellationToken ct = default);
     Task<HouseholdStatisticsResponse> GetStatisticsAsync(Guid householdId, CancellationToken ct = default);
+    Task<HouseholdPreferencesResponse?> GetHouseholdPreferencesAsync(Guid householdId, CancellationToken ct = default);
+    Task<HouseholdPreferencesResponse?> UpdateHouseholdPreferencesAsync(Guid householdId, UpdateHouseholdPreferencesRequest request, CancellationToken ct = default);
+    Task<InviteTokenResponse> CreateHouseholdInviteTokenAsync(Guid groupId, Guid householdId, CreateInviteTokenRequest request, CancellationToken ct = default);
+    Task<bool> UpdateMemberPermissionsAsync(Guid householdId, Guid userId, bool admin, bool canOrganize, bool canInvite, CancellationToken ct = default);
 }

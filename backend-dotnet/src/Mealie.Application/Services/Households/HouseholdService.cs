@@ -1,6 +1,8 @@
 using Mealie.Application.Common;
 using Mealie.Application.Dtos.Groups;
 using Mealie.Domain.Entities.Core;
+using Mealie.Domain.Entities.Organizers;
+using Mealie.Domain.Entities.Settings;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -94,6 +96,42 @@ public class HouseholdService(ApplicationDbContext db, ILogger<HouseholdService>
         };
     }
 
+    public async Task<HouseholdPreferencesResponse?> GetHouseholdPreferencesAsync(Guid householdId, CancellationToken ct = default)
+    {
+        var prefs = await db.HouseholdPreferences.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.HouseholdId == householdId, ct);
+        if (prefs is null) return null;
+        return MapToHouseholdPreferencesResponse(prefs);
+    }
+
+    public async Task<HouseholdPreferencesResponse?> UpdateHouseholdPreferencesAsync(Guid householdId, UpdateHouseholdPreferencesRequest request, CancellationToken ct = default)
+    {
+        var prefs = await db.HouseholdPreferences.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.HouseholdId == householdId, ct);
+        if (prefs is null) return null;
+
+        if (request.PrivateHousehold.HasValue)
+            prefs.PrivateHousehold = request.PrivateHousehold.Value;
+        if (request.FirstDayOfWeek is not null)
+            prefs.FirstDayOfWeek = request.FirstDayOfWeek;
+        if (request.RecipePublic is not null)
+            prefs.RecipePublic = request.RecipePublic;
+        if (request.RecipeShowNutrition is not null)
+            prefs.RecipeShowNutrition = request.RecipeShowNutrition;
+        if (request.RecipeShowAssets is not null)
+            prefs.RecipeShowAssets = request.RecipeShowAssets;
+        if (request.RecipeLandscapeView is not null)
+            prefs.RecipeLandscapeView = request.RecipeLandscapeView;
+        if (request.RecipeDisableComments is not null)
+            prefs.RecipeDisableComments = request.RecipeDisableComments;
+        if (request.RecipeDisableAmount is not null)
+            prefs.RecipeDisableAmount = request.RecipeDisableAmount;
+
+        prefs.UpdateAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return MapToHouseholdPreferencesResponse(prefs);
+    }
+
     private static HouseholdResponse MapToResponse(Household h) => new()
     {
         Id = h.Id,
@@ -101,4 +139,47 @@ public class HouseholdService(ApplicationDbContext db, ILogger<HouseholdService>
         Slug = h.Slug,
         GroupId = h.GroupId
     };
+
+    private static HouseholdPreferencesResponse MapToHouseholdPreferencesResponse(HouseholdPreferences prefs) => new()
+    {
+        Id = prefs.Id,
+        HouseholdId = prefs.HouseholdId,
+        PrivateHousehold = prefs.PrivateHousehold,
+        FirstDayOfWeek = prefs.FirstDayOfWeek,
+        RecipePublic = prefs.RecipePublic,
+        RecipeShowNutrition = prefs.RecipeShowNutrition,
+        RecipeShowAssets = prefs.RecipeShowAssets,
+        RecipeLandscapeView = prefs.RecipeLandscapeView,
+        RecipeDisableComments = prefs.RecipeDisableComments,
+        RecipeDisableAmount = prefs.RecipeDisableAmount,
+    };
+
+    public async Task<InviteTokenResponse> CreateHouseholdInviteTokenAsync(Guid groupId, Guid householdId, CreateInviteTokenRequest request, CancellationToken ct = default)
+    {
+        var token = new GroupInviteToken
+        {
+            Id = Guid.NewGuid(),
+            Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
+            GroupId = groupId,
+            HouseholdId = householdId,
+            CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
+        };
+        db.InviteTokens.Add(token);
+        await db.SaveChangesAsync(ct);
+        return new InviteTokenResponse { Id = token.Id, Token = token.Token, GroupId = groupId, HouseholdId = householdId };
+    }
+
+    public async Task<bool> UpdateMemberPermissionsAsync(Guid householdId, Guid userId, bool admin, bool canOrganize, bool canInvite, CancellationToken ct = default)
+    {
+        var user = await db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == userId && u.HouseholdId == householdId, ct);
+        if (user is null) return false;
+
+        user.Admin = admin;
+        user.CanOrganize = canOrganize;
+        user.CanInvite = canInvite;
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
 }

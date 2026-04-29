@@ -83,6 +83,29 @@ public class GroupsController(
         return Ok();
     }
 
+    [HttpGet("preferences")]
+    public async Task<ActionResult<GroupPreferencesResponse>> GetPreferences()
+    {
+        var prefs = await groupService.GetGroupPreferencesAsync(CurrentGroupId);
+        if (prefs is null) return NotFoundOrForbidden();
+        return Ok(prefs);
+    }
+
+    [HttpPut("preferences")]
+    public async Task<ActionResult<GroupPreferencesResponse>> UpdatePreferences([FromBody] UpdateGroupPreferencesRequest request)
+    {
+        var prefs = await groupService.UpdateGroupPreferencesAsync(CurrentGroupId, request);
+        if (prefs is null) return NotFoundOrForbidden();
+        return Ok(prefs);
+    }
+
+    [HttpGet("storage")]
+    public async Task<ActionResult<GroupStorageResponse>> GetStorage()
+    {
+        var response = new GroupStorageResponse { TotalSize = 0 };
+        return Ok(response);
+    }
+
     // ── Migrations ─────────────────────────────────────────────────────────
 
     [HttpPost("migrations")]

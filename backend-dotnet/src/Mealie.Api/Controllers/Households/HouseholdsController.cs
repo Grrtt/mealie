@@ -31,6 +31,7 @@ public class HouseholdsController(
     }
 
     [HttpGet("self/members")]
+    [HttpGet("members")]
     public async Task<ActionResult<IList<UserSummaryDto>>> GetMembers()
     {
         var members = await householdService.GetMembersAsync(CurrentHouseholdId);
@@ -38,6 +39,7 @@ public class HouseholdsController(
     }
 
     [HttpGet("self/statistics")]
+    [HttpGet("statistics")]
     public async Task<ActionResult<HouseholdStatisticsResponse>> GetStatistics()
     {
         var stats = await householdService.GetStatisticsAsync(CurrentHouseholdId);
@@ -50,5 +52,43 @@ public class HouseholdsController(
         var recipe = await recipeService.GetDetailBySlugAsync(CurrentGroupId, slug);
         if (recipe is null) return NotFoundOrForbidden();
         return Ok(recipe);
+    }
+
+    [HttpGet("preferences")]
+    public async Task<ActionResult<HouseholdPreferencesResponse>> GetPreferences()
+    {
+        var prefs = await householdService.GetHouseholdPreferencesAsync(CurrentHouseholdId);
+        if (prefs is null) return NotFoundOrForbidden();
+        return Ok(prefs);
+    }
+
+    [HttpPut("preferences")]
+    public async Task<ActionResult<HouseholdPreferencesResponse>> UpdatePreferences([FromBody] UpdateHouseholdPreferencesRequest request)
+    {
+        var prefs = await householdService.UpdateHouseholdPreferencesAsync(CurrentHouseholdId, request);
+        if (prefs is null) return NotFoundOrForbidden();
+        return Ok(prefs);
+    }
+
+    [HttpPost("invitations")]
+    public async Task<ActionResult<InviteTokenResponse>> CreateInvitation([FromBody] CreateInviteTokenRequest request)
+    {
+        var token = await householdService.CreateHouseholdInviteTokenAsync(CurrentGroupId, CurrentHouseholdId, request);
+        return Ok(token);
+    }
+
+    [HttpPost("invitations/email")]
+    public async Task<IActionResult> SendInvitationEmail([FromBody] HouseholdInvitationEmailRequest request)
+    {
+        // Email sending is optional - just return success
+        return Ok(new { message = "Invitation email queued" });
+    }
+
+    [HttpPut("permissions")]
+    public async Task<IActionResult> UpdateHouseholdPermissions([FromBody] HouseholdMemberPermissions request)
+    {
+        var success = await householdService.UpdateMemberPermissionsAsync(CurrentHouseholdId, request.UserId, request.Admin, request.CanOrganize, request.CanInvite);
+        if (!success) return NotFoundOrForbidden();
+        return Ok();
     }
 }

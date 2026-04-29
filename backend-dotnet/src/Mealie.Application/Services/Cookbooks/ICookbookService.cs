@@ -10,4 +10,5 @@ public interface ICookbookService
     Task<CookbookResponse> CreateAsync(Guid groupId, Guid householdId, CreateCookbookRequest request, CancellationToken ct = default);
     Task<CookbookResponse?> UpdateAsync(Guid householdId, Guid id, UpdateCookbookRequest request, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid householdId, Guid id, CancellationToken ct = default);
+    Task<bool> ReorderAsync(Guid householdId, IEnumerable<CookbookReorderRequest> reorderRequests, CancellationToken ct = default);
 }
