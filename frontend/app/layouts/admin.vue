@@ -115,6 +115,12 @@ const developerLinks: SidebarLinks = [
         title: i18n.t("sidebar.parser"),
         restricted: true,
       },
+      {
+        icon: $globals.icons.search,
+        to: "/admin/debug/indexes",
+        title: "Search Indexes",
+        restricted: true,
+      },
     ],
   },
 ];

@@ -7,6 +7,7 @@ import { AdminMaintenanceApi } from "./admin/admin-maintenance";
 import { AdminAnalyticsApi } from "./admin/admin-analytics";
 import { AdminDebugAPI } from "./admin/admin-debug";
 import { AdminIngredientAliasesApi } from "./admin/admin-ingredient-aliases";
+import { AdminIndexesApi } from "./admin/admin-indexes";
 import type { ApiRequestInstance } from "~/lib/api/types/non-generated";
 
 export class AdminAPI {
@@ -19,6 +20,7 @@ export class AdminAPI {
   public analytics: AdminAnalyticsApi;
   public debug: AdminDebugAPI;
   public ingredientAliases: AdminIngredientAliasesApi;
+  public indexes: AdminIndexesApi;
 
   constructor(requests: ApiRequestInstance) {
     this.about = new AdminAboutAPI(requests);
@@ -30,6 +32,7 @@ export class AdminAPI {
     this.analytics = new AdminAnalyticsApi(requests);
     this.debug = new AdminDebugAPI(requests);
     this.ingredientAliases = new AdminIngredientAliasesApi(requests);
+    this.indexes = new AdminIndexesApi(requests);
 
     Object.freeze(this);
   }

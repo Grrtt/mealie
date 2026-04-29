@@ -18,7 +18,7 @@ namespace Mealie.Application.Services.Search;
 /// <summary>
 /// Singleton Lucene.NET search index for recipes. Provides near-real-time search.
 /// </summary>
-public sealed class LuceneRecipeSearchIndex : IRecipeSearchIndex, IDisposable
+public sealed class LuceneRecipeSearchIndex : IRecipeSearchIndex, IIndexDiagnostics, IDisposable
 {
     private const LuceneVersion Version = LuceneVersion.LUCENE_48;
 
@@ -231,5 +231,74 @@ public sealed class LuceneRecipeSearchIndex : IRecipeSearchIndex, IDisposable
         _searcherManager.Dispose();
         _writer.Dispose();
         _analyzer.Dispose();
+    }
+
+    // ── IIndexDiagnostics ────────────────────────────────────────────────────
+
+    public string Name => "recipes";
+
+    public int GetDocumentCount()
+    {
+        var searcher = _searcherManager.Acquire();
+        try
+        {
+            return searcher.IndexReader.NumDocs;
+        }
+        finally
+        {
+            _searcherManager.Release(searcher);
+        }
+    }
+
+    public IReadOnlyList<IReadOnlyDictionary<string, string>> RawSearch(string? query, int maxResults = 50)
+    {
+        _searcherManager.MaybeRefresh();
+        var searcher = _searcherManager.Acquire();
+        try
+        {
+            Query q;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                q = new MatchAllDocsQuery();
+            }
+            else
+            {
+                var parser = new MultiFieldQueryParser(
+                    Version,
+                    ["name", "description", "tags", "categories"],
+                    _analyzer);
+                parser.DefaultOperator = Operator.OR;
+                q = parser.Parse(QueryParserBase.Escape(query.Trim()));
+            }
+
+            var topDocs = searcher.Search(q, maxResults);
+            var results = new List<IReadOnlyDictionary<string, string>>(topDocs.ScoreDocs.Length);
+
+            foreach (var sd in topDocs.ScoreDocs)
+            {
+                var doc = searcher.Doc(sd.Doc);
+                var dict = new Dictionary<string, string>();
+                foreach (var fieldName in new[] { "id", "householdId", "slug", "name" })
+                {
+                    var val = doc.Get(fieldName);
+                    if (val is not null) dict[fieldName] = val;
+                }
+                results.Add(dict);
+            }
+
+            return results;
+        }
+        finally
+        {
+            _searcherManager.Release(searcher);
+        }
+    }
+
+    public Task DeleteAsync(CancellationToken ct = default)
+    {
+        _writer.DeleteAll();
+        _writer.Commit();
+        _searcherManager.MaybeRefreshBlocking();
+        return Task.CompletedTask;
     }
 }

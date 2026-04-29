@@ -192,3 +192,18 @@ export interface UserImport {
   status: boolean;
   exception?: string | null;
 }
+export interface IndexInfo {
+  name: string;
+  documentCount: number;
+  directoryPath: string;
+  directorySizeBytes: number;
+}
+export interface IndexSearchRequest {
+  query?: string | null;
+  maxResults?: number;
+}
+export interface IndexSearchResponse {
+  indexName: string;
+  totalHits: number;
+  documents: Record<string, string>[];
+}

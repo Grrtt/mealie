@@ -2,6 +2,7 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
@@ -15,12 +16,13 @@ using Microsoft.Extensions.Options;
 
 namespace Mealie.Application.Services.Search;
 
-public sealed class LuceneFoodSearchIndex : IFoodSearchIndex, IDisposable
+public sealed class LuceneFoodSearchIndex : IFoodSearchIndex, IIndexDiagnostics, IDisposable
 {
     private const LuceneVersion Version = LuceneVersion.LUCENE_48;
 
     private readonly ILogger<LuceneFoodSearchIndex> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly StandardAnalyzer _analyzer;
     private readonly FSDirectory _directory;
     private readonly IndexWriter _writer;
     private readonly SearcherManager _searcherManager;
@@ -37,7 +39,8 @@ public sealed class LuceneFoodSearchIndex : IFoodSearchIndex, IDisposable
         System.IO.Directory.CreateDirectory(indexPath);
 
         _directory = FSDirectory.Open(new DirectoryInfo(indexPath));
-        var config = new IndexWriterConfig(Version, new StandardAnalyzer(Version))
+        _analyzer = new StandardAnalyzer(Version);
+        var config = new IndexWriterConfig(Version, _analyzer)
         {
             OpenMode = OpenMode.CREATE_OR_APPEND
         };
@@ -176,6 +179,76 @@ public sealed class LuceneFoodSearchIndex : IFoodSearchIndex, IDisposable
     {
         _searcherManager.Dispose();
         _writer.Dispose();
+        _analyzer.Dispose();
         _directory.Dispose();
+    }
+
+    // ── IIndexDiagnostics ────────────────────────────────────────────────────
+
+    public string Name => "foods";
+
+    public int GetDocumentCount()
+    {
+        var searcher = _searcherManager.Acquire();
+        try
+        {
+            return searcher.IndexReader.NumDocs;
+        }
+        finally
+        {
+            _searcherManager.Release(searcher);
+        }
+    }
+
+    public IReadOnlyList<IReadOnlyDictionary<string, string>> RawSearch(string? query, int maxResults = 50)
+    {
+        _searcherManager.MaybeRefreshBlocking();
+        var searcher = _searcherManager.Acquire();
+        try
+        {
+            Query q;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                q = new MatchAllDocsQuery();
+            }
+            else
+            {
+                var parser = new MultiFieldQueryParser(
+                    Version,
+                    ["name", "name_lower", "alias_lower"],
+                    _analyzer);
+                parser.DefaultOperator = Operator.OR;
+                q = parser.Parse(QueryParserBase.Escape(query.Trim()));
+            }
+
+            var topDocs = searcher.Search(q, maxResults);
+            var results = new List<IReadOnlyDictionary<string, string>>(topDocs.ScoreDocs.Length);
+
+            foreach (var sd in topDocs.ScoreDocs)
+            {
+                var doc = searcher.Doc(sd.Doc);
+                var dict = new Dictionary<string, string>();
+                foreach (var fieldName in new[] { "id", "groupId", "name", "name_lower" })
+                {
+                    var val = doc.Get(fieldName);
+                    if (val is not null) dict[fieldName] = val;
+                }
+                results.Add(dict);
+            }
+
+            return results;
+        }
+        finally
+        {
+            _searcherManager.Release(searcher);
+        }
+    }
+
+    public Task DeleteAsync(CancellationToken ct = default)
+    {
+        _writer.DeleteAll();
+        _writer.Commit();
+        _searcherManager.MaybeRefreshBlocking();
+        return Task.CompletedTask;
     }
 }

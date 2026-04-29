@@ -242,6 +242,11 @@ builder.Services.AddMediatR(cfg =>
 // Search indexes: singleton Lucene implementations + startup rebuild
 builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IRecipeSearchIndex, Mealie.Application.Services.Search.LuceneRecipeSearchIndex>();
 builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IFoodSearchIndex, Mealie.Application.Services.Search.LuceneFoodSearchIndex>();
+builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IIndexDiagnostics>(sp =>
+    (Mealie.Application.Contracts.Search.IIndexDiagnostics)sp.GetRequiredService<Mealie.Application.Contracts.Search.IRecipeSearchIndex>());
+builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IIndexDiagnostics>(sp =>
+    (Mealie.Application.Contracts.Search.IIndexDiagnostics)sp.GetRequiredService<Mealie.Application.Contracts.Search.IFoodSearchIndex>());
+builder.Services.AddScoped<Mealie.Application.Services.Admin.IIndexAdminService, Mealie.Application.Services.Admin.IndexAdminService>();
 builder.Services.AddHostedService<Mealie.Application.Services.Search.SearchIndexRebuildService>();
 
 // Ingredient NLP parser: singleton Python subprocess bridge
