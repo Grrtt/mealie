@@ -66,6 +66,26 @@ public class UnitService(ApplicationDbContext db) : IUnitService
         return true;
     }
 
+    public async Task<bool> MergeAsync(Guid groupId, Guid fromUnitId, Guid toUnitId, CancellationToken ct = default)
+    {
+        var fromUnit = await db.Units.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == fromUnitId, ct);
+        var toUnit = await db.Units.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == toUnitId, ct);
+        if (fromUnit is null || toUnit is null) return false;
+
+        var ingredients = await db.RecipeIngredients
+            .Where(i => i.UnitId == fromUnitId)
+            .ToListAsync(ct);
+
+        foreach (var ingredient in ingredients)
+        {
+            ingredient.UnitId = toUnitId;
+        }
+
+        db.Units.Remove(fromUnit);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
     private static UnitResponse MapToResponse(IngredientUnit u) => new()
     {
         Id = u.Id, Name = u.Name, Description = u.Description, Abbreviation = u.Abbreviation,

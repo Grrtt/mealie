@@ -10,4 +10,5 @@ public interface IUnitService
     Task<UnitResponse> CreateAsync(Guid groupId, CreateUnitRequest request, CancellationToken ct = default);
     Task<UnitResponse?> UpdateAsync(Guid groupId, Guid id, UpdateUnitRequest request, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default);
+    Task<bool> MergeAsync(Guid groupId, Guid fromUnitId, Guid toUnitId, CancellationToken ct = default);
 }

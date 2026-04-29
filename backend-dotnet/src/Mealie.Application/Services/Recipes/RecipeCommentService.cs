@@ -87,4 +87,68 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
         await db.SaveChangesAsync(ct);
         return true;
     }
+
+    public async Task<IList<CommentResponse>> GetAllCommentsAsync(Guid groupId, CancellationToken ct = default)
+    {
+        return await db.RecipeComments
+            .Include(c => c.Recipe)
+            .Where(c => c.Recipe.GroupId == groupId)
+            .OrderBy(c => c.CreatedAt)
+            .Select(c => new CommentResponse
+            {
+                Id = c.Id,
+                Text = c.Text,
+                RecipeId = c.RecipeId,
+                UserId = c.UserId,
+                CreatedAt = c.CreatedAt,
+                UpdateAt = c.UpdateAt,
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<CommentResponse?> GetCommentByIdAsync(Guid commentId, CancellationToken ct = default)
+    {
+        var comment = await db.RecipeComments
+            .FirstOrDefaultAsync(c => c.Id == commentId, ct);
+        if (comment is null) return null;
+
+        return new CommentResponse
+        {
+            Id = comment.Id,
+            Text = comment.Text,
+            RecipeId = comment.RecipeId,
+            UserId = comment.UserId,
+            CreatedAt = comment.CreatedAt,
+            UpdateAt = comment.UpdateAt,
+        };
+    }
+
+    public async Task<CommentResponse?> AddCommentByRecipeIdAsync(Guid recipeId, Guid userId, CreateCommentRequest request, CancellationToken ct = default)
+    {
+        var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Id == recipeId, ct);
+        if (recipe is null) return null;
+
+        var comment = new RecipeComment
+        {
+            Id = Guid.NewGuid(),
+            Text = request.Text,
+            RecipeId = recipe.Id,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow,
+        };
+
+        db.RecipeComments.Add(comment);
+        await db.SaveChangesAsync(ct);
+
+        return new CommentResponse
+        {
+            Id = comment.Id,
+            Text = comment.Text,
+            RecipeId = comment.RecipeId,
+            UserId = comment.UserId,
+            CreatedAt = comment.CreatedAt,
+            UpdateAt = comment.UpdateAt,
+        };
+    }
 }

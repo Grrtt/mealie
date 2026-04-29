@@ -23,6 +23,14 @@ public class CategoriesController(IOrganizerService organizerService, ITenantCon
         return Ok(category);
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<CategoryResponse>> GetCategoryBySlug(string slug, CancellationToken ct)
+    {
+        var category = await organizerService.GetCategoryBySlugAsync(CurrentGroupId, slug, ct);
+        if (category is null) return NotFoundOrForbidden();
+        return Ok(category);
+    }
+
     [HttpPost]
     public async Task<ActionResult<CategoryResponse>> CreateCategory([FromBody] CreateOrganizerRequest request, CancellationToken ct)
     {
@@ -37,6 +45,10 @@ public class CategoriesController(IOrganizerService organizerService, ITenantCon
         if (category is null) return NotFoundOrForbidden();
         return Ok(category);
     }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<CategoryResponse>> PatchCategory(Guid id, [FromBody] UpdateOrganizerRequest request, CancellationToken ct)
+        => await UpdateCategory(id, request, ct);
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteCategory(Guid id, CancellationToken ct)

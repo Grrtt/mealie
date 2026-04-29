@@ -38,6 +38,10 @@ public class FoodsController(IFoodService foodService, ITenantContext tenantCont
         return Ok(food);
     }
 
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<FoodResponse>> PatchFood(Guid id, [FromBody] UpdateFoodRequest request, CancellationToken ct)
+        => await UpdateFood(id, request, ct);
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteFood(Guid id, CancellationToken ct)
     {
@@ -45,4 +49,18 @@ public class FoodsController(IFoodService foodService, ITenantContext tenantCont
         if (!deleted) return NotFoundOrForbidden();
         return NoContent();
     }
+
+    [HttpPut("merge")]
+    public async Task<IActionResult> MergeFoods([FromBody] MergeFoodRequest request, CancellationToken ct)
+    {
+        var success = await foodService.MergeAsync(CurrentGroupId, request.FromFood, request.ToFood, ct);
+        if (!success) return NotFoundOrForbidden();
+        return Ok(new { detail = "Foods merged successfully" });
+    }
+}
+
+public class MergeFoodRequest
+{
+    public Guid FromFood { get; set; }
+    public Guid ToFood { get; set; }
 }

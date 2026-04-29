@@ -68,6 +68,27 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
         return true;
     }
 
+    public async Task<bool> MergeAsync(Guid groupId, Guid fromFoodId, Guid toFoodId, CancellationToken ct = default)
+    {
+        var fromFood = await db.Foods.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == fromFoodId, ct);
+        var toFood = await db.Foods.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == toFoodId, ct);
+        if (fromFood is null || toFood is null) return false;
+
+        var ingredients = await db.RecipeIngredients
+            .Where(i => i.FoodId == fromFoodId)
+            .ToListAsync(ct);
+
+        foreach (var ingredient in ingredients)
+        {
+            ingredient.FoodId = toFoodId;
+        }
+
+        db.Foods.Remove(fromFood);
+        await db.SaveChangesAsync(ct);
+        await mediator.Publish(new FoodDeletedEvent(fromFoodId), ct);
+        return true;
+    }
+
     private static FoodResponse MapToResponse(IngredientFood f) => new()
     {
         Id = f.Id, Name = f.Name, Description = f.Description, PluralName = f.PluralName,

@@ -12,6 +12,7 @@ public interface IUserService
     Task<bool> DeleteApiKeyAsync(Guid userId, int keyId, CancellationToken ct = default);
     Task AddFavoriteAsync(Guid userId, string slug, CancellationToken ct = default);
     Task RemoveFavoriteAsync(Guid userId, string slug, CancellationToken ct = default);
+    Task<IList<string>> GetFavoritesAsync(Guid userId, CancellationToken ct = default);
     Task<IList<UserRatingResponse>> GetRatingsAsync(Guid userId, CancellationToken ct = default);
     Task SetRatingAsync(Guid userId, string slug, int? rating, bool? isFavorite, CancellationToken ct = default);
 }

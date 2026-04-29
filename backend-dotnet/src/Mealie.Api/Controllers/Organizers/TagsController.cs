@@ -23,6 +23,14 @@ public class TagsController(IOrganizerService organizerService, ITenantContext t
         return Ok(tag);
     }
 
+    [HttpGet("slug/{slug}")]
+    public async Task<ActionResult<TagResponse>> GetTagBySlug(string slug, CancellationToken ct)
+    {
+        var tag = await organizerService.GetTagBySlugAsync(CurrentGroupId, slug, ct);
+        if (tag is null) return NotFoundOrForbidden();
+        return Ok(tag);
+    }
+
     [HttpPost]
     public async Task<ActionResult<TagResponse>> CreateTag([FromBody] CreateOrganizerRequest request, CancellationToken ct)
     {
@@ -37,6 +45,10 @@ public class TagsController(IOrganizerService organizerService, ITenantContext t
         if (tag is null) return NotFoundOrForbidden();
         return Ok(tag);
     }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<TagResponse>> PatchTag(Guid id, [FromBody] UpdateOrganizerRequest request, CancellationToken ct)
+        => await UpdateTag(id, request, ct);
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteTag(Guid id, CancellationToken ct)

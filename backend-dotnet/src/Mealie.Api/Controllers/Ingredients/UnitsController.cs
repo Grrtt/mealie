@@ -38,6 +38,10 @@ public class UnitsController(IUnitService unitService, ITenantContext tenantCont
         return Ok(unit);
     }
 
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<UnitResponse>> PatchUnit(Guid id, [FromBody] UpdateUnitRequest request, CancellationToken ct)
+        => await UpdateUnit(id, request, ct);
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteUnit(Guid id, CancellationToken ct)
     {
@@ -45,4 +49,18 @@ public class UnitsController(IUnitService unitService, ITenantContext tenantCont
         if (!deleted) return NotFoundOrForbidden();
         return NoContent();
     }
+
+    [HttpPut("merge")]
+    public async Task<IActionResult> MergeUnits([FromBody] MergeUnitRequest request, CancellationToken ct)
+    {
+        var success = await unitService.MergeAsync(CurrentGroupId, request.FromUnit, request.ToUnit, ct);
+        if (!success) return NotFoundOrForbidden();
+        return Ok(new { detail = "Units merged successfully" });
+    }
+}
+
+public class MergeUnitRequest
+{
+    public Guid FromUnit { get; set; }
+    public Guid ToUnit { get; set; }
 }

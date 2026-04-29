@@ -106,6 +106,15 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
         }
     }
 
+    public async Task<IList<string>> GetFavoritesAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await db.Users.IgnoreQueryFilters()
+            .Include(u => u.FavoriteRecipes)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return [];
+        return user.FavoriteRecipes.Select(r => r.Slug).ToList();
+    }
+
     public async Task<IList<UserRatingResponse>> GetRatingsAsync(Guid userId, CancellationToken ct = default)
     {
         var user = await db.Users.IgnoreQueryFilters()
