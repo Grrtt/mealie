@@ -10,7 +10,12 @@ public class Tier4Reader(DbConnection conn)
         var data = new MigrationData();
 
         // Planning
-        data.MealPlans = (await conn.QueryAsync("SELECT * FROM meal_plans")).ToList<dynamic>();
+        // household_id is an association proxy in Python (not a stored column), so join through users.
+        data.MealPlans = (await conn.QueryAsync("""
+            SELECT gmp.*, u.household_id
+            FROM group_meal_plans gmp
+            LEFT JOIN users u ON u.id = gmp.user_id
+            """)).ToList<dynamic>();
         data.ShoppingLists = (await conn.QueryAsync("SELECT * FROM shopping_lists")).ToList<dynamic>();
         data.ShoppingListItems = (await conn.QueryAsync("SELECT * FROM shopping_list_items")).ToList<dynamic>();
         try { data.Webhooks = (await conn.QueryAsync("SELECT * FROM webhooks")).ToList<dynamic>(); } catch { }

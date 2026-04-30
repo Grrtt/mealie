@@ -95,10 +95,11 @@ export const useMealplans = function (range: Ref<DateRange>) {
 
     async deleteOne(id: string | number) {
       loading.value = true;
-      const { data } = await api.mealplans.deleteOne(id);
-      if (data) {
-        this.refreshAll();
+      const { error } = await api.mealplans.deleteOne(id);
+      if (!error) {
+        await this.refreshAll();
       }
+      loading.value = false;
     },
 
     async setType(payload: UpdatePlanEntry, type: PlanEntryType) {

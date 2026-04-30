@@ -61,7 +61,7 @@
       </v-card>
     </v-menu>
 
-    <div class="d-flex flex-wrap align-center justify-space-between mb-2">
+    <div class="d-flex flex-wrap align-center justify-space-between mb-2 ga-2">
       <v-tabs style="width: fit-content;">
         <v-tab :to="{ name: TABS.view, query: route.query }">
           {{ $t('meal-plan.meal-planner') }}
@@ -70,45 +70,44 @@
           {{ $t('general.edit') }}
         </v-tab>
       </v-tabs>
-      <BaseButton
-        v-if="route.name === TABS.view"
-        color="info"
-        :icon="$globals.icons.cartCheck"
-        :text="$t('meal-plan.add-all-to-list')"
-        :disabled="!hasRecipes"
-        :loading="state.addAllLoading"
-        class="ml-auto mr-4"
-        @click="addAllToList"
-      />
-      <ButtonLink
-        :icon="$globals.icons.calendar"
-        :to="`/household/mealplan/settings`"
-        :text="$t('general.settings')"
-      />
-      <template v-if="route.name === TABS.edit">
-        <v-select
-          v-model="fillWeekTypes"
-          :items="planTypeOptions"
-          item-title="text"
-          item-value="value"
-          :label="$t('meal-plan.fill-week-types')"
-          multiple
-          chips
-          closable-chips
-          density="compact"
-          hide-details
-          style="max-width: 300px"
-          class="ml-2"
-        />
+      <div class="d-flex align-center flex-wrap ga-2 ml-auto">
         <BaseButton
-          color="primary"
-          :icon="$globals.icons.calendarWeek"
-          :text="$t('meal-plan.fill-week')"
-          :loading="loading"
-          class="ml-2"
-          @click="fillWeek"
+          v-if="route.name === TABS.view"
+          color="info"
+          :icon="$globals.icons.cartCheck"
+          :text="$t('meal-plan.add-all-to-list')"
+          :disabled="!hasRecipes"
+          :loading="state.addAllLoading"
+          @click="addAllToList"
         />
-      </template>
+        <template v-if="route.name === TABS.edit">
+          <v-select
+            v-model="fillWeekTypes"
+            :items="planTypeOptions"
+            item-title="text"
+            item-value="value"
+            :label="$t('meal-plan.fill-week-types')"
+            multiple
+            chips
+            closable-chips
+            density="compact"
+            hide-details
+            style="min-width: 240px"
+          />
+          <BaseButton
+            color="primary"
+            :icon="$globals.icons.calendarWeek"
+            :text="$t('meal-plan.fill-week')"
+            :loading="loading"
+            @click="fillWeek"
+          />
+        </template>
+        <ButtonLink
+          :icon="$globals.icons.calendar"
+          :to="`/household/mealplan/settings`"
+          :text="$t('general.settings')"
+        />
+      </div>
     </div>
 
     <div>

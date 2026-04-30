@@ -120,7 +120,7 @@ public class TargetWriter(DbConnection conn, ILogger log)
         await WriteEntitiesAsync("meal_plans", data.MealPlans, report, async (row) =>
         {
             await conn.ExecuteAsync("""
-                INSERT INTO meal_plans (id, date, entry_type, title, text, recipe_id, group_id, household_id, user_id, created_at, update_at)
+                INSERT INTO group_meal_plans (id, date, entry_type, title, text, recipe_id, group_id, household_id, user_id, created_at, update_at)
                 VALUES (@id, @date, @entry_type, @title, @text, @recipe_id, @group_id, @household_id, @user_id, @created_at, @update_at)
                 ON CONFLICT (id) DO NOTHING
                 """, new {
