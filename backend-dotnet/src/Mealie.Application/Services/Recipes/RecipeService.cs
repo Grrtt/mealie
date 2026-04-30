@@ -37,12 +37,16 @@ public class RecipeService(
     public async Task<PaginatedResponse<RecipeSummaryResponse>> GetPaginatedAsync(
         Guid householdId, PaginationParams pagination, RecipeFilter? filter = null, CancellationToken ct = default)
     {
-        // Use Lucene unless the filter has GUID-based tag/category identifiers (Lucene indexes names, not GUIDs)
-        bool hasGuidFilters =
+        // Foods, tools, and households filters require EF (Lucene doesn't index those IDs).
+        // Also skip Lucene when tags/categories are provided as GUIDs (Lucene indexes names).
+        bool requiresEf =
+            (filter?.Foods?.Count > 0) ||
+            (filter?.Tools?.Count > 0) ||
+            (filter?.Households?.Count > 0) ||
             (filter?.Tags?.Any(t => Guid.TryParse(t, out _)) ?? false) ||
             (filter?.Categories?.Any(c => Guid.TryParse(c, out _)) ?? false);
 
-        if (!hasGuidFilters)
+        if (!requiresEf)
         {
             var searchQuery = new RecipeSearchQuery(
                 HouseholdId: householdId,
@@ -84,7 +88,7 @@ public class RecipeService(
             }
         }
 
-        // EF Core fallback
+        // EF Core path — handles all filters including foods, tools, households
         var query = db.Recipes.IgnoreQueryFilters()
             .Where(r => r.HouseholdId == householdId)
             .Include(r => r.Tags)
@@ -100,7 +104,11 @@ public class RecipeService(
                 .Select(t => Guid.TryParse(t, out var g) ? g : (Guid?)null)
                 .Where(g => g.HasValue).Select(g => g!.Value).ToList();
             var tagSlugs = tagFilters.Where(t => !Guid.TryParse(t, out _)).ToList();
-            query = query.Where(r => r.Tags.Any(t => tagGuids.Contains(t.Id) || tagSlugs.Contains(t.Slug)));
+            if (filter.RequireAllTags == true)
+                query = query.Where(r => tagGuids.All(tid => r.Tags.Any(t => t.Id == tid)) &&
+                                         tagSlugs.All(slug => r.Tags.Any(t => t.Slug == slug)));
+            else
+                query = query.Where(r => r.Tags.Any(t => tagGuids.Contains(t.Id) || tagSlugs.Contains(t.Slug)));
         }
 
         if (filter?.Categories is { Count: > 0 } catFilters)
@@ -109,12 +117,73 @@ public class RecipeService(
                 .Select(c => Guid.TryParse(c, out var g) ? g : (Guid?)null)
                 .Where(g => g.HasValue).Select(g => g!.Value).ToList();
             var catSlugs = catFilters.Where(c => !Guid.TryParse(c, out _)).ToList();
-            query = query.Where(r => r.Categories.Any(c => catGuids.Contains(c.Id) || catSlugs.Contains(c.Slug)));
+            if (filter.RequireAllCategories == true)
+                query = query.Where(r => catGuids.All(cid => r.Categories.Any(c => c.Id == cid)) &&
+                                         catSlugs.All(slug => r.Categories.Any(c => c.Slug == slug)));
+            else
+                query = query.Where(r => r.Categories.Any(c => catGuids.Contains(c.Id) || catSlugs.Contains(c.Slug)));
+        }
+
+        if (filter?.Foods is { Count: > 0 } foodFilters)
+        {
+            var foodGuids = foodFilters
+                .Select(f => Guid.TryParse(f, out var g) ? g : (Guid?)null)
+                .Where(g => g.HasValue).Select(g => g!.Value).ToList();
+            if (filter.RequireAllFoods == true)
+                query = query.Where(r => foodGuids.All(fid =>
+                    r.RecipeIngredients.Any(i => i.FoodId == fid)));
+            else
+                query = query.Where(r => r.RecipeIngredients.Any(i =>
+                    i.FoodId.HasValue && foodGuids.Contains(i.FoodId.Value)));
+        }
+
+        if (filter?.Tools is { Count: > 0 } toolFilters)
+        {
+            var toolGuids = toolFilters
+                .Select(t => Guid.TryParse(t, out var g) ? g : (Guid?)null)
+                .Where(g => g.HasValue).Select(g => g!.Value).ToList();
+            if (filter.RequireAllTools == true)
+                query = query
+                    .Include(r => r.Tools)
+                    .Where(r => toolGuids.All(tid => r.Tools.Any(t => t.Id == tid)));
+            else
+                query = query
+                    .Include(r => r.Tools)
+                    .Where(r => r.Tools.Any(t => toolGuids.Contains(t.Id)));
+        }
+
+        if (filter?.Households is { Count: > 0 } householdFilters)
+        {
+            var householdGuids = householdFilters
+                .Select(h => Guid.TryParse(h, out var g) ? g : (Guid?)null)
+                .Where(g => g.HasValue).Select(g => g!.Value).ToList();
+            query = query.Where(r => householdGuids.Contains(r.HouseholdId));
         }
 
         var total = await query.CountAsync(ct);
-        var efItems = await query
-            .OrderBy(r => r.Name)
+
+        // Apply ordering
+        var ordered = (filter?.OrderBy?.ToLowerInvariant()) switch
+        {
+            "name" => filter?.OrderDirection?.ToLowerInvariant() == "asc"
+                ? query.OrderBy(r => r.Name)
+                : query.OrderByDescending(r => r.Name),
+            "created_at" => filter?.OrderDirection?.ToLowerInvariant() == "asc"
+                ? query.OrderBy(r => r.CreatedAt)
+                : query.OrderByDescending(r => r.CreatedAt),
+            "updated_at" => filter?.OrderDirection?.ToLowerInvariant() == "asc"
+                ? query.OrderBy(r => r.UpdateAt)
+                : query.OrderByDescending(r => r.UpdateAt),
+            "last_made" => filter?.OrderDirection?.ToLowerInvariant() == "asc"
+                ? query.OrderBy(r => r.LastMade)
+                : query.OrderByDescending(r => r.LastMade),
+            "rating" => filter?.OrderDirection?.ToLowerInvariant() == "asc"
+                ? query.OrderBy(r => r.Rating)
+                : query.OrderByDescending(r => r.Rating),
+            _ => query.OrderByDescending(r => r.CreatedAt),
+        };
+
+        var efItems = await ordered
             .Skip(pagination.Skip)
             .Take(pagination.PerPage)
             .Select(r => MapToSummary(r))

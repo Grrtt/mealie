@@ -36,11 +36,20 @@ public class RecipeFilter
     public IList<string>? Categories { get; set; }
     public IList<string>? Tools { get; set; }
     public IList<string>? Foods { get; set; }
+    public IList<string>? Households { get; set; }
     public bool? RequireAllCategories { get; set; }
     public bool? RequireAllTags { get; set; }
+    public bool? RequireAllTools { get; set; }
+    public bool? RequireAllFoods { get; set; }
+    public string? OrderBy { get; set; }
+    public string? OrderDirection { get; set; }
+    public string? QueryFilter { get; set; }
 
     public bool IsEmpty =>
         string.IsNullOrEmpty(Search) &&
         (Tags is null || Tags.Count == 0) &&
-        (Categories is null || Categories.Count == 0);
+        (Categories is null || Categories.Count == 0) &&
+        (Foods is null || Foods.Count == 0) &&
+        (Tools is null || Tools.Count == 0) &&
+        (Households is null || Households.Count == 0);
 }

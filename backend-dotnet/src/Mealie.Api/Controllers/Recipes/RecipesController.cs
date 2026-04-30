@@ -30,11 +30,38 @@ public class RecipesController(
     [HttpGet]
     [OutputCache(PolicyName = Mealie.Api.Caching.RecipeListCachePolicy.Name)]
     public async Task<ActionResult<PaginatedResponse<RecipeSummaryResponse>>> GetRecipes(
-        [FromQuery] PaginationParams pagination, [FromQuery] string? search,
-        [FromQuery] string[]? tags, [FromQuery] string[]? categories,
-        CancellationToken ct)
+        [FromQuery] PaginationParams pagination,
+        [FromQuery] string? search,
+        [FromQuery] string[]? tags,
+        [FromQuery] string[]? categories,
+        [FromQuery] string[]? foods,
+        [FromQuery] string[]? tools,
+        [FromQuery] string[]? households,
+        [FromQuery] bool requireAllCategories = false,
+        [FromQuery] bool requireAllTags = false,
+        [FromQuery] bool requireAllTools = false,
+        [FromQuery] bool requireAllFoods = false,
+        [FromQuery] string? orderBy = null,
+        [FromQuery] string? orderDirection = null,
+        [FromQuery] string? queryFilter = null,
+        CancellationToken ct = default)
     {
-        var filter = new RecipeFilter { Search = search, Tags = tags, Categories = categories };
+        var filter = new RecipeFilter
+        {
+            Search = search,
+            Tags = tags,
+            Categories = categories,
+            Foods = foods,
+            Tools = tools,
+            Households = households,
+            RequireAllCategories = requireAllCategories,
+            RequireAllTags = requireAllTags,
+            RequireAllTools = requireAllTools,
+            RequireAllFoods = requireAllFoods,
+            OrderBy = orderBy,
+            OrderDirection = orderDirection,
+            QueryFilter = queryFilter,
+        };
         var result = await recipeService.GetPaginatedAsync(tenantContext.HouseholdId, pagination, filter, ct);
         return Ok(result);
     }
