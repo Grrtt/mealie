@@ -25,9 +25,14 @@ public sealed class RecipeListCachePolicy : IOutputCachePolicy
         context.AllowLocking = true;
         context.ResponseExpirationTimeSpan = TimeSpan.FromMinutes(5);
 
-        // Vary only by params the backend actually reads — seeds, requireAll*, orderByNullPosition
-        // etc. are ignored by the controller so must not bust the cache key.
-        context.CacheVaryByRules.QueryKeys = new[] { "page", "perPage", "search", "tags", "categories" };
+        // Vary by all filter/sort params the backend reads.
+        context.CacheVaryByRules.QueryKeys = new[]
+        {
+            "page", "perPage", "search",
+            "tags", "categories", "foods", "tools", "households",
+            "requireAllCategories", "requireAllTags", "requireAllTools", "requireAllFoods",
+            "orderBy", "orderDirection",
+        };
         // Vary by household so different households never share a cache entry.
         context.CacheVaryByRules.VaryByValues.Add("householdId", tenant.HouseholdId.ToString());
 
