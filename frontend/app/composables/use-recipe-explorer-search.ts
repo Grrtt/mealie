@@ -190,6 +190,11 @@ function createRecipeExplorerSearchState(groupSlug: ComputedRef<string>): Recipe
     selectedHouseholds.value = [];
     selectedTags.value = [];
     selectedTools.value = [];
+    // Immediately sync passedQuery and clear the session so stale state isn't
+    // restored if the user navigates away before the 500ms debounce fires.
+    passedQuery.value = calcPassedQuery();
+    searchQuerySession.value.recipe = "";
+    router.push({ query: {} });
   }
 
   function toggleOrderDirection() {
