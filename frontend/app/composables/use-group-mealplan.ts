@@ -105,6 +105,31 @@ export const useMealplans = function (range: Ref<DateRange>) {
       payload.entryType = type;
       await this.updateOne(payload);
     },
+
+    async fillDay(date: Date, entryTypes: string[]) {
+      loading.value = true;
+      const { data } = await api.mealplans.fillDay({
+        date: format(date, "yyyy-MM-dd"),
+        entryTypes,
+      });
+      if (data) {
+        await this.refreshAll();
+      }
+      loading.value = false;
+    },
+
+    async fillWeek(startDate: Date, endDate: Date, entryTypes: string[]) {
+      loading.value = true;
+      const { data } = await api.mealplans.fillWeek({
+        startDate: format(startDate, "yyyy-MM-dd"),
+        endDate: format(endDate, "yyyy-MM-dd"),
+        entryTypes,
+      });
+      if (data) {
+        await this.refreshAll();
+      }
+      loading.value = false;
+    },
   };
 
   const mealplans = actions.getAll();

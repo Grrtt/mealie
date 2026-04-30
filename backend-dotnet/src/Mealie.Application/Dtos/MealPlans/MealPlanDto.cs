@@ -58,3 +58,18 @@ public class CreateRandomMealPlanRequest
     public DateOnly Date { get; set; }
     public string EntryType { get; set; } = "breakfast";
 }
+
+public class FillDayRequest
+{
+    public DateOnly Date { get; set; }
+    // List of entry types to fill - duplicates allowed (e.g. two "side" entries)
+    public IList<string> EntryTypes { get; set; } = ["breakfast", "lunch", "side", "dinner", "side"];
+}
+
+public class FillWeekRequest
+{
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }
+    // Applied to every day in the range
+    public IList<string> EntryTypes { get; set; } = ["breakfast", "lunch", "side", "dinner", "side"];
+}

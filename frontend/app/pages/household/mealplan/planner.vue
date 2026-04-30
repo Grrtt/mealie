@@ -85,6 +85,30 @@
         :to="`/household/mealplan/settings`"
         :text="$t('general.settings')"
       />
+      <template v-if="route.name === TABS.edit">
+        <v-select
+          v-model="fillWeekTypes"
+          :items="planTypeOptions"
+          item-title="text"
+          item-value="value"
+          :label="$t('meal-plan.fill-week-types')"
+          multiple
+          chips
+          closable-chips
+          density="compact"
+          hide-details
+          style="max-width: 300px"
+          class="ml-2"
+        />
+        <BaseButton
+          color="primary"
+          :icon="$globals.icons.calendarWeek"
+          :text="$t('meal-plan.fill-week')"
+          :loading="loading"
+          class="ml-2"
+          @click="fillWeek"
+        />
+      </template>
     </div>
 
     <div>
@@ -102,7 +126,7 @@
 import { isSameDay, addDays, parseISO, format, isValid } from "date-fns";
 import RecipeDialogAddToShoppingList from "~/components/Domain/Recipe/RecipeDialogAddToShoppingList.vue";
 import { useHouseholdSelf } from "~/composables/use-households";
-import { useMealplans } from "~/composables/use-group-mealplan";
+import { useMealplans, usePlanTypeOptions } from "~/composables/use-group-mealplan";
 import { useUserMealPlanPreferences } from "~/composables/use-users/preferences";
 import type { ShoppingListSummary } from "~/lib/api/types/household";
 import { useUserApi } from "~/composables/api";
@@ -198,7 +222,16 @@ watch(weekRange, (newRange) => {
   });
 }, { immediate: true });
 
-const { mealplans, actions } = useMealplans(weekRange);
+const { mealplans, actions, loading } = useMealplans(weekRange);
+
+const planTypeOptions = usePlanTypeOptions();
+const fillWeekTypes = ref<string[]>(["breakfast", "lunch", "dinner", "side"]);
+
+async function fillWeek() {
+  // Double up "side" to represent both a lunch side and a dinner side
+  const types = fillWeekTypes.value.flatMap(t => t === "side" ? ["side", "side"] : [t]);
+  await actions.fillWeek(weekRange.value.start, weekRange.value.end, types);
+}
 
 function filterMealByDate(date: Date) {
   if (!mealplans.value) return [];

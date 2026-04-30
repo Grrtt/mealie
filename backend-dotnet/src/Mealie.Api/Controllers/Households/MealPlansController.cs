@@ -43,6 +43,20 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
         return Ok(plan);
     }
 
+    [HttpPost("fill-day")]
+    public async Task<ActionResult<IList<MealPlanResponse>>> FillDay([FromBody] FillDayRequest request, CancellationToken ct)
+    {
+        var plans = await mealPlanService.FillDayAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
+        return Ok(plans);
+    }
+
+    [HttpPost("fill-week")]
+    public async Task<ActionResult<IList<MealPlanResponse>>> FillWeek([FromBody] FillWeekRequest request, CancellationToken ct)
+    {
+        var plans = await mealPlanService.FillWeekAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
+        return Ok(plans);
+    }
+
     [HttpPost]
     public async Task<ActionResult<MealPlanResponse>> CreateMealPlan([FromBody] CreateMealPlanRequest request, CancellationToken ct)
     {

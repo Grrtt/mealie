@@ -65,32 +65,79 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
 
     public async Task<MealPlanResponse?> CreateRandomAsync(Guid groupId, Guid householdId, Guid userId, CreateRandomMealPlanRequest request, CancellationToken ct = default)
     {
-        var recipeIds = await db.Recipes.IgnoreQueryFilters()
+        var plan = await CreateRandomPlanAsync(groupId, householdId, userId, request.Date, request.EntryType, ct);
+        if (plan is null) return null;
+        await db.SaveChangesAsync(ct);
+        await LoadRecipeNav(plan, ct);
+        return MapToResponse(plan);
+    }
+
+    public async Task<IList<MealPlanResponse>> FillDayAsync(Guid groupId, Guid householdId, Guid userId, FillDayRequest request, CancellationToken ct = default)
+    {
+        var recipeIds = await GetGroupRecipeIdsAsync(groupId, ct);
+        if (recipeIds.Count == 0) return [];
+
+        var plans = new List<MealPlan>();
+        foreach (var entryType in request.EntryTypes)
+        {
+            var plan = BuildRandomPlan(groupId, householdId, userId, request.Date, entryType, recipeIds);
+            db.MealPlans.Add(plan);
+            plans.Add(plan);
+        }
+
+        await db.SaveChangesAsync(ct);
+        foreach (var plan in plans) await LoadRecipeNav(plan, ct);
+        return plans.Select(MapToResponse).ToList();
+    }
+
+    public async Task<IList<MealPlanResponse>> FillWeekAsync(Guid groupId, Guid householdId, Guid userId, FillWeekRequest request, CancellationToken ct = default)
+    {
+        var recipeIds = await GetGroupRecipeIdsAsync(groupId, ct);
+        if (recipeIds.Count == 0) return [];
+
+        var plans = new List<MealPlan>();
+        for (var date = request.StartDate; date <= request.EndDate; date = date.AddDays(1))
+        {
+            foreach (var entryType in request.EntryTypes)
+            {
+                var plan = BuildRandomPlan(groupId, householdId, userId, date, entryType, recipeIds);
+                db.MealPlans.Add(plan);
+                plans.Add(plan);
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+        foreach (var plan in plans) await LoadRecipeNav(plan, ct);
+        return plans.Select(MapToResponse).ToList();
+    }
+
+    private async Task<List<Guid>> GetGroupRecipeIdsAsync(Guid groupId, CancellationToken ct) =>
+        await db.Recipes.IgnoreQueryFilters()
             .Where(r => r.GroupId == groupId)
             .Select(r => r.Id)
             .ToListAsync(ct);
 
+    private static MealPlan BuildRandomPlan(Guid groupId, Guid householdId, Guid userId, DateOnly date, string entryType, List<Guid> recipeIds) => new()
+    {
+        Id = Guid.NewGuid(),
+        Title = string.Empty,
+        EntryType = entryType,
+        Date = date,
+        RecipeId = recipeIds[Random.Shared.Next(recipeIds.Count)],
+        GroupId = groupId,
+        HouseholdId = householdId,
+        UserId = userId,
+        CreatedAt = DateTime.UtcNow,
+        UpdateAt = DateTime.UtcNow,
+    };
+
+    private async Task<MealPlan?> CreateRandomPlanAsync(Guid groupId, Guid householdId, Guid userId, DateOnly date, string entryType, CancellationToken ct)
+    {
+        var recipeIds = await GetGroupRecipeIdsAsync(groupId, ct);
         if (recipeIds.Count == 0) return null;
-
-        var randomId = recipeIds[Random.Shared.Next(recipeIds.Count)];
-
-        var plan = new MealPlan
-        {
-            Id = Guid.NewGuid(),
-            Title = string.Empty,
-            EntryType = request.EntryType,
-            Date = request.Date,
-            RecipeId = randomId,
-            GroupId = groupId,
-            HouseholdId = householdId,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
-        };
+        var plan = BuildRandomPlan(groupId, householdId, userId, date, entryType, recipeIds);
         db.MealPlans.Add(plan);
-        await db.SaveChangesAsync(ct);
-        await LoadRecipeNav(plan, ct);
-        return MapToResponse(plan);
+        return plan;
     }
 
     public async Task<bool> DeleteAsync(Guid householdId, Guid id, CancellationToken ct = default)
