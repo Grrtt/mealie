@@ -166,6 +166,11 @@
           <BaseButtonGroup
             :buttons="[
               {
+                icon: $globals.icons.calendarMultiselect,
+                text: $t('meal-plan.fill-day'),
+                event: 'fillDay',
+              },
+              {
                 icon: $globals.icons.diceMultiple,
                 text: $t('meal-plan.random-meal'),
                 event: 'random',
@@ -218,6 +223,7 @@
                 event: 'create',
               },
             ]"
+            @fill-day="fillDay(plan.date)"
             @create="openDialog(plan.date)"
             @random-breakfast="randomMeal(plan.date, 'breakfast')"
             @random-lunch="randomMeal(plan.date, 'lunch')"
@@ -389,6 +395,10 @@ async function randomMeal(date: Date, type: PlanEntryType) {
   if (data) {
     props.actions.refreshAll();
   }
+}
+
+async function fillDay(date: Date) {
+  await props.actions.fillDay(date, ["breakfast", "lunch", "side", "dinner", "side"]);
 }
 
 // =====================================================
