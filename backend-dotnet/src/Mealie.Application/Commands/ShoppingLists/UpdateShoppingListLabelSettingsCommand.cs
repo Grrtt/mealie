@@ -1,63 +1,28 @@
 using Mealie.Application.Dtos.ShoppingLists;
+using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Planning;
 using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
 using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
-using Mealie.Application.Queries;
 namespace Mealie.Application.Commands.ShoppingLists;
 
-public record CreateShoppingListCommand(Guid GroupId, Guid HouseholdId, CreateShoppingListRequest Request)
-    : IQuery<ShoppingListResponse>
-{
-    public async Task<ShoppingListResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var list = new ShoppingList
-        {
-            Id = Guid.NewGuid(), Name = Request.Name, GroupId = GroupId, HouseholdId = HouseholdId,
-            CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-        };
-        db.ShoppingLists.Add(list);
-        await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new ShoppingListCreatedEvent(list.Id, GroupId, HouseholdId), ct);
-        return ShoppingListMappings.MapToResponse(list);
-    }
-}
-
-public record UpdateShoppingListCommand(Guid HouseholdId, Guid Id, UpdateShoppingListRequest Request)
+public record UpdateShoppingListLabelSettingsCommand(Guid HouseholdId, Guid ListId, UpdateShoppingListLabelSettingsRequest Request)
     : IQuery<ShoppingListResponse?>
 {
     public async Task<ShoppingListResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
         var list = await db.ShoppingLists.IgnoreQueryFilters()
-            .Where(s => s.HouseholdId == HouseholdId && s.Id == Id)
+            .Where(s => s.HouseholdId == HouseholdId && s.Id == ListId)
             .Include(s => s.Items).ThenInclude(i => i.Unit)
             .Include(s => s.Items).ThenInclude(i => i.Food)
             .FirstOrDefaultAsync(ct);
         if (list is null) return null;
-        if (Request.Name is not null) list.Name = Request.Name;
         list.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new ShoppingListUpdatedEvent(list.Id, list.GroupId, HouseholdId), ct);
         return ShoppingListMappings.MapToResponse(list);
-    }
-}
-
-public record DeleteShoppingListCommand(Guid HouseholdId, Guid Id) : IQuery<bool>
-{
-    public async Task<bool> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var list = await db.ShoppingLists.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(s => s.HouseholdId == HouseholdId && s.Id == Id, ct);
-        if (list is null) return false;
-        db.ShoppingLists.Remove(list);
-        await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new ShoppingListDeletedEvent(Id, HouseholdId), ct);
-        return true;
     }
 }
 
