@@ -11,23 +11,37 @@ public class MediaController(IOptions<AppSettings> settings) : ControllerBase
 {
     private string DataDir => settings.Value.DataDir;
 
-    [HttpGet("/api/media/users/{userId}/profile.webp")]
-    public IActionResult UserProfileImage(Guid userId)
+    [HttpGet("/api/media/users/{userId}/{fileName}")]
+    public IActionResult UserMedia(Guid userId, string fileName)
     {
-        var path = Path.Combine(DataDir, "users", userId.ToString(), "profile.webp");
-        if (!System.IO.File.Exists(path))
+        var userDir = Path.GetFullPath(Path.Combine(DataDir, "users", userId.ToString()));
+        var filePath = Path.GetFullPath(Path.Combine(userDir, fileName));
+
+        if (!filePath.StartsWith(userDir, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest();
+        }
+
+        if (!System.IO.File.Exists(filePath))
         {
             return NotFound();
         }
 
-        return PhysicalFile(path, "image/webp");
+        return PhysicalFile(filePath, "image/webp");
     }
 
-    [HttpGet("/api/media/recipes/{slug}/images/{imageName}")]
-    public IActionResult RecipeImage(string slug, string imageName)
+    [HttpGet("/api/media/recipes/{recipeId:guid}/images/{imageName}")]
+    public IActionResult RecipeImage(Guid recipeId, string imageName)
     {
-        var path = Path.Combine(DataDir, "recipes", slug, "images", imageName);
-        if (!System.IO.File.Exists(path))
+        var imagesDir = Path.GetFullPath(Path.Combine(DataDir, "recipes", recipeId.ToString(), "images"));
+        var filePath = Path.GetFullPath(Path.Combine(imagesDir, imageName));
+
+        if (!filePath.StartsWith(imagesDir, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest();
+        }
+
+        if (!System.IO.File.Exists(filePath))
         {
             return NotFound();
         }
@@ -39,18 +53,45 @@ public class MediaController(IOptions<AppSettings> settings) : ControllerBase
             ".png" => "image/png",
             _ => "application/octet-stream"
         };
-        return PhysicalFile(path, mimeType);
+        return PhysicalFile(filePath, mimeType);
     }
 
-    [HttpGet("/api/media/recipes/{slug}/assets/{assetName}")]
-    public IActionResult RecipeAsset(string slug, string assetName)
+    [HttpGet("/api/media/recipes/{recipeId:guid}/images/timeline/{eventId:guid}/{imageName}")]
+    public IActionResult RecipeTimelineEventImage(Guid recipeId, Guid eventId, string imageName)
     {
-        var path = Path.Combine(DataDir, "recipes", slug, "assets", assetName);
-        if (!System.IO.File.Exists(path))
+        var eventDir = Path.GetFullPath(
+            Path.Combine(DataDir, "recipes", recipeId.ToString(), "images", "timeline", eventId.ToString()));
+        var filePath = Path.GetFullPath(Path.Combine(eventDir, imageName));
+
+        if (!filePath.StartsWith(eventDir, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest();
+        }
+
+        if (!System.IO.File.Exists(filePath))
         {
             return NotFound();
         }
 
-        return PhysicalFile(path, "application/octet-stream");
+        return PhysicalFile(filePath, "image/webp");
+    }
+
+    [HttpGet("/api/media/recipes/{recipeId:guid}/assets/{assetName}")]
+    public IActionResult RecipeAsset(Guid recipeId, string assetName)
+    {
+        var assetsDir = Path.GetFullPath(Path.Combine(DataDir, "recipes", recipeId.ToString(), "assets"));
+        var filePath = Path.GetFullPath(Path.Combine(assetsDir, assetName));
+
+        if (!filePath.StartsWith(assetsDir, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest();
+        }
+
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound();
+        }
+
+        return PhysicalFile(filePath, "application/octet-stream");
     }
 }

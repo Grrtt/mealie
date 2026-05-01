@@ -2,8 +2,10 @@ using System.Text.Json;
 using Mealie.Api.Caching;
 using Mealie.Application.Common;
 using Mealie.Application.Dtos.Recipes;
+using Mealie.Application.Services.Images;
 using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;
+using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
 using Mealie.Infrastructure.Scraper;
 using Mealie.Shared.Pagination;
@@ -11,6 +13,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Mealie.Api.Controllers.Recipes;
 
@@ -23,6 +26,7 @@ public class RecipesController(
     IRecipeExportService exportService,
     IRecipeImportService importService,
     ITenantContext tenantContext,
+    IOptions<AppSettings> appSettings,
     ApplicationDbContext db) : ControllerBase
 {
     // ── CRUD Endpoints (T057-T061) ──────────────────────────────────────────
@@ -293,17 +297,14 @@ public class RecipesController(
             return BadRequest(new { detail = "No image provided" });
         }
 
-        var recipeDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "recipes", slug);
-        var imageDir = Path.Combine(recipeDir, "images");
-        Directory.CreateDirectory(imageDir);
+        using var ms = new MemoryStream();
+        await image.CopyToAsync(ms, ct);
+        var imageBytes = ms.ToArray();
 
-        var imagePath = Path.Combine(imageDir, "original.webp");
+        var imageDir = Path.Combine(appSettings.Value.DataDir, "recipes", recipe.Id.ToString(), "images");
+        RecipeImageProcessor.SaveVariants(imageDir, imageBytes);
 
-        await using var stream = image.OpenReadStream();
-        await using var file = System.IO.File.Create(imagePath);
-        await stream.CopyToAsync(file, ct);
-
-        recipe.Image = $"/api/media/recipes/{slug}/images/original.webp";
+        recipe.Image = "original.webp";
         recipe.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
@@ -330,11 +331,14 @@ public class RecipesController(
             return NotFound(new { detail = "Recipe not found" });
         }
 
-        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "data", "recipes", slug, "images",
-            "original.webp");
-        if (System.IO.File.Exists(imagePath))
+        var imageDir = Path.Combine(appSettings.Value.DataDir, "recipes", recipe.Id.ToString(), "images");
+        foreach (var variant in new[] { "original.webp", "min-original.webp", "tiny-original.webp" })
         {
-            System.IO.File.Delete(imagePath);
+            var p = Path.Combine(imageDir, variant);
+            if (System.IO.File.Exists(p))
+            {
+                System.IO.File.Delete(p);
+            }
         }
 
         recipe.Image = null;
