@@ -25,7 +25,11 @@ public class BackupsController(IBackupService backupService) : ControllerBase
 
     [HttpGet("{fileName}")]
     public IActionResult GetBackup(string fileName)
-        => NotFound(new { detail = "Backup not found" });
+    {
+        var path = backupService.GetBackupPath(fileName);
+        if (path is null) return NotFound(new { detail = "Backup not found" });
+        return PhysicalFile(path, "application/zip", Path.GetFileName(fileName));
+    }
 
     [HttpDelete("{fileName}")]
     public async Task<IActionResult> DeleteBackup(string fileName)

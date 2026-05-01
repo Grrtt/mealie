@@ -56,6 +56,13 @@ public class BackupService(AppSettings settings, ILogger<BackupService> logger) 
         return Task.FromResult<IList<BackupInfo>>(files);
     }
 
+    public string? GetBackupPath(string fileName)
+    {
+        var safe = Path.GetFileName(fileName);
+        var path = Path.Combine(BackupDir, safe);
+        return File.Exists(path) ? path : null;
+    }
+
     public Task RestoreBackupAsync(string fileName, CancellationToken ct = default)
     {
         var filePath = Path.Combine(BackupDir, Path.GetFileName(fileName));

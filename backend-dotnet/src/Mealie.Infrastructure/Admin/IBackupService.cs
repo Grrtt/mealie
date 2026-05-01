@@ -4,6 +4,7 @@ public interface IBackupService
 {
     Task<string> CreateBackupAsync(CancellationToken ct = default);
     Task<IList<BackupInfo>> ListBackupsAsync(CancellationToken ct = default);
+    string? GetBackupPath(string fileName);
     Task RestoreBackupAsync(string fileName, CancellationToken ct = default);
     Task DeleteBackupAsync(string fileName, CancellationToken ct = default);
 }

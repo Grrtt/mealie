@@ -1,9 +1,13 @@
 using Mealie.Application.Dtos.Admin;
 using Mealie.Application.Services.Admin;
+using Mealie.Application.Services.Auth;
+using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
+using Mealie.Infrastructure.Email;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Mealie.Api.Controllers.Admin;
 
@@ -13,6 +17,9 @@ namespace Mealie.Api.Controllers.Admin;
 public class AdminController(
     IAdminUserService userService,
     IAdminGroupService groupService,
+    IPasswordResetService passwordResetService,
+    IEmailService emailService,
+    IOptions<AppSettings> settings,
     ApplicationDbContext db) : ControllerBase
 {
     // ── About & Statistics ──────────────────────────────────────────────────
@@ -22,7 +29,7 @@ public class AdminController(
     {
         production = true,
         version = "2.0.0",
-        apiPort = 9000,
+        apiPort = settings.Value.ApiPort,
     });
 
     [HttpGet("statistics")]
@@ -51,11 +58,11 @@ public class AdminController(
     [HttpGet("about/check")]
     public IActionResult Check() => Ok(new
     {
-        emailReady = false,
-        ldapReady = false,
-        oidcReady = false,
-        enableOpenai = false,
-        baseUrlSet = true,
+        emailReady = emailService.IsConfigured,
+        ldapReady = settings.Value.LdapEnabled && !string.IsNullOrEmpty(settings.Value.LdapServer),
+        oidcReady = settings.Value.OidcEnabled && !string.IsNullOrEmpty(settings.Value.OidcAuthority),
+        enableOpenai = !string.IsNullOrEmpty(settings.Value.OpenAiApiKey),
+        baseUrlSet = !string.IsNullOrEmpty(settings.Value.BaseUrl),
         isUpToDate = true,
     });
 
@@ -137,24 +144,22 @@ public class AdminController(
     public async Task<IActionResult> GeneratePasswordResetToken(
         [FromBody] PasswordResetTokenRequest request, CancellationToken ct)
     {
+        string? email = request.Email;
+
         if (request.UserId.HasValue && request.UserId != Guid.Empty)
         {
             var user = await db.Users.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
             if (user is null) return NotFound(new { detail = "User not found" });
-            
-            // Use email from database
-            request.Email = user.Email;
+            email = user.Email;
         }
 
-        if (string.IsNullOrEmpty(request.Email))
+        if (string.IsNullOrEmpty(email))
             return BadRequest(new { detail = "Either userId or email must be provided" });
 
-        var user2 = await db.Users.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.Email == request.Email, ct);
-        if (user2 is null) return NotFound(new { detail = "User with that email not found" });
+        var token = await passwordResetService.GenerateResetTokenAsync(email);
+        if (token is null) return NotFound(new { detail = "User with that email not found" });
 
-        var token = BCrypt.Net.BCrypt.GenerateSalt() + Guid.NewGuid().ToString();
         return Ok(new PasswordResetTokenResponse { Token = token });
     }
 
