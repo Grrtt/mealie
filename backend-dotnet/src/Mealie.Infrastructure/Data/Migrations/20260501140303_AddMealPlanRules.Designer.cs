@@ -3,6 +3,7 @@ using System;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Mealie.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260501140303_AddMealPlanRules")]
+    partial class AddMealPlanRules
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
@@ -34,6 +37,25 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_cookbooks_to_categories_cookbook_id");
 
                     b.ToTable("cookbooks_to_categories", (string)null);
+                });
+
+            modelBuilder.Entity("CategoryRecipe", b =>
+                {
+                    b.Property<string>("CategoriesId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("categories_id");
+
+                    b.Property<string>("RecipesId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipes_id");
+
+                    b.HasKey("CategoriesId", "RecipesId")
+                        .HasName("pk_recipes_to_categories");
+
+                    b.HasIndex("RecipesId")
+                        .HasDatabaseName("ix_recipes_to_categories_recipes_id");
+
+                    b.ToTable("recipes_to_categories", (string)null);
                 });
 
             modelBuilder.Entity("CookbookTag", b =>
@@ -1781,6 +1803,44 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.ToTable("webhook_urls", (string)null);
                 });
 
+            modelBuilder.Entity("RecipeTag", b =>
+                {
+                    b.Property<string>("RecipesId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipes_id");
+
+                    b.Property<string>("TagsId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tags_id");
+
+                    b.HasKey("RecipesId", "TagsId")
+                        .HasName("pk_recipes_to_tags");
+
+                    b.HasIndex("TagsId")
+                        .HasDatabaseName("ix_recipes_to_tags_tags_id");
+
+                    b.ToTable("recipes_to_tags", (string)null);
+                });
+
+            modelBuilder.Entity("RecipeTool", b =>
+                {
+                    b.Property<string>("RecipesId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("recipes_id");
+
+                    b.Property<string>("ToolsId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("tools_id");
+
+                    b.HasKey("RecipesId", "ToolsId")
+                        .HasName("pk_recipes_to_tools");
+
+                    b.HasIndex("ToolsId")
+                        .HasDatabaseName("ix_recipes_to_tools_tools_id");
+
+                    b.ToTable("recipes_to_tools", (string)null);
+                });
+
             modelBuilder.Entity("RecipeUser", b =>
                 {
                     b.Property<string>("FavoriteRecipesId")
@@ -1857,63 +1917,6 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.ToTable("plan_rules_to_tags", (string)null);
                 });
 
-            modelBuilder.Entity("recipes_to_categories", b =>
-                {
-                    b.Property<string>("category_id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("category_id");
-
-                    b.Property<string>("recipe_id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("recipe_id");
-
-                    b.HasKey("category_id", "recipe_id")
-                        .HasName("pk_recipes_to_categories");
-
-                    b.HasIndex("recipe_id")
-                        .HasDatabaseName("ix_recipes_to_categories_recipe_id");
-
-                    b.ToTable("recipes_to_categories", (string)null);
-                });
-
-            modelBuilder.Entity("recipes_to_tags", b =>
-                {
-                    b.Property<string>("recipe_id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("recipe_id");
-
-                    b.Property<string>("tag_id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("tag_id");
-
-                    b.HasKey("recipe_id", "tag_id")
-                        .HasName("pk_recipes_to_tags");
-
-                    b.HasIndex("tag_id")
-                        .HasDatabaseName("ix_recipes_to_tags_tag_id");
-
-                    b.ToTable("recipes_to_tags", (string)null);
-                });
-
-            modelBuilder.Entity("recipes_to_tools", b =>
-                {
-                    b.Property<string>("recipe_id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("recipe_id");
-
-                    b.Property<string>("tool_id")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("tool_id");
-
-                    b.HasKey("recipe_id", "tool_id")
-                        .HasName("pk_recipes_to_tools");
-
-                    b.HasIndex("tool_id")
-                        .HasDatabaseName("ix_recipes_to_tools_tool_id");
-
-                    b.ToTable("recipes_to_tools", (string)null);
-                });
-
             modelBuilder.Entity("CategoryCookbook", b =>
                 {
                     b.HasOne("Mealie.Domain.Entities.Organizers.Category", null)
@@ -1929,6 +1932,23 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_to_categories_cookbooks_cookbook_id");
+                });
+
+            modelBuilder.Entity("CategoryRecipe", b =>
+                {
+                    b.HasOne("Mealie.Domain.Entities.Organizers.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_categories_categories_categories_id");
+
+                    b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
+                        .WithMany()
+                        .HasForeignKey("RecipesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_categories_recipes_recipes_id");
                 });
 
             modelBuilder.Entity("CookbookTag", b =>
@@ -2664,6 +2684,40 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.Navigation("Household");
                 });
 
+            modelBuilder.Entity("RecipeTag", b =>
+                {
+                    b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
+                        .WithMany()
+                        .HasForeignKey("RecipesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tags_recipes_recipes_id");
+
+                    b.HasOne("Mealie.Domain.Entities.Organizers.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tags_tags_tags_id");
+                });
+
+            modelBuilder.Entity("RecipeTool", b =>
+                {
+                    b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
+                        .WithMany()
+                        .HasForeignKey("RecipesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tools_recipes_recipes_id");
+
+                    b.HasOne("Mealie.Domain.Entities.Organizers.Tool", null)
+                        .WithMany()
+                        .HasForeignKey("ToolsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recipes_to_tools_tools_tools_id");
+                });
+
             modelBuilder.Entity("RecipeUser", b =>
                 {
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
@@ -2730,57 +2784,6 @@ namespace Mealie.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_plan_rules_to_tags_tags_tag_id");
-                });
-
-            modelBuilder.Entity("recipes_to_categories", b =>
-                {
-                    b.HasOne("Mealie.Domain.Entities.Organizers.Category", null)
-                        .WithMany()
-                        .HasForeignKey("category_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_recipes_to_categories_categories_category_id");
-
-                    b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
-                        .WithMany()
-                        .HasForeignKey("recipe_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_recipes_to_categories_recipes_recipe_id");
-                });
-
-            modelBuilder.Entity("recipes_to_tags", b =>
-                {
-                    b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
-                        .WithMany()
-                        .HasForeignKey("recipe_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_recipes_to_tags_recipes_recipe_id");
-
-                    b.HasOne("Mealie.Domain.Entities.Organizers.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("tag_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_recipes_to_tags_tags_tag_id");
-                });
-
-            modelBuilder.Entity("recipes_to_tools", b =>
-                {
-                    b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
-                        .WithMany()
-                        .HasForeignKey("recipe_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_recipes_to_tools_recipes_recipe_id");
-
-                    b.HasOne("Mealie.Domain.Entities.Organizers.Tool", null)
-                        .WithMany()
-                        .HasForeignKey("tool_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_recipes_to_tools_tools_tool_id");
                 });
 
             modelBuilder.Entity("Mealie.Domain.Entities.Core.Group", b =>

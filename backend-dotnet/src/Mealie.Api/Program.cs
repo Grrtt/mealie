@@ -195,6 +195,7 @@ builder.Services.AddScoped<IUnitService, UnitService>();
 
 // Application services — Meal Plans & Shopping
 builder.Services.AddScoped<IMealPlanService, MealPlanService>();
+builder.Services.AddScoped<IMealPlanRuleService, MealPlanRuleService>();
 builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 
 // Phase 7: Background services

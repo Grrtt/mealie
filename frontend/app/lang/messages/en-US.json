@@ -379,6 +379,7 @@
     "add-day-to-list": "Add Day to List",
     "fill-day": "Fill Day",
     "fill-week": "Fill Week",
+    "fill-week-description": "Fills the week with random recipes. If meal plan rules are configured, each rule's entry type and filters are used. Otherwise, falls back to a default set of meals.",
     "fill-week-types": "Meal Types"
   },
   "migration": {

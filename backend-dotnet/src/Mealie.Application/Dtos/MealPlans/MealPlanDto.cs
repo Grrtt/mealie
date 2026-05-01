@@ -70,6 +70,4 @@ public class FillWeekRequest
 {
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
-    // Applied to every day in the range
-    public IList<string> EntryTypes { get; set; } = ["breakfast", "lunch", "side", "dinner", "side"];
 }

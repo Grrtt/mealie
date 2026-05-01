@@ -2,11 +2,109 @@ using Mealie.Application.Dtos.MealPlans;
 using Mealie.Domain.Entities.Planning;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Services.MealPlans;
 
-public class MealPlanService(ApplicationDbContext db) : IMealPlanService
+public class MealPlanService(ApplicationDbContext db, ILogger<MealPlanService> logger) : IMealPlanService
 {
+    private static string DayOfWeekToRuleDay(DayOfWeek dow) => dow switch
+    {
+        DayOfWeek.Monday => "monday",
+        DayOfWeek.Tuesday => "tuesday",
+        DayOfWeek.Wednesday => "wednesday",
+        DayOfWeek.Thursday => "thursday",
+        DayOfWeek.Friday => "friday",
+        DayOfWeek.Saturday => "saturday",
+        DayOfWeek.Sunday => "sunday",
+        _ => "unset",
+    };
+
+    /// <summary>
+    /// Returns a random recipe ID from the group, filtered by applicable meal plan rules for the
+    /// given date and entry type. When no rules with tag/category constraints are configured,
+    /// automatically filters to recipes whose tags or categories match the entry type by slug.
+    /// Falls back to all group recipes only if nothing matches.
+    /// </summary>
+    private async Task<Guid?> GetRandomRecipeIdAsync(Guid groupId, DateOnly date, string entryType, CancellationToken ct)
+    {
+        var dayName = DayOfWeekToRuleDay(date.DayOfWeek);
+
+        // Load rules that match (day OR unset) AND (entryType OR unset)
+        var rules = await db.MealPlanRules.IgnoreQueryFilters()
+            .Include(r => r.Tags)
+            .Include(r => r.Categories)
+            .Where(r => r.GroupId == groupId &&
+                        (r.Day == dayName || r.Day == "unset") &&
+                        (r.EntryType == entryType || r.EntryType == "unset"))
+            .ToListAsync(ct);
+
+        var tagSets = rules.Where(r => r.Tags.Count > 0).Select(r => r.Tags.Select(t => t.Id).ToHashSet()).ToList();
+        var catSets = rules.Where(r => r.Categories.Count > 0).Select(r => r.Categories.Select(c => c.Id).ToHashSet()).ToList();
+
+        if (tagSets.Count > 0 || catSets.Count > 0)
+        {
+            var candidates = await db.Recipes.IgnoreQueryFilters()
+                .Include(r => r.Tags)
+                .Include(r => r.Categories)
+                .Where(r => r.GroupId == groupId)
+                .ToListAsync(ct);
+
+            var filtered = candidates.Where(r =>
+                tagSets.All(set => r.Tags.Any(t => set.Contains(t.Id))) &&
+                catSets.All(set => r.Categories.Any(c => set.Contains(c.Id)))
+            ).ToList();
+
+            logger.LogDebug("MealPlan rules filter: entryType={EntryType} rules={Rules} candidates={Candidates} filtered={Filtered}",
+                entryType, rules.Count, candidates.Count, filtered.Count);
+
+            if (filtered.Count > 0)
+                return filtered[Random.Shared.Next(filtered.Count)].Id;
+        }
+
+        // Auto-filter: query tag and category IDs with explicit IgnoreQueryFilters so the
+        // global tenant filter on Tag/Category doesn't interfere, then filter recipes by those IDs.
+        var entrySlug = entryType.ToLowerInvariant();
+
+        var matchingTagIds = await db.Tags.IgnoreQueryFilters()
+            .Where(t => t.GroupId == groupId && t.Slug == entrySlug)
+            .Select(t => t.Id)
+            .ToListAsync(ct);
+
+        var matchingCatIds = await db.Categories.IgnoreQueryFilters()
+            .Where(c => c.GroupId == groupId && c.Slug == entrySlug)
+            .Select(c => c.Id)
+            .ToListAsync(ct);
+
+        logger.LogDebug("MealPlan auto-filter: entryType={EntryType} slug={Slug} matchingTags={Tags} matchingCats={Cats}",
+            entryType, entrySlug, matchingTagIds.Count, matchingCatIds.Count);
+
+        if (matchingTagIds.Count > 0 || matchingCatIds.Count > 0)
+        {
+            var autoFiltered = await db.Recipes.IgnoreQueryFilters()
+                .Where(r => r.GroupId == groupId &&
+                            (r.Tags.Any(t => matchingTagIds.Contains(t.Id)) ||
+                             r.Categories.Any(c => matchingCatIds.Contains(c.Id))))
+                .Select(r => r.Id)
+                .ToListAsync(ct);
+
+            logger.LogDebug("MealPlan auto-filter results: {Count} recipes match slug '{Slug}'", autoFiltered.Count, entrySlug);
+
+            if (autoFiltered.Count > 0)
+                return autoFiltered[Random.Shared.Next(autoFiltered.Count)];
+        }
+
+        // Total fallback — no tag/category matches found for this entry type
+        logger.LogDebug("MealPlan fallback: no recipes matched slug '{Slug}', picking from all group recipes", entrySlug);
+
+        var allIds = await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.GroupId == groupId)
+            .Select(r => r.Id)
+            .ToListAsync(ct);
+
+        return allIds.Count == 0 ? null : allIds[Random.Shared.Next(allIds.Count)];
+    }
+
     private static IQueryable<MealPlan> WithRecipe(IQueryable<MealPlan> q) =>
         q.Include(m => m.Recipe).ThenInclude(r => r!.Tags)
          .Include(m => m.Recipe).ThenInclude(r => r!.Categories);
@@ -65,8 +163,23 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
 
     public async Task<MealPlanResponse?> CreateRandomAsync(Guid groupId, Guid householdId, Guid userId, CreateRandomMealPlanRequest request, CancellationToken ct = default)
     {
-        var plan = await CreateRandomPlanAsync(groupId, householdId, userId, request.Date, request.EntryType, ct);
-        if (plan is null) return null;
+        var recipeId = await GetRandomRecipeIdAsync(groupId, request.Date, request.EntryType, ct);
+        if (recipeId is null) return null;
+
+        var plan = new MealPlan
+        {
+            Id = Guid.NewGuid(),
+            Title = string.Empty,
+            EntryType = request.EntryType,
+            Date = request.Date,
+            RecipeId = recipeId,
+            GroupId = groupId,
+            HouseholdId = householdId,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow,
+        };
+        db.MealPlans.Add(plan);
         await db.SaveChangesAsync(ct);
         await LoadRecipeNav(plan, ct);
         return MapToResponse(plan);
@@ -74,13 +187,25 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
 
     public async Task<IList<MealPlanResponse>> FillDayAsync(Guid groupId, Guid householdId, Guid userId, FillDayRequest request, CancellationToken ct = default)
     {
-        var recipeIds = await GetGroupRecipeIdsAsync(groupId, ct);
-        if (recipeIds.Count == 0) return [];
-
         var plans = new List<MealPlan>();
         foreach (var entryType in request.EntryTypes)
         {
-            var plan = BuildRandomPlan(groupId, householdId, userId, request.Date, entryType, recipeIds);
+            var recipeId = await GetRandomRecipeIdAsync(groupId, request.Date, entryType, ct);
+            if (recipeId is null) continue;
+
+            var plan = new MealPlan
+            {
+                Id = Guid.NewGuid(),
+                Title = string.Empty,
+                EntryType = entryType,
+                Date = request.Date,
+                RecipeId = recipeId,
+                GroupId = groupId,
+                HouseholdId = householdId,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdateAt = DateTime.UtcNow,
+            };
             db.MealPlans.Add(plan);
             plans.Add(plan);
         }
@@ -90,17 +215,71 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
         return plans.Select(MapToResponse).ToList();
     }
 
+    private static readonly IList<string> DefaultFillEntryTypes = ["breakfast", "lunch", "side", "dinner", "side"];
+
     public async Task<IList<MealPlanResponse>> FillWeekAsync(Guid groupId, Guid householdId, Guid userId, FillWeekRequest request, CancellationToken ct = default)
     {
-        var recipeIds = await GetGroupRecipeIdsAsync(groupId, ct);
-        if (recipeIds.Count == 0) return [];
+        // Load all rules for this group that have an explicit entry type — these drive what gets created.
+        var allRules = await db.MealPlanRules.IgnoreQueryFilters()
+            .Include(r => r.Tags)
+            .Include(r => r.Categories)
+            .Where(r => r.GroupId == groupId && r.EntryType != "unset")
+            .ToListAsync(ct);
+
+        var hasRules = allRules.Count > 0;
+        logger.LogDebug("FillWeek: {Rules} rules found for group {Group}", allRules.Count, groupId);
 
         var plans = new List<MealPlan>();
         for (var date = request.StartDate; date <= request.EndDate; date = date.AddDays(1))
         {
-            foreach (var entryType in request.EntryTypes)
+            var dayName = DayOfWeekToRuleDay(date.DayOfWeek);
+
+            IEnumerable<(string entryType, MealPlanRule? rule)> slots;
+
+            if (hasRules)
             {
-                var plan = BuildRandomPlan(groupId, householdId, userId, date, entryType, recipeIds);
+                // Use rules for this specific day (or "unset" rules that apply to every day)
+                var dayRules = allRules
+                    .Where(r => r.Day == dayName || r.Day == "unset")
+                    .ToList();
+
+                slots = dayRules.Select(r => (r.EntryType, (MealPlanRule?)r));
+            }
+            else
+            {
+                // No rules configured — fall back to the standard set of entry types
+                slots = DefaultFillEntryTypes.Select(t => (t, (MealPlanRule?)null));
+            }
+
+            foreach (var (entryType, rule) in slots)
+            {
+                Guid? recipeId;
+
+                if (rule is { Tags.Count: > 0 } or { Categories.Count: > 0 })
+                {
+                    // Rule has explicit tag/category constraints — apply them directly
+                    recipeId = await GetRandomRecipeIdForRuleAsync(groupId, rule, ct);
+                }
+                else
+                {
+                    recipeId = await GetRandomRecipeIdAsync(groupId, date, entryType, ct);
+                }
+
+                if (recipeId is null) continue;
+
+                var plan = new MealPlan
+                {
+                    Id = Guid.NewGuid(),
+                    Title = string.Empty,
+                    EntryType = entryType,
+                    Date = date,
+                    RecipeId = recipeId,
+                    GroupId = groupId,
+                    HouseholdId = householdId,
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdateAt = DateTime.UtcNow,
+                };
                 db.MealPlans.Add(plan);
                 plans.Add(plan);
             }
@@ -111,34 +290,28 @@ public class MealPlanService(ApplicationDbContext db) : IMealPlanService
         return plans.Select(MapToResponse).ToList();
     }
 
-    private async Task<List<Guid>> GetGroupRecipeIdsAsync(Guid groupId, CancellationToken ct) =>
-        await db.Recipes.IgnoreQueryFilters()
+    /// <summary>Picks a random recipe that satisfies all tag and category constraints of the given rule.</summary>
+    private async Task<Guid?> GetRandomRecipeIdForRuleAsync(Guid groupId, MealPlanRule rule, CancellationToken ct)
+    {
+        var tagIds = rule.Tags.Select(t => t.Id).ToHashSet();
+        var catIds = rule.Categories.Select(c => c.Id).ToHashSet();
+
+        var candidates = await db.Recipes.IgnoreQueryFilters()
+            .Include(r => r.Tags)
+            .Include(r => r.Categories)
             .Where(r => r.GroupId == groupId)
-            .Select(r => r.Id)
             .ToListAsync(ct);
 
-    private static MealPlan BuildRandomPlan(Guid groupId, Guid householdId, Guid userId, DateOnly date, string entryType, List<Guid> recipeIds) => new()
-    {
-        Id = Guid.NewGuid(),
-        Title = string.Empty,
-        EntryType = entryType,
-        Date = date,
-        RecipeId = recipeIds[Random.Shared.Next(recipeIds.Count)],
-        GroupId = groupId,
-        HouseholdId = householdId,
-        UserId = userId,
-        CreatedAt = DateTime.UtcNow,
-        UpdateAt = DateTime.UtcNow,
-    };
+        var filtered = candidates.Where(r =>
+            (tagIds.Count == 0 || r.Tags.Any(t => tagIds.Contains(t.Id))) &&
+            (catIds.Count == 0 || r.Categories.Any(c => catIds.Contains(c.Id)))
+        ).ToList();
 
-    private async Task<MealPlan?> CreateRandomPlanAsync(Guid groupId, Guid householdId, Guid userId, DateOnly date, string entryType, CancellationToken ct)
-    {
-        var recipeIds = await GetGroupRecipeIdsAsync(groupId, ct);
-        if (recipeIds.Count == 0) return null;
-        var plan = BuildRandomPlan(groupId, householdId, userId, date, entryType, recipeIds);
-        db.MealPlans.Add(plan);
-        return plan;
+        logger.LogDebug("Rule {Rule}: {Filtered}/{Total} recipes match constraints", rule.Id, filtered.Count, candidates.Count);
+
+        return filtered.Count == 0 ? null : filtered[Random.Shared.Next(filtered.Count)].Id;
     }
+
 
     public async Task<bool> DeleteAsync(Guid householdId, Guid id, CancellationToken ct = default)
     {

@@ -49,6 +49,7 @@ public class ApplicationDbContext : DbContext
 
     // Planning
     public DbSet<MealPlan> MealPlans => Set<MealPlan>();
+    public DbSet<MealPlanRule> MealPlanRules => Set<MealPlanRule>();
     public DbSet<ShoppingList> ShoppingLists => Set<ShoppingList>();
     public DbSet<ShoppingListItem> ShoppingListItems => Set<ShoppingListItem>();
     public DbSet<ShoppingListItemRecipeReference> ShoppingListItemRecipeReferences => Set<ShoppingListItemRecipeReference>();

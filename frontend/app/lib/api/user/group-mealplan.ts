@@ -23,7 +23,7 @@ export class MealPlanAPI extends BaseCRUDAPI<CreatePlanEntry, ReadPlanEntry, Upd
     return await this.requests.post<ReadPlanEntry[]>(routes.fillDay, payload);
   }
 
-  async fillWeek(payload: { startDate: string; endDate: string; entryTypes: string[] }) {
+  async fillWeek(payload: { startDate: string; endDate: string }) {
     return await this.requests.post<ReadPlanEntry[]>(routes.fillWeek, payload);
   }
 }

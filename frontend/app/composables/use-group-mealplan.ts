@@ -119,12 +119,11 @@ export const useMealplans = function (range: Ref<DateRange>) {
       loading.value = false;
     },
 
-    async fillWeek(startDate: Date, endDate: Date, entryTypes: string[]) {
+    async fillWeek(startDate: Date, endDate: Date) {
       loading.value = true;
       const { data } = await api.mealplans.fillWeek({
         startDate: format(startDate, "yyyy-MM-dd"),
         endDate: format(endDate, "yyyy-MM-dd"),
-        entryTypes,
       });
       if (data) {
         await this.refreshAll();

@@ -1,3 +1,4 @@
+using Mealie.Domain.Entities.Organizers;
 using Mealie.Domain.Entities.Recipes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -39,16 +40,28 @@ public class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
             s.Property(x => x.Locked).HasColumnName("settings_locked");
         });
 
-        // Many-to-many with junction tables (table names from Python source)
+        // Many-to-many with junction tables — column names must match the Python SQLAlchemy source
         builder.HasMany(r => r.Tags)
                .WithMany(t => t.Recipes)
-               .UsingEntity(j => j.ToTable("recipes_to_tags"));
+               .UsingEntity<Dictionary<string, object>>(
+                   "recipes_to_tags",
+                   j => j.HasOne<Tag>().WithMany().HasForeignKey("tag_id"),
+                   j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                   j => j.HasKey("recipe_id", "tag_id"));
         builder.HasMany(r => r.Categories)
                .WithMany(c => c.Recipes)
-               .UsingEntity(j => j.ToTable("recipes_to_categories"));
+               .UsingEntity<Dictionary<string, object>>(
+                   "recipes_to_categories",
+                   j => j.HasOne<Category>().WithMany().HasForeignKey("category_id"),
+                   j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                   j => j.HasKey("category_id", "recipe_id"));
         builder.HasMany(r => r.Tools)
                .WithMany(t => t.Recipes)
-               .UsingEntity(j => j.ToTable("recipes_to_tools"));
+               .UsingEntity<Dictionary<string, object>>(
+                   "recipes_to_tools",
+                   j => j.HasOne<Tool>().WithMany().HasForeignKey("tool_id"),
+                   j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                   j => j.HasKey("recipe_id", "tool_id"));
 
         builder.HasOne(r => r.Group)
                .WithMany(g => g.Recipes)
