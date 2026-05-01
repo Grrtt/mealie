@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Organizers;
+using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Organizers;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
@@ -13,9 +14,15 @@ public class TagsController(IOrganizerService organizerService, ITenantContext t
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<TagResponse>>> GetTags(
-        [FromQuery] PaginationParams pagination, CancellationToken ct)
+        [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
     {
-        return Ok(await organizerService.GetTagsAsync(CurrentGroupId, pagination, ct));
+        return Ok(await organizerService.GetTagsAsync(CurrentGroupId, pagination, search, ct));
+    }
+
+    [HttpGet("empty")]
+    public async Task<ActionResult<IList<TagResponse>>> GetEmptyTags(CancellationToken ct)
+    {
+        return Ok(await organizerService.GetEmptyTagsAsync(CurrentGroupId, ct));
     }
 
     [HttpGet("{slug}")]
@@ -40,6 +47,12 @@ public class TagsController(IOrganizerService organizerService, ITenantContext t
         }
 
         return Ok(tag);
+    }
+
+    [HttpGet("{id:guid}/recipes")]
+    public async Task<ActionResult<IList<RecipeSummaryResponse>>> GetTagRecipes(Guid id, CancellationToken ct)
+    {
+        return Ok(await organizerService.GetRecipesByTagAsync(CurrentGroupId, id, ct));
     }
 
     [HttpPost]

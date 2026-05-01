@@ -1,5 +1,6 @@
 using Mealie.Application.Common;
 using Mealie.Application.Dtos.Organizers;
+using Mealie.Application.Dtos.Recipes;
 using Mealie.Domain.Entities.Organizers;
 using Mealie.Infrastructure.Data;
 using Mealie.Shared.Pagination;
@@ -12,9 +13,14 @@ public class OrganizerService(ApplicationDbContext db) : IOrganizerService
     // ── Tags ────────────────────────────────────────────────────────────────
 
     public async Task<PaginatedResponse<TagResponse>> GetTagsAsync(Guid groupId, PaginationParams pagination,
-        CancellationToken ct = default)
+        string? search = null, CancellationToken ct = default)
     {
         var query = db.Tags.IgnoreQueryFilters().Where(t => t.GroupId == groupId);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(t => t.Name.Contains(search));
+        }
+
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(t => t.Name)
             .Skip(pagination.Skip).Take(pagination.PerPage)
@@ -100,12 +106,46 @@ public class OrganizerService(ApplicationDbContext db) : IOrganizerService
         return true;
     }
 
-    // ── Categories ──────────────────────────────────────────────────────────
+    public async Task<IList<TagResponse>> GetEmptyTagsAsync(Guid groupId, CancellationToken ct = default)
+    {
+        return await db.Tags.IgnoreQueryFilters()
+            .Where(t => t.GroupId == groupId && !t.Recipes.Any())
+            .OrderBy(t => t.Name)
+            .Select(t => new TagResponse
+            {
+                Id = t.Id, Name = t.Name, Slug = t.Slug, GroupId = t.GroupId, CreatedAt = t.CreatedAt,
+                UpdateAt = t.UpdateAt
+            })
+            .ToListAsync(ct);
+    }
 
-    public async Task<PaginatedResponse<CategoryResponse>> GetCategoriesAsync(Guid groupId, PaginationParams pagination,
+    public async Task<IList<RecipeSummaryResponse>> GetRecipesByTagAsync(Guid groupId, Guid tagId,
         CancellationToken ct = default)
     {
+        var tag = await db.Tags.IgnoreQueryFilters()
+            .Include(t => t.Recipes).ThenInclude(r => r.Tags)
+            .Include(t => t.Recipes).ThenInclude(r => r.Categories)
+            .FirstOrDefaultAsync(t => t.GroupId == groupId && t.Id == tagId, ct);
+
+        if (tag is null)
+        {
+            return [];
+        }
+
+        return tag.Recipes.Select(MapRecipeSummary).ToList();
+    }
+
+    // ── Categories ──────────────────────────────────────────────────────────
+
+    public async Task<PaginatedResponse<CategoryResponse>> GetCategoriesAsync(Guid groupId,
+        PaginationParams pagination, string? search = null, CancellationToken ct = default)
+    {
         var query = db.Categories.IgnoreQueryFilters().Where(c => c.GroupId == groupId);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(c => c.Name.Contains(search));
+        }
+
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(c => c.Name)
             .Skip(pagination.Skip).Take(pagination.PerPage)
@@ -195,12 +235,46 @@ public class OrganizerService(ApplicationDbContext db) : IOrganizerService
         return true;
     }
 
+    public async Task<IList<CategoryResponse>> GetEmptyCategoriesAsync(Guid groupId, CancellationToken ct = default)
+    {
+        return await db.Categories.IgnoreQueryFilters()
+            .Where(c => c.GroupId == groupId && !c.Recipes.Any())
+            .OrderBy(c => c.Name)
+            .Select(c => new CategoryResponse
+            {
+                Id = c.Id, Name = c.Name, Slug = c.Slug, GroupId = c.GroupId, CreatedAt = c.CreatedAt,
+                UpdateAt = c.UpdateAt
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<IList<RecipeSummaryResponse>> GetRecipesByCategoryAsync(Guid groupId, Guid categoryId,
+        CancellationToken ct = default)
+    {
+        var category = await db.Categories.IgnoreQueryFilters()
+            .Include(c => c.Recipes).ThenInclude(r => r.Tags)
+            .Include(c => c.Recipes).ThenInclude(r => r.Categories)
+            .FirstOrDefaultAsync(c => c.GroupId == groupId && c.Id == categoryId, ct);
+
+        if (category is null)
+        {
+            return [];
+        }
+
+        return category.Recipes.Select(MapRecipeSummary).ToList();
+    }
+
     // ── Tools ────────────────────────────────────────────────────────────────
 
     public async Task<PaginatedResponse<ToolResponse>> GetToolsAsync(Guid groupId, PaginationParams pagination,
-        CancellationToken ct = default)
+        string? search = null, CancellationToken ct = default)
     {
         var query = db.Tools.IgnoreQueryFilters().Where(t => t.GroupId == groupId);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(t => t.Name.Contains(search));
+        }
+
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(t => t.Name)
             .Skip(pagination.Skip).Take(pagination.PerPage)
@@ -292,6 +366,45 @@ public class OrganizerService(ApplicationDbContext db) : IOrganizerService
         await db.SaveChangesAsync(ct);
         return true;
     }
+
+    public async Task<IList<RecipeSummaryResponse>> GetRecipesByToolAsync(Guid groupId, Guid toolId,
+        CancellationToken ct = default)
+    {
+        var tool = await db.Tools.IgnoreQueryFilters()
+            .Include(t => t.Recipes).ThenInclude(r => r.Tags)
+            .Include(t => t.Recipes).ThenInclude(r => r.Categories)
+            .FirstOrDefaultAsync(t => t.GroupId == groupId && t.Id == toolId, ct);
+
+        if (tool is null)
+        {
+            return [];
+        }
+
+        return tool.Recipes.Select(MapRecipeSummary).ToList();
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static RecipeSummaryResponse MapRecipeSummary(Domain.Entities.Recipes.Recipe r) =>
+        new()
+        {
+            Id = r.Id,
+            Name = r.Name,
+            Slug = r.Slug,
+            Description = r.Description,
+            Image = r.Image,
+            OrgUrl = r.OrgUrl,
+            Rating = r.Rating,
+            GroupId = r.GroupId,
+            HouseholdId = r.HouseholdId,
+            CreatedAt = r.CreatedAt,
+            UpdateAt = r.UpdateAt,
+            Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug })
+                .ToList(),
+            Categories = r.Categories
+                .Select(c => new OrganizerSimpleResponse { Id = c.Id, Name = c.Name, Slug = c.Slug })
+                .ToList()
+        };
 
     private async Task<string> EnsureUniqueTagSlugAsync(string slug, Guid groupId, CancellationToken ct)
     {

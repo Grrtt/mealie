@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Organizers;
+using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Organizers;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
@@ -13,9 +14,9 @@ public class ToolsController(IOrganizerService organizerService, ITenantContext 
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<ToolResponse>>> GetTools(
-        [FromQuery] PaginationParams pagination, CancellationToken ct)
+        [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
     {
-        return Ok(await organizerService.GetToolsAsync(CurrentGroupId, pagination, ct));
+        return Ok(await organizerService.GetToolsAsync(CurrentGroupId, pagination, search, ct));
     }
 
     [HttpGet("{slug}")]
@@ -40,6 +41,12 @@ public class ToolsController(IOrganizerService organizerService, ITenantContext 
         }
 
         return Ok(tool);
+    }
+
+    [HttpGet("{id:guid}/recipes")]
+    public async Task<ActionResult<IList<RecipeSummaryResponse>>> GetToolRecipes(Guid id, CancellationToken ct)
+    {
+        return Ok(await organizerService.GetRecipesByToolAsync(CurrentGroupId, id, ct));
     }
 
     [HttpPost]

@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Organizers;
+using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Organizers;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
@@ -13,9 +14,15 @@ public class CategoriesController(IOrganizerService organizerService, ITenantCon
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<CategoryResponse>>> GetCategories(
-        [FromQuery] PaginationParams pagination, CancellationToken ct)
+        [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
     {
-        return Ok(await organizerService.GetCategoriesAsync(CurrentGroupId, pagination, ct));
+        return Ok(await organizerService.GetCategoriesAsync(CurrentGroupId, pagination, search, ct));
+    }
+
+    [HttpGet("empty")]
+    public async Task<ActionResult<IList<CategoryResponse>>> GetEmptyCategories(CancellationToken ct)
+    {
+        return Ok(await organizerService.GetEmptyCategoriesAsync(CurrentGroupId, ct));
     }
 
     [HttpGet("{slug}")]
@@ -40,6 +47,12 @@ public class CategoriesController(IOrganizerService organizerService, ITenantCon
         }
 
         return Ok(category);
+    }
+
+    [HttpGet("{id:guid}/recipes")]
+    public async Task<ActionResult<IList<RecipeSummaryResponse>>> GetCategoryRecipes(Guid id, CancellationToken ct)
+    {
+        return Ok(await organizerService.GetRecipesByCategoryAsync(CurrentGroupId, id, ct));
     }
 
     [HttpPost]
