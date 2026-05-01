@@ -10,24 +10,29 @@ public class ParserController(IIngredientParserService parserService, ITenantCon
     : MealieControllerBase(tenantContext)
 {
     [HttpPost("ingredient")]
-    public async Task<ActionResult<ParsedIngredientDto>> ParseIngredient([FromBody] ParseIngredientRequest request)
+    public async Task<ActionResult<ParsedIngredientDto>> ParseIngredient(
+        [FromBody] ParseIngredientRequest request,
+        [FromQuery] string parser = "nlp")
     {
-        var result = await parserService.ParseAsync(CurrentGroupId, request.Ingredient);
+        var result = await parserService.ParseAsync(CurrentGroupId, request.Ingredient, parser);
         return Ok(result);
     }
 
     [HttpGet("ingredient")]
-    public async Task<ActionResult<ParsedIngredientDto>> ParseIngredientGet([FromQuery] string ingredient)
+    public async Task<ActionResult<ParsedIngredientDto>> ParseIngredientGet(
+        [FromQuery] string ingredient,
+        [FromQuery] string parser = "nlp")
     {
-        var result = await parserService.ParseAsync(CurrentGroupId, ingredient);
+        var result = await parserService.ParseAsync(CurrentGroupId, ingredient, parser);
         return Ok(result);
     }
 
     [HttpPost("ingredients")]
     public async Task<ActionResult<IList<ParsedIngredientDto>>> ParseIngredients(
-        [FromBody] ParseIngredientsRequest request)
+        [FromBody] ParseIngredientsRequest request,
+        [FromQuery] string parser = "nlp")
     {
-        var results = await parserService.ParseBatchAsync(CurrentGroupId, request.Ingredients);
+        var results = await parserService.ParseBatchAsync(CurrentGroupId, request.Ingredients, parser);
         return Ok(results);
     }
 }

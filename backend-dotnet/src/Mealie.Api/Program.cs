@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.Extensions.Options;
 using Mealie.Api.Caching;
 using Mealie.Api.Commands;
 using Mealie.Api.Filters;
@@ -232,6 +233,17 @@ builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 builder.Services.AddHttpClient<IWebhookDeliveryService, WebhookDeliveryService>(c =>
     c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<AppriseNotificationHandler>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient("OpenAi", (sp, c) =>
+{
+    var key = sp.GetRequiredService<IOptions<AppSettings>>().Value.OpenAiApiKey;
+    c.BaseAddress = new Uri("https://api.openai.com/v1/");
+    c.Timeout = TimeSpan.FromSeconds(30);
+    if (!string.IsNullOrEmpty(key))
+    {
+        c.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
+    }
+});
 builder.Services.AddSingleton<IEventBus, EventBus>();
 builder.Services.AddScoped<IWebhookService, WebhookService>();
 builder.Services.AddScoped<IEventNotifierService, EventNotifierService>();
