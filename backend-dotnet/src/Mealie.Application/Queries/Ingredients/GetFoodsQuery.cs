@@ -26,17 +26,6 @@ public record GetFoodsQuery(Guid GroupId, PaginationParams Pagination, string? S
     }
 }
 
-public record GetFoodByIdQuery(Guid GroupId, Guid Id) : IQuery<FoodResponse?>
-{
-    public async Task<FoodResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var f = await services.Db.Foods.IgnoreQueryFilters()
-            .Include(f => f.Aliases).Include(f => f.Label)
-            .FirstOrDefaultAsync(f => f.GroupId == GroupId && f.Id == Id, ct);
-        return f is null ? null : FoodMappings.MapToResponse(f);
-    }
-}
-
 file static class FoodMappings
 {
     public static FoodResponse MapToResponse(IngredientFood f) =>

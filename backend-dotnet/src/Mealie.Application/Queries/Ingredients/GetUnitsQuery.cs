@@ -26,17 +26,6 @@ public record GetUnitsQuery(Guid GroupId, PaginationParams Pagination, string? S
     }
 }
 
-public record GetUnitByIdQuery(Guid GroupId, Guid Id) : IQuery<UnitResponse?>
-{
-    public async Task<UnitResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var u = await services.Db.Units.IgnoreQueryFilters()
-            .Include(u => u.Aliases)
-            .FirstOrDefaultAsync(u => u.GroupId == GroupId && u.Id == Id, ct);
-        return u is null ? null : UnitMappings.MapToResponse(u);
-    }
-}
-
 file static class UnitMappings
 {
     public static UnitResponse MapToResponse(IngredientUnit u) =>
