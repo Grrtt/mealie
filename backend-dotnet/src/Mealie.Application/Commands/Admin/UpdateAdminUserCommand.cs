@@ -1,28 +1,9 @@
 using Mealie.Application.Dtos.Admin;
+using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Core;
 using Microsoft.EntityFrameworkCore;
 
-using Mealie.Application.Queries;
 namespace Mealie.Application.Commands.Admin;
-
-public record CreateAdminUserCommand(CreateAdminUserRequest Request) : IQuery<AdminUserResponse>
-{
-    public async Task<AdminUserResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var user = new User
-        {
-            Id = Guid.NewGuid(), Username = Request.Username, Email = Request.Email,
-            FullName = Request.FullName, Password = BCrypt.Net.BCrypt.HashPassword(Request.Password),
-            AuthMethod = AuthMethod.Mealie, Admin = Request.Admin,
-            GroupId = Request.GroupId, HouseholdId = Request.HouseholdId,
-            CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-        };
-        db.Users.Add(user);
-        await db.SaveChangesAsync(ct);
-        return AdminUserMappings.MapToResponse(user);
-    }
-}
 
 public record UpdateAdminUserCommand(Guid UserId, UpdateAdminUserRequest Request) : IQuery<AdminUserResponse?>
 {
@@ -63,36 +44,9 @@ public record UpdateAdminUserCommand(Guid UserId, UpdateAdminUserRequest Request
     }
 }
 
-public record DeleteAdminUserCommand(Guid UserId) : IQuery<bool>
-{
-    public async Task<bool> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == UserId, ct);
-        if (user is null) return false;
-        db.Users.Remove(user);
-        await db.SaveChangesAsync(ct);
-        return true;
-    }
-}
-
-public record UnlockUserCommand(Guid UserId) : IQuery<bool>
-{
-    public async Task<bool> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == UserId, ct);
-        if (user is null) return false;
-        user.LockedAt = null;
-        user.LoginAttempts = 0;
-        await db.SaveChangesAsync(ct);
-        return true;
-    }
-}
-
 file static class AdminUserMappings
 {
-    public static AdminUserResponse MapToResponse(User u) =>
+    public static Mealie.Application.Dtos.Admin.AdminUserResponse MapToResponse(Mealie.Domain.Entities.Core.User u) =>
         new()
         {
             Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email,
