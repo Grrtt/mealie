@@ -6,7 +6,7 @@ namespace Mealie.Application.Services.Ingredients;
 public interface IUnitService
 {
     Task<PaginatedResponse<UnitResponse>> GetUnitsAsync(Guid groupId, PaginationParams pagination,
-        CancellationToken ct = default);
+        string? search = null, CancellationToken ct = default);
 
     Task<UnitResponse?> GetByIdAsync(Guid groupId, Guid id, CancellationToken ct = default);
     Task<UnitResponse> CreateAsync(Guid groupId, CreateUnitRequest request, CancellationToken ct = default);

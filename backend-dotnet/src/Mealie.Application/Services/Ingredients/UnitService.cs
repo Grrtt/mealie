@@ -9,30 +9,36 @@ namespace Mealie.Application.Services.Ingredients;
 public class UnitService(ApplicationDbContext db) : IUnitService
 {
     public async Task<PaginatedResponse<UnitResponse>> GetUnitsAsync(Guid groupId, PaginationParams pagination,
-        CancellationToken ct = default)
+        string? search = null, CancellationToken ct = default)
     {
-        var query = db.Units.IgnoreQueryFilters().Where(u => u.GroupId == groupId);
+        var query = db.Units.IgnoreQueryFilters()
+            .Include(u => u.Aliases)
+            .Where(u => u.GroupId == groupId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(u => u.Name.Contains(search));
+        }
+
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(u => u.Name)
             .Skip(pagination.Skip).Take(pagination.PerPage)
-            .Select(u => MapToResponse(u))
             .ToListAsync(ct);
+
         return new PaginatedResponse<UnitResponse>
         {
             Page = pagination.Page, PerPage = pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / pagination.PerPage), Items = items
+            TotalPages = (int)Math.Ceiling((double)total / pagination.PerPage),
+            Items = items.Select(MapToResponse).ToList()
         };
     }
 
     public async Task<UnitResponse?> GetByIdAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
-        var u = await db.Units.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
-        if (u is null)
-        {
-            return null;
-        }
-
-        return MapToResponse(u);
+        var u = await db.Units.IgnoreQueryFilters()
+            .Include(u => u.Aliases)
+            .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
+        return u is null ? null : MapToResponse(u);
     }
 
     public async Task<UnitResponse> CreateAsync(Guid groupId, CreateUnitRequest request, CancellationToken ct = default)
@@ -45,6 +51,12 @@ public class UnitService(ApplicationDbContext db) : IUnitService
             UseAbbreviation = request.UseAbbreviation, Fraction = request.Fraction,
             GroupId = groupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
         };
+
+        foreach (var alias in request.Aliases)
+        {
+            unit.Aliases.Add(new IngredientUnitAlias { Id = Guid.NewGuid(), Name = alias, UnitId = unit.Id });
+        }
+
         db.Units.Add(unit);
         await db.SaveChangesAsync(ct);
         return MapToResponse(unit);
@@ -53,45 +65,26 @@ public class UnitService(ApplicationDbContext db) : IUnitService
     public async Task<UnitResponse?> UpdateAsync(Guid groupId, Guid id, UpdateUnitRequest request,
         CancellationToken ct = default)
     {
-        var unit = await db.Units.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
-        if (unit is null)
-        {
-            return null;
-        }
+        var unit = await db.Units.IgnoreQueryFilters()
+            .Include(u => u.Aliases)
+            .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
+        if (unit is null) return null;
 
-        if (request.Name is not null)
-        {
-            unit.Name = request.Name;
-        }
+        if (request.Name is not null) unit.Name = request.Name;
+        if (request.Description is not null) unit.Description = request.Description;
+        if (request.Abbreviation is not null) unit.Abbreviation = request.Abbreviation;
+        if (request.PluralName is not null) unit.PluralName = request.PluralName;
+        if (request.PluralAbbreviation is not null) unit.PluralAbbreviation = request.PluralAbbreviation;
+        if (request.UseAbbreviation.HasValue) unit.UseAbbreviation = request.UseAbbreviation.Value;
+        if (request.Fraction.HasValue) unit.Fraction = request.Fraction.Value;
 
-        if (request.Description is not null)
+        if (request.Aliases is not null)
         {
-            unit.Description = request.Description;
-        }
-
-        if (request.Abbreviation is not null)
-        {
-            unit.Abbreviation = request.Abbreviation;
-        }
-
-        if (request.PluralName is not null)
-        {
-            unit.PluralName = request.PluralName;
-        }
-
-        if (request.PluralAbbreviation is not null)
-        {
-            unit.PluralAbbreviation = request.PluralAbbreviation;
-        }
-
-        if (request.UseAbbreviation.HasValue)
-        {
-            unit.UseAbbreviation = request.UseAbbreviation.Value;
-        }
-
-        if (request.Fraction.HasValue)
-        {
-            unit.Fraction = request.Fraction.Value;
+            unit.Aliases.Clear();
+            foreach (var alias in request.Aliases)
+            {
+                unit.Aliases.Add(new IngredientUnitAlias { Id = Guid.NewGuid(), Name = alias, UnitId = unit.Id });
+            }
         }
 
         unit.UpdateAt = DateTime.UtcNow;
@@ -102,10 +95,7 @@ public class UnitService(ApplicationDbContext db) : IUnitService
     public async Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
         var unit = await db.Units.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
-        if (unit is null)
-        {
-            return false;
-        }
+        if (unit is null) return false;
 
         db.Units.Remove(unit);
         await db.SaveChangesAsync(ct);
@@ -118,19 +108,11 @@ public class UnitService(ApplicationDbContext db) : IUnitService
             .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == fromUnitId, ct);
         var toUnit = await db.Units.IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == toUnitId, ct);
-        if (fromUnit is null || toUnit is null)
-        {
-            return false;
-        }
+        if (fromUnit is null || toUnit is null) return false;
 
-        var ingredients = await db.RecipeIngredients
+        await db.RecipeIngredients
             .Where(i => i.UnitId == fromUnitId)
-            .ToListAsync(ct);
-
-        foreach (var ingredient in ingredients)
-        {
-            ingredient.UnitId = toUnitId;
-        }
+            .ExecuteUpdateAsync(s => s.SetProperty(i => i.UnitId, toUnitId), ct);
 
         db.Units.Remove(fromUnit);
         await db.SaveChangesAsync(ct);
@@ -144,7 +126,8 @@ public class UnitService(ApplicationDbContext db) : IUnitService
             Id = u.Id, Name = u.Name, Description = u.Description, Abbreviation = u.Abbreviation,
             PluralName = u.PluralName, PluralAbbreviation = u.PluralAbbreviation,
             UseAbbreviation = u.UseAbbreviation, Fraction = u.Fraction,
-            GroupId = u.GroupId, CreatedAt = u.CreatedAt, UpdateAt = u.UpdateAt
+            GroupId = u.GroupId, CreatedAt = u.CreatedAt, UpdateAt = u.UpdateAt,
+            Aliases = u.Aliases.Select(a => new AliasResponse { Id = a.Id, Name = a.Name }).ToList()
         };
     }
 }

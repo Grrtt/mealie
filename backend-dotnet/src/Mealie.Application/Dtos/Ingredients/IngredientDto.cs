@@ -1,5 +1,18 @@
 namespace Mealie.Application.Dtos.Ingredients;
 
+public class AliasResponse
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+public class LabelSummaryResponse
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Color { get; set; }
+}
+
 public class FoodResponse
 {
     public Guid Id { get; set; }
@@ -7,8 +20,11 @@ public class FoodResponse
     public string? Description { get; set; }
     public string? PluralName { get; set; }
     public Guid? UnitId { get; set; }
+    public Guid? LabelId { get; set; }
+    public LabelSummaryResponse? Label { get; set; }
     public Guid GroupId { get; set; }
     public bool OnHand { get; set; }
+    public List<AliasResponse> Aliases { get; set; } = [];
     public DateTime CreatedAt { get; set; }
     public DateTime UpdateAt { get; set; }
 }
@@ -24,6 +40,7 @@ public class UnitResponse
     public bool UseAbbreviation { get; set; }
     public bool Fraction { get; set; }
     public Guid GroupId { get; set; }
+    public List<AliasResponse> Aliases { get; set; } = [];
     public DateTime CreatedAt { get; set; }
     public DateTime UpdateAt { get; set; }
 }
@@ -34,7 +51,9 @@ public class CreateFoodRequest
     public string? Description { get; set; }
     public string? PluralName { get; set; }
     public Guid? UnitId { get; set; }
+    public Guid? LabelId { get; set; }
     public bool OnHand { get; set; }
+    public List<string> Aliases { get; set; } = [];
 }
 
 public class UpdateFoodRequest
@@ -43,7 +62,9 @@ public class UpdateFoodRequest
     public string? Description { get; set; }
     public string? PluralName { get; set; }
     public Guid? UnitId { get; set; }
+    public Guid? LabelId { get; set; }
     public bool? OnHand { get; set; }
+    public List<string>? Aliases { get; set; }
 }
 
 public class CreateUnitRequest
@@ -55,6 +76,7 @@ public class CreateUnitRequest
     public string? PluralAbbreviation { get; set; }
     public bool UseAbbreviation { get; set; }
     public bool Fraction { get; set; }
+    public List<string> Aliases { get; set; } = [];
 }
 
 public class UpdateUnitRequest
@@ -66,4 +88,5 @@ public class UpdateUnitRequest
     public string? PluralAbbreviation { get; set; }
     public bool? UseAbbreviation { get; set; }
     public bool? Fraction { get; set; }
+    public List<string>? Aliases { get; set; }
 }

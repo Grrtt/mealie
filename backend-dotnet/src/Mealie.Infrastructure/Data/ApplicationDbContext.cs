@@ -46,6 +46,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<IngredientFood> Foods => Set<IngredientFood>();
     public DbSet<IngredientUnit> Units => Set<IngredientUnit>();
     public DbSet<IngredientFoodAlias> FoodAliases => Set<IngredientFoodAlias>();
+    public DbSet<IngredientUnitAlias> UnitAliases => Set<IngredientUnitAlias>();
 
     // Planning
     public DbSet<MealPlan> MealPlans => Set<MealPlan>();

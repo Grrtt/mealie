@@ -13,9 +13,9 @@ public class UnitsController(IUnitService unitService, ITenantContext tenantCont
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<UnitResponse>>> GetUnits(
-        [FromQuery] PaginationParams pagination, CancellationToken ct)
+        [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
     {
-        return Ok(await unitService.GetUnitsAsync(CurrentGroupId, pagination, ct));
+        return Ok(await unitService.GetUnitsAsync(CurrentGroupId, pagination, search, ct));
     }
 
     [HttpGet("{id:guid}")]

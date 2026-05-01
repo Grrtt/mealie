@@ -13,9 +13,9 @@ public class FoodsController(IFoodService foodService, ITenantContext tenantCont
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<FoodResponse>>> GetFoods(
-        [FromQuery] PaginationParams pagination, CancellationToken ct)
+        [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
     {
-        return Ok(await foodService.GetFoodsAsync(CurrentGroupId, pagination, ct));
+        return Ok(await foodService.GetFoodsAsync(CurrentGroupId, pagination, search, ct));
     }
 
     [HttpGet("{id:guid}")]

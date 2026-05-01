@@ -6,7 +6,7 @@ namespace Mealie.Application.Services.Ingredients;
 public interface IFoodService
 {
     Task<PaginatedResponse<FoodResponse>> GetFoodsAsync(Guid groupId, PaginationParams pagination,
-        CancellationToken ct = default);
+        string? search = null, CancellationToken ct = default);
 
     Task<FoodResponse?> GetByIdAsync(Guid groupId, Guid id, CancellationToken ct = default);
     Task<FoodResponse> CreateAsync(Guid groupId, CreateFoodRequest request, CancellationToken ct = default);
