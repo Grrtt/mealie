@@ -3,7 +3,10 @@ using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Households;
 using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;
+using Mealie.Infrastructure.Configuration;
+using Mealie.Infrastructure.Email;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Mealie.Api.Controllers.Households;
 
@@ -12,6 +15,8 @@ namespace Mealie.Api.Controllers.Households;
 public class HouseholdsController(
     IHouseholdService householdService,
     IRecipeService recipeService,
+    IEmailService emailService,
+    IOptions<AppSettings> settings,
     ITenantContext tenantContext) : MealieControllerBase(tenantContext)
 {
     [HttpGet("self")]
@@ -80,7 +85,13 @@ public class HouseholdsController(
     [HttpPost("invitations/email")]
     public async Task<IActionResult> SendInvitationEmail([FromBody] HouseholdInvitationEmailRequest request)
     {
-        // Email sending is optional - just return success
+        if (emailService.IsConfigured && !string.IsNullOrEmpty(request.Email))
+        {
+            var baseUrl = settings.Value.BaseUrl.TrimEnd('/');
+            var inviteUrl = $"{baseUrl}/register?token={Uri.EscapeDataString(request.Token)}";
+            var household = await householdService.GetHouseholdAsync(CurrentHouseholdId);
+            await emailService.SendInvitationEmailAsync(request.Email, household?.Name ?? "Mealie", inviteUrl);
+        }
         return Ok(new { message = "Invitation email queued" });
     }
 

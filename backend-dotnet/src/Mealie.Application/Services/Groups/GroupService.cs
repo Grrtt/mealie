@@ -34,6 +34,14 @@ public class GroupService(ApplicationDbContext db, ILogger<GroupService> logger)
             .ToListAsync(ct);
     }
 
+    public async Task<UserSummaryDto?> GetMemberAsync(Guid groupId, Guid userId, CancellationToken ct = default)
+    {
+        return await db.Users.IgnoreQueryFilters()
+            .Where(u => u.GroupId == groupId && u.Id == userId)
+            .Select(u => new UserSummaryDto { Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email })
+            .FirstOrDefaultAsync(ct);
+    }
+
     public async Task<IList<HouseholdResponse>> GetHouseholdsAsync(Guid groupId, CancellationToken ct = default)
     {
         return await db.Households.IgnoreQueryFilters()

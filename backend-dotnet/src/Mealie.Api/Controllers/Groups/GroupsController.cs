@@ -45,6 +45,14 @@ public class GroupsController(
         return Ok(new { items = members, total = members.Count, page = 1, perPage = -1 });
     }
 
+    [HttpGet("members/{userId:guid}")]
+    public async Task<ActionResult<UserSummaryDto>> GetMember(Guid userId)
+    {
+        var member = await groupService.GetMemberAsync(CurrentGroupId, userId);
+        if (member is null) return NotFoundOrForbidden();
+        return Ok(member);
+    }
+
     [HttpGet("households")]
     public async Task<ActionResult<object>> GetHouseholds()
     {
