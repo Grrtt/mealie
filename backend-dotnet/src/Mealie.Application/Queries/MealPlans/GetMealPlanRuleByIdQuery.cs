@@ -4,17 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Queries.MealPlans;
 
-public record GetMealPlanRulesQuery(Guid GroupId, Guid HouseholdId) : IQuery<IList<MealPlanRuleResponse>>
-{
-    public async Task<IList<MealPlanRuleResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var rules = await RuleHelpers.WithNav(services.Db.MealPlanRules.IgnoreQueryFilters())
-            .Where(r => r.GroupId == GroupId && (r.HouseholdId == null || r.HouseholdId == HouseholdId))
-            .ToListAsync(ct);
-        return rules.Select(RuleHelpers.MapToResponse).ToList();
-    }
-}
-
 public record GetMealPlanRuleByIdQuery(Guid GroupId, Guid Id) : IQuery<MealPlanRuleResponse?>
 {
     public async Task<MealPlanRuleResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
