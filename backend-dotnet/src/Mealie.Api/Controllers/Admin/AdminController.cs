@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.Admin;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Admin;
+using Mealie.Application.Commands.Admin;
 using Mealie.Application.Services.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;

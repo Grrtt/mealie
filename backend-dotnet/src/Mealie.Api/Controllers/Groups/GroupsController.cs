@@ -2,6 +2,7 @@ using Mealie.Application.Dtos.Groups;
 using Mealie.Application.Dtos.Reports;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Groups;
+using Mealie.Application.Commands.Groups;
 using Mealie.Application.Services.Migrations;
 using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Auth;

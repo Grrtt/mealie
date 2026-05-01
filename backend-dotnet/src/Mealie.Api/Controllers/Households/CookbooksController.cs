@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.Organizers;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Cookbooks;
+using Mealie.Application.Commands.Cookbooks;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;

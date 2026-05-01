@@ -4,6 +4,7 @@ using Mealie.Application.Common;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Recipes;
+using Mealie.Application.Commands.Recipes;
 using Mealie.Application.Services.Images;
 using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;

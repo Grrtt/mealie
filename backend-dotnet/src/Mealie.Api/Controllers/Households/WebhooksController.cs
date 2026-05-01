@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.Webhooks;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Webhooks;
+using Mealie.Application.Commands.Webhooks;
 using Mealie.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
 

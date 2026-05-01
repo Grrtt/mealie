@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.ShoppingLists;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.ShoppingLists;
+using Mealie.Application.Commands.ShoppingLists;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;

@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.Users;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Users;
+using Mealie.Application.Commands.Users;
 using Mealie.Application.Services.Auth;
 using Mealie.Application.Validators.Auth;
 using Mealie.Infrastructure.Auth;

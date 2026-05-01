@@ -2,6 +2,7 @@ using Mealie.Application.Dtos.Organizers;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Organizers;
+using Mealie.Application.Commands.Organizers;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;

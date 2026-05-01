@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.Ingredients;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Ingredients;
+using Mealie.Application.Commands.Ingredients;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
