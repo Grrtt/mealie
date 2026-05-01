@@ -17,17 +17,6 @@ public record GetAllGroupsQuery : IQuery<object>
     }
 }
 
-public record GetAdminGroupQuery(Guid GroupId) : IQuery<AdminGroupResponse?>
-{
-    public async Task<AdminGroupResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var g = await services.Db.Groups.IgnoreQueryFilters()
-            .Include(g => g.Users).Include(g => g.Households).Include(g => g.Preferences)
-            .FirstOrDefaultAsync(g => g.Id == GroupId, ct);
-        return g is null ? null : AdminGroupMappings.MapGroupToResponse(g);
-    }
-}
-
 file static class AdminGroupMappings
 {
     public static AdminGroupResponse MapGroupToResponse(Group g) =>
