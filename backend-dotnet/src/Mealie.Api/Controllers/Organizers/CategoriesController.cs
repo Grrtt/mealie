@@ -1,8 +1,8 @@
+using Mealie.Application.Commands.Organizers;
 using Mealie.Application.Dtos.Organizers;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Organizers;
-using Mealie.Application.Commands.Organizers;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -17,27 +17,39 @@ public class CategoriesController(QueryExecutor executor, ITenantContext tenantC
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<CategoryResponse>>> GetCategories(
         [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new GetCategoriesQuery(CurrentGroupId, pagination, search), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetCategoriesQuery(CurrentGroupId, pagination, search), ct));
+    }
 
     [HttpGet("empty")]
     public async Task<ActionResult<IList<CategoryResponse>>> GetEmptyCategories(CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new GetEmptyCategoriesQuery(CurrentGroupId), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetEmptyCategoriesQuery(CurrentGroupId), ct));
+    }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<CategoryResponse>> GetCategory(string slug, CancellationToken ct)
     {
         var category = await executor.ExecuteAsync(new GetCategoryBySlugQuery(CurrentGroupId, slug), ct);
-        if (category is null) return NotFoundOrForbidden();
+        if (category is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(category);
     }
 
     [HttpGet("slug/{slug}")]
     public async Task<ActionResult<CategoryResponse>> GetCategoryBySlug(string slug, CancellationToken ct)
-        => await GetCategory(slug, ct);
+    {
+        return await GetCategory(slug, ct);
+    }
 
     [HttpGet("{id:guid}/recipes")]
     public async Task<ActionResult<IList<RecipeSummaryResponse>>> GetCategoryRecipes(Guid id, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new GetRecipesByCategoryQuery(CurrentGroupId, id), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetRecipesByCategoryQuery(CurrentGroupId, id), ct));
+    }
 
     [HttpPost]
     public async Task<ActionResult<CategoryResponse>> CreateCategory([FromBody] CreateOrganizerRequest request,
@@ -52,19 +64,30 @@ public class CategoriesController(QueryExecutor executor, ITenantContext tenantC
         CancellationToken ct)
     {
         var category = await executor.ExecuteAsync(new UpdateCategoryCommand(CurrentGroupId, id, request), ct);
-        if (category is null) return NotFoundOrForbidden();
+        if (category is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(category);
     }
 
     [HttpPatch("{id:guid}")]
     public async Task<ActionResult<CategoryResponse>> PatchCategory(Guid id, [FromBody] UpdateOrganizerRequest request,
-        CancellationToken ct) => await UpdateCategory(id, request, ct);
+        CancellationToken ct)
+    {
+        return await UpdateCategory(id, request, ct);
+    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteCategory(Guid id, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteCategoryCommand(CurrentGroupId, id), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 }

@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.Ingredients;
 using Mealie.Application.Dtos.Ingredients;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Ingredients;
-using Mealie.Application.Commands.Ingredients;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -16,13 +16,19 @@ public class FoodsController(QueryExecutor executor, ITenantContext tenantContex
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<FoodResponse>>> GetFoods(
         [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new GetFoodsQuery(CurrentGroupId, pagination, search), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetFoodsQuery(CurrentGroupId, pagination, search), ct));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<FoodResponse>> GetFood(Guid id, CancellationToken ct)
     {
         var food = await executor.ExecuteAsync(new GetFoodByIdQuery(CurrentGroupId, id), ct);
-        if (food is null) return NotFoundOrForbidden();
+        if (food is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(food);
     }
 
@@ -38,27 +44,43 @@ public class FoodsController(QueryExecutor executor, ITenantContext tenantContex
         CancellationToken ct)
     {
         var food = await executor.ExecuteAsync(new UpdateFoodCommand(CurrentGroupId, id, request), ct);
-        if (food is null) return NotFoundOrForbidden();
+        if (food is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(food);
     }
 
     [HttpPatch("{id:guid}")]
     public async Task<ActionResult<FoodResponse>> PatchFood(Guid id, [FromBody] UpdateFoodRequest request,
-        CancellationToken ct) => await UpdateFood(id, request, ct);
+        CancellationToken ct)
+    {
+        return await UpdateFood(id, request, ct);
+    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteFood(Guid id, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteFoodCommand(CurrentGroupId, id), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
     [HttpPut("merge")]
     public async Task<IActionResult> MergeFoods([FromBody] MergeFoodRequest request, CancellationToken ct)
     {
-        var success = await executor.ExecuteAsync(new MergeFoodCommand(CurrentGroupId, request.FromFood, request.ToFood), ct);
-        if (!success) return NotFoundOrForbidden();
+        var success =
+            await executor.ExecuteAsync(new MergeFoodCommand(CurrentGroupId, request.FromFood, request.ToFood), ct);
+        if (!success)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(new { detail = "Foods merged successfully" });
     }
 }

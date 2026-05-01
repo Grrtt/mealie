@@ -1,15 +1,16 @@
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Microsoft.Extensions.Options;
 using Mealie.Api.Caching;
 using Mealie.Api.Commands;
 using Mealie.Api.Filters;
 using Mealie.Api.Middleware;
 using Mealie.Application;
 using Mealie.Application.Contracts.Search;
+using Mealie.Application.Queries;
 using Mealie.Application.Services.Admin;
 using Mealie.Application.Services.Auth;
 using Mealie.Application.Services.Cookbooks;
@@ -21,7 +22,6 @@ using Mealie.Application.Services.MealPlans;
 using Mealie.Application.Services.Migrations;
 using Mealie.Application.Services.Organizers;
 using Mealie.Application.Services.Parser;
-using Mealie.Application.Queries;
 using Mealie.Application.Services.Recipes;
 using Mealie.Application.Services.Search;
 using Mealie.Application.Services.Seeder;
@@ -44,6 +44,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -246,7 +247,7 @@ builder.Services.AddHttpClient("OpenAi", (sp, c) =>
     if (!string.IsNullOrEmpty(key))
     {
         c.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
+            new AuthenticationHeaderValue("Bearer", key);
     }
 });
 builder.Services.AddSingleton<IEventBus, EventBus>();

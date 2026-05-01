@@ -17,8 +17,11 @@ public record GetShareTokenQuery(Guid TokenId) : IQuery<ShareTokenResponse?>
 
 file static class ShareMappings
 {
-    public static ShareTokenResponse MapToResponse(RecipeShareToken t) => new()
+    public static ShareTokenResponse MapToResponse(RecipeShareToken t)
     {
-        Id = t.Id, RecipeId = t.RecipeId, GroupId = t.GroupId, CreatedAt = t.CreatedAt, ExpiresAt = t.ExpiresAt
-    };
+        return new ShareTokenResponse
+        {
+            Id = t.Id, RecipeId = t.RecipeId, GroupId = t.GroupId, CreatedAt = t.CreatedAt, ExpiresAt = t.ExpiresAt
+        };
+    }
 }

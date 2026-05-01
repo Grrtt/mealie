@@ -12,7 +12,11 @@ public record RemoveFavoriteRecipeCommand(Guid UserId, string Slug) : IQuery<boo
             .Include(u => u.FavoriteRecipes)
             .FirstOrDefaultAsync(u => u.Id == UserId, ct);
         var recipe = user?.FavoriteRecipes.FirstOrDefault(r => r.Slug == Slug);
-        if (recipe is null) return false;
+        if (recipe is null)
+        {
+            return false;
+        }
+
         user!.FavoriteRecipes.Remove(recipe);
         await db.SaveChangesAsync(ct);
         return true;

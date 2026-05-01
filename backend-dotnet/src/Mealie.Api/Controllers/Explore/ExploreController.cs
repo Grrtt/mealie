@@ -1,4 +1,7 @@
 using Mealie.Application.Dtos.Admin;
+using Mealie.Domain.Entities.Core;
+using Mealie.Domain.Entities.Organizers;
+using Mealie.Domain.Entities.Recipes;
 using Mealie.Infrastructure.Data;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
@@ -19,7 +22,10 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         return Ok(new { id = group.Id, name = group.Name, slug = group.Slug });
     }
@@ -32,14 +38,19 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Households.IgnoreQueryFilters()
             .Include(h => h.Preferences)
             .Where(h => h.GroupId == group.Id && (h.Preferences == null || !h.Preferences.PrivateHousehold));
 
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(h => h.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(h => h.Name)
@@ -65,7 +76,10 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     public async Task<IActionResult> GetHousehold(string groupSlug, string householdSlug, CancellationToken ct)
     {
         var household = await ResolvePublicHousehold(groupSlug, householdSlug, ct);
-        if (household is null) return NotFound();
+        if (household is null)
+        {
+            return NotFound();
+        }
 
         var recipeCount = await db.Recipes.IgnoreQueryFilters()
             .Where(r => r.HouseholdId == household.Id && r.Settings != null && r.Settings.Public)
@@ -87,13 +101,18 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
         [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
     {
         var household = await ResolvePublicHousehold(groupSlug, householdSlug, ct);
-        if (household is null) return NotFound();
+        if (household is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Recipes.IgnoreQueryFilters()
             .Where(r => r.HouseholdId == household.Id && r.Settings != null && r.Settings.Public);
 
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(r => r.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(r => r.Name)
@@ -114,11 +133,14 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
         string recipeSlug, CancellationToken ct)
     {
         var household = await ResolvePublicHousehold(groupSlug, householdSlug, ct);
-        if (household is null) return NotFound();
+        if (household is null)
+        {
+            return NotFound();
+        }
 
         var recipe = await db.Recipes.IgnoreQueryFilters()
             .Where(r => r.HouseholdId == household.Id && r.Slug == recipeSlug
-                     && r.Settings != null && r.Settings.Public)
+                                                      && r.Settings != null && r.Settings.Public)
             .FirstOrDefaultAsync(ct);
 
         return recipe is null ? NotFound() : Ok(recipe);
@@ -132,16 +154,21 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Recipes.IgnoreQueryFilters()
             .Include(r => r.Household).ThenInclude(h => h!.Preferences)
             .Where(r => r.GroupId == group.Id && r.Settings != null && r.Settings.Public
-                     && (r.Household == null || r.Household.Preferences == null
-                         || !r.Household.Preferences.PrivateHousehold));
+                        && (r.Household == null || r.Household.Preferences == null
+                                                || !r.Household.Preferences.PrivateHousehold));
 
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(r => r.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(r => r.Name)
@@ -162,14 +189,17 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var recipe = await db.Recipes.IgnoreQueryFilters()
             .Include(r => r.Household).ThenInclude(h => h!.Preferences)
             .Where(r => r.GroupId == group.Id && r.Slug == recipeSlug
-                     && r.Settings != null && r.Settings.Public
-                     && (r.Household == null || r.Household.Preferences == null
-                         || !r.Household.Preferences.PrivateHousehold))
+                                              && r.Settings != null && r.Settings.Public
+                                              && (r.Household == null || r.Household.Preferences == null
+                                                                      || !r.Household.Preferences.PrivateHousehold))
             .FirstOrDefaultAsync(ct);
 
         return recipe is null ? NotFound() : Ok(recipe);
@@ -182,13 +212,18 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
         [FromQuery] PaginationParams pagination, [FromQuery] string? search, CancellationToken ct)
     {
         var household = await ResolvePublicHousehold(groupSlug, householdSlug, ct);
-        if (household is null) return NotFound();
+        if (household is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Cookbooks.IgnoreQueryFilters()
             .Where(c => c.HouseholdId == household.Id && c.Public);
 
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(c => c.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(c => c.Name)
@@ -209,14 +244,20 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
         Guid cookbookId, CancellationToken ct)
     {
         var household = await ResolvePublicHousehold(groupSlug, householdSlug, ct);
-        if (household is null) return NotFound();
+        if (household is null)
+        {
+            return NotFound();
+        }
 
         var cookbook = await db.Cookbooks.IgnoreQueryFilters()
             .Include(c => c.Categories)
             .Include(c => c.Tags)
             .Include(c => c.Tools)
             .FirstOrDefaultAsync(c => c.Id == cookbookId && c.HouseholdId == household.Id && c.Public, ct);
-        if (cookbook is null) return NotFound();
+        if (cookbook is null)
+        {
+            return NotFound();
+        }
 
         var recipes = await BuildCookbookRecipeQuery(cookbook, household.Id)
             .Select(r => new { r.Id, r.Name, r.Slug, r.Image, r.Rating })
@@ -237,15 +278,21 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Cookbooks.IgnoreQueryFilters()
             .Include(c => c.Household).ThenInclude(h => h.Preferences)
             .Where(c => c.GroupId == group.Id && c.Public
-                     && (c.Household.Preferences == null || !c.Household.Preferences.PrivateHousehold));
+                                              && (c.Household.Preferences == null ||
+                                                  !c.Household.Preferences.PrivateHousehold));
 
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(c => c.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(c => c.Name)
@@ -266,7 +313,10 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var cookbook = await db.Cookbooks.IgnoreQueryFilters()
             .Include(c => c.Household).ThenInclude(h => h.Preferences)
@@ -274,8 +324,12 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
             .Include(c => c.Tags)
             .Include(c => c.Tools)
             .FirstOrDefaultAsync(c => c.Id == cookbookId && c.GroupId == group.Id && c.Public
-                && (c.Household.Preferences == null || !c.Household.Preferences.PrivateHousehold), ct);
-        if (cookbook is null) return NotFound();
+                                      && (c.Household.Preferences == null || !c.Household.Preferences.PrivateHousehold),
+                ct);
+        if (cookbook is null)
+        {
+            return NotFound();
+        }
 
         var recipes = await BuildCookbookRecipeQuery(cookbook, cookbook.HouseholdId)
             .Select(r => new { r.Id, r.Name, r.Slug, r.Image, r.Rating })
@@ -296,11 +350,16 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Foods.IgnoreQueryFilters().Where(f => f.GroupId == group.Id);
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(f => f.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(f => f.Name)
@@ -321,7 +380,10 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var food = await db.Foods.IgnoreQueryFilters()
             .FirstOrDefaultAsync(f => f.Id == foodId && f.GroupId == group.Id, ct);
@@ -337,11 +399,16 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Tags.IgnoreQueryFilters().Where(t => t.GroupId == group.Id);
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(t => t.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(t => t.Name)
@@ -363,7 +430,10 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var tag = await db.Tags.IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Id == tagId && t.GroupId == group.Id, ct);
@@ -379,11 +449,16 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Categories.IgnoreQueryFilters().Where(c => c.GroupId == group.Id);
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(c => c.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(c => c.Name)
@@ -405,7 +480,10 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var category = await db.Categories.IgnoreQueryFilters()
             .FirstOrDefaultAsync(c => c.Id == categoryId && c.GroupId == group.Id, ct);
@@ -421,11 +499,16 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var query = db.Tools.IgnoreQueryFilters().Where(t => t.GroupId == group.Id);
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(t => t.Name.Contains(search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(t => t.Name)
@@ -447,7 +530,10 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return NotFound();
+        if (group is null)
+        {
+            return NotFound();
+        }
 
         var tool = await db.Tools.IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Id == toolId && t.GroupId == group.Id, ct);
@@ -456,24 +542,35 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private async Task<Mealie.Domain.Entities.Core.Household?> ResolvePublicHousehold(
+    private async Task<Household?> ResolvePublicHousehold(
         string groupSlug, string householdSlug, CancellationToken ct)
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .FirstOrDefaultAsync(g => g.Slug == groupSlug, ct);
-        if (group is null) return null;
+        if (group is null)
+        {
+            return null;
+        }
 
         var household = await db.Households.IgnoreQueryFilters()
             .Include(h => h.Preferences)
             .FirstOrDefaultAsync(h => h.GroupId == group.Id && h.Slug == householdSlug, ct);
 
-        if (household is null) return null;
-        if (household.Preferences?.PrivateHousehold == true) return null;
+        if (household is null)
+        {
+            return null;
+        }
+
+        if (household.Preferences?.PrivateHousehold == true)
+        {
+            return null;
+        }
+
         return household;
     }
 
-    private IQueryable<Mealie.Domain.Entities.Recipes.Recipe> BuildCookbookRecipeQuery(
-        Mealie.Domain.Entities.Organizers.Cookbook cookbook, Guid householdId)
+    private IQueryable<Recipe> BuildCookbookRecipeQuery(
+        Cookbook cookbook, Guid householdId)
     {
         var query = db.Recipes.IgnoreQueryFilters()
             .Include(r => r.Categories)
@@ -485,9 +582,13 @@ public class ExploreController(ApplicationDbContext db) : ControllerBase
         {
             var catIds = cookbook.Categories.Select(c => c.Id).ToList();
             if (cookbook.RequireAllCategories)
+            {
                 query = query.Where(r => catIds.All(cid => r.Categories.Any(c => c.Id == cid)));
+            }
             else
+            {
                 query = query.Where(r => r.Categories.Any(c => catIds.Contains(c.Id)));
+            }
         }
 
         if (cookbook.Tags.Count > 0)

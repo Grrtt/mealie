@@ -5,13 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Recipes;
 
-public record AddCommentByRecipeIdCommand(Guid RecipeId, Guid UserId, CreateCommentRequest Request) : IQuery<CommentResponse?>
+public record AddCommentByRecipeIdCommand(Guid RecipeId, Guid UserId, CreateCommentRequest Request)
+    : IQuery<CommentResponse?>
 {
     public async Task<CommentResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Id == RecipeId, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
+
         var comment = new RecipeComment
         {
             Id = Guid.NewGuid(), Text = Request.Text, RecipeId = RecipeId, UserId = UserId,
@@ -25,9 +30,12 @@ public record AddCommentByRecipeIdCommand(Guid RecipeId, Guid UserId, CreateComm
 
 file static class CommentMappings
 {
-    public static CommentResponse MapToResponse(RecipeComment c) => new()
+    public static CommentResponse MapToResponse(RecipeComment c)
     {
-        Id = c.Id, Text = c.Text, RecipeId = c.RecipeId, UserId = c.UserId,
-        CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
-    };
+        return new CommentResponse
+        {
+            Id = c.Id, Text = c.Text, RecipeId = c.RecipeId, UserId = c.UserId,
+            CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
+        };
+    }
 }

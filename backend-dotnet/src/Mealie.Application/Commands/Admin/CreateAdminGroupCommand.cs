@@ -1,6 +1,6 @@
+using System.Text.RegularExpressions;
 using Mealie.Application.Dtos.Admin;
 using Mealie.Application.Queries;
-using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Group = Mealie.Domain.Entities.Core.Group;
@@ -26,30 +26,41 @@ public record CreateAdminGroupCommand(CreateAdminGroupRequest Request) : IQuery<
 
 file static class AdminGroupMappings
 {
-    public static string GenerateSlug(string name) =>
-        System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant().Trim(), @"[^a-z0-9]+", "-").Trim('-');
+    public static string GenerateSlug(string name)
+    {
+        return Regex.Replace(name.ToLowerInvariant().Trim(), @"[^a-z0-9]+", "-")
+            .Trim('-');
+    }
 
-    public static async Task<string> GenerateUniqueGroupSlugAsync(Mealie.Infrastructure.Data.ApplicationDbContext db, string name, CancellationToken ct)
+    public static async Task<string> GenerateUniqueGroupSlugAsync(ApplicationDbContext db, string name,
+        CancellationToken ct)
     {
         var baseSlug = GenerateSlug(name);
         var slug = baseSlug;
         var i = 1;
         while (await db.Groups.IgnoreQueryFilters().AnyAsync(g => g.Slug == slug, ct))
+        {
             slug = $"{baseSlug}-{i++}";
+        }
+
         return slug;
     }
 
-    public static Mealie.Application.Dtos.Admin.AdminGroupResponse MapGroupToResponse(Mealie.Domain.Entities.Core.Group g) =>
-        new()
+    public static AdminGroupResponse MapGroupToResponse(Group g)
+    {
+        return new AdminGroupResponse
         {
             Id = g.Id, Name = g.Name, Slug = g.Slug, CreatedAt = g.CreatedAt, UpdateAt = g.UpdateAt,
             UserCount = g.Users.Count, HouseholdCount = g.Households.Count,
             Users = g.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
             Households = g.Households.Select(h => (object)new { h.Id, h.Name, h.Slug }).ToList(),
-            Preferences = g.Preferences is null ? null : new Mealie.Application.Dtos.Admin.GroupPreferencesDto
-            {
-                Id = g.Preferences.Id, GroupId = g.Preferences.GroupId,
-                PrivateGroup = g.Preferences.PrivateGroup, ShowAnnouncements = false
-            }
+            Preferences = g.Preferences is null
+                ? null
+                : new GroupPreferencesDto
+                {
+                    Id = g.Preferences.Id, GroupId = g.Preferences.GroupId,
+                    PrivateGroup = g.Preferences.PrivateGroup, ShowAnnouncements = false
+                }
         };
+    }
 }

@@ -37,7 +37,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var plans = await WithRecipe(db.MealPlans.IgnoreQueryFilters()
-            .Where(m => m.HouseholdId == householdId && m.Date == today))
+                .Where(m => m.HouseholdId == householdId && m.Date == today))
             .ToListAsync(ct);
         return plans.Select(MapToResponse).ToList();
     }

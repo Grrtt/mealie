@@ -6,7 +6,8 @@ namespace Mealie.Application.Queries.Groups;
 
 public record GetHouseholdPreferencesQuery(Guid HouseholdId) : IQuery<HouseholdPreferencesResponse?>
 {
-    public async Task<HouseholdPreferencesResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
+    public async Task<HouseholdPreferencesResponse?> ExecuteAsync(IQueryServices services,
+        CancellationToken ct = default)
     {
         var prefs = await services.Db.HouseholdPreferences.IgnoreQueryFilters()
             .FirstOrDefaultAsync(p => p.HouseholdId == HouseholdId, ct);
@@ -16,8 +17,9 @@ public record GetHouseholdPreferencesQuery(Guid HouseholdId) : IQuery<HouseholdP
 
 file static class HouseholdMappings
 {
-    public static HouseholdPreferencesResponse MapToHouseholdPreferencesResponse(HouseholdPreferences prefs) =>
-        new()
+    public static HouseholdPreferencesResponse MapToHouseholdPreferencesResponse(HouseholdPreferences prefs)
+    {
+        return new HouseholdPreferencesResponse
         {
             Id = prefs.Id, HouseholdId = prefs.HouseholdId, PrivateHousehold = prefs.PrivateHousehold,
             FirstDayOfWeek = prefs.FirstDayOfWeek, RecipePublic = prefs.RecipePublic,
@@ -25,4 +27,5 @@ file static class HouseholdMappings
             RecipeLandscapeView = prefs.RecipeLandscapeView, RecipeDisableComments = prefs.RecipeDisableComments,
             RecipeDisableAmount = prefs.RecipeDisableAmount
         };
+    }
 }

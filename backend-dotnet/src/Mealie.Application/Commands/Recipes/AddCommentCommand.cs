@@ -11,7 +11,11 @@ public record AddCommentCommand(string Slug, Guid UserId, CreateCommentRequest R
     {
         var db = services.Db;
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == Slug, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
+
         var comment = new RecipeComment
         {
             Id = Guid.NewGuid(), Text = Request.Text, RecipeId = recipe.Id, UserId = UserId,
@@ -25,9 +29,12 @@ public record AddCommentCommand(string Slug, Guid UserId, CreateCommentRequest R
 
 file static class CommentMappings
 {
-    public static CommentResponse MapToResponse(RecipeComment c) => new()
+    public static CommentResponse MapToResponse(RecipeComment c)
     {
-        Id = c.Id, Text = c.Text, RecipeId = c.RecipeId, UserId = c.UserId,
-        CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
-    };
+        return new CommentResponse
+        {
+            Id = c.Id, Text = c.Text, RecipeId = c.RecipeId, UserId = c.UserId,
+            CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
+        };
+    }
 }

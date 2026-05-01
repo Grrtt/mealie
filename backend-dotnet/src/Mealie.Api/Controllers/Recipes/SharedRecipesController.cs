@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.Recipes;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Recipes;
-using Mealie.Application.Commands.Recipes;
 using Mealie.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,7 +19,11 @@ public class SharedRecipesController(
     public async Task<ActionResult<ShareTokenResponse>> GetSharedRecipe(Guid id, CancellationToken ct)
     {
         var token = await executor.ExecuteAsync(new GetShareTokenQuery(id), ct);
-        if (token is null) return NotFound(new { detail = "Share token not found or expired" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Share token not found or expired" });
+        }
+
         return Ok(token);
     }
 
@@ -31,7 +35,11 @@ public class SharedRecipesController(
         var token = await executor.ExecuteAsync(new CreateShareTokenCommand(
             request.RecipeSlug, tenantContext.GroupId,
             new CreateShareTokenRequest { ExpiresAt = request.ExpiresAt }), ct);
-        if (token is null) return NotFound(new { detail = "Recipe not found" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(token);
     }
 
@@ -41,7 +49,11 @@ public class SharedRecipesController(
         Guid id, [FromBody] CreateShareTokenRequest request, CancellationToken ct)
     {
         var token = await executor.ExecuteAsync(new GetShareTokenQuery(id), ct);
-        if (token is null) return NotFound(new { detail = "Share token not found" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Share token not found" });
+        }
+
         return Ok(token);
     }
 
@@ -49,14 +61,20 @@ public class SharedRecipesController(
     [Authorize]
     public async Task<ActionResult<ShareTokenResponse>> PatchSharedRecipe(
         Guid id, [FromBody] CreateShareTokenRequest request, CancellationToken ct)
-        => await UpdateSharedRecipe(id, request, ct);
+    {
+        return await UpdateSharedRecipe(id, request, ct);
+    }
 
     [HttpDelete("{id:guid}")]
     [Authorize]
     public async Task<IActionResult> DeleteSharedRecipe(Guid id, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteShareTokenCommand(id), ct);
-        if (!deleted) return NotFound(new { detail = "Share token not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Share token not found" });
+        }
+
         return NoContent();
     }
 }

@@ -7,7 +7,8 @@ namespace Mealie.Application.Queries.ShoppingLists;
 public record GetShoppingListsQuery(Guid HouseholdId, PaginationParams Pagination)
     : IQuery<PaginatedResponse<ShoppingListSummaryResponse>>
 {
-    public async Task<PaginatedResponse<ShoppingListSummaryResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
+    public async Task<PaginatedResponse<ShoppingListSummaryResponse>> ExecuteAsync(IQueryServices services,
+        CancellationToken ct = default)
     {
         var db = services.Db;
         var query = db.ShoppingLists.IgnoreQueryFilters().Where(s => s.HouseholdId == HouseholdId);

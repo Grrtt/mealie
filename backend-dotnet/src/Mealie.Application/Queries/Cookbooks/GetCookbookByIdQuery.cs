@@ -16,11 +16,13 @@ public record GetCookbookByIdQuery(Guid HouseholdId, Guid Id) : IQuery<CookbookR
 
 file static class CookbookMappings
 {
-    public static CookbookResponse MapToResponse(Cookbook c) =>
-        new()
+    public static CookbookResponse MapToResponse(Cookbook c)
+    {
+        return new CookbookResponse
         {
             Id = c.Id, Name = c.Name, Description = c.Description, Image = c.Image,
             Public = c.Public, RequireAllCategories = c.RequireAllCategories, Position = c.Position,
             GroupId = c.GroupId, HouseholdId = c.HouseholdId, CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
         };
+    }
 }

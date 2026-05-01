@@ -1,10 +1,6 @@
-using Mealie.Application.Common;
 using Mealie.Application.Dtos.Groups;
 using Mealie.Application.Queries;
-using Mealie.Domain.Entities.Core;
 using Mealie.Domain.Entities.Organizers;
-using Mealie.Domain.Entities.Settings;
-using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Groups;
 
@@ -21,6 +17,7 @@ public record CreateHouseholdInviteTokenCommand(Guid GroupId, Guid HouseholdId, 
         };
         db.InviteTokens.Add(token);
         await db.SaveChangesAsync(ct);
-        return new InviteTokenResponse { Id = token.Id, Token = token.Token, GroupId = GroupId, HouseholdId = HouseholdId };
+        return new InviteTokenResponse
+            { Id = token.Id, Token = token.Token, GroupId = GroupId, HouseholdId = HouseholdId };
     }
 }

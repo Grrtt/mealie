@@ -1,7 +1,6 @@
 using Mealie.Application.Dtos.Admin;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Core;
-using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Admin;
 
@@ -26,8 +25,9 @@ public record CreateAdminUserCommand(CreateAdminUserRequest Request) : IQuery<Ad
 
 file static class AdminUserMappings
 {
-    public static Mealie.Application.Dtos.Admin.AdminUserResponse MapToResponse(Mealie.Domain.Entities.Core.User u) =>
-        new()
+    public static AdminUserResponse MapToResponse(User u)
+    {
+        return new AdminUserResponse
         {
             Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email,
             Admin = u.Admin, Advanced = u.Advanced, GroupId = u.GroupId, Group = u.Group?.Name,
@@ -37,4 +37,5 @@ file static class AdminUserMappings
             LoginAttempts = u.LoginAttempts, LockedAt = u.LockedAt,
             CreatedAt = u.CreatedAt, UpdateAt = u.UpdateAt
         };
+    }
 }

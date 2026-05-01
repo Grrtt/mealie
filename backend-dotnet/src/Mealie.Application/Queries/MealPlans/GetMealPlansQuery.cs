@@ -12,9 +12,18 @@ public record GetMealPlansQuery(Guid HouseholdId, DateOnly? StartDate = null, Da
     public async Task<IList<MealPlanResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
-        var query = MealPlanHelpers.WithRecipe(db.MealPlans.IgnoreQueryFilters().Where(m => m.HouseholdId == HouseholdId));
-        if (StartDate.HasValue) query = query.Where(m => m.Date >= StartDate.Value);
-        if (EndDate.HasValue) query = query.Where(m => m.Date <= EndDate.Value);
+        var query = MealPlanHelpers.WithRecipe(db.MealPlans.IgnoreQueryFilters()
+            .Where(m => m.HouseholdId == HouseholdId));
+        if (StartDate.HasValue)
+        {
+            query = query.Where(m => m.Date >= StartDate.Value);
+        }
+
+        if (EndDate.HasValue)
+        {
+            query = query.Where(m => m.Date <= EndDate.Value);
+        }
+
         var plans = await query.OrderBy(m => m.Date).ToListAsync(ct);
         return plans.Select(MealPlanHelpers.MapToResponse).ToList();
     }
@@ -22,25 +31,34 @@ public record GetMealPlansQuery(Guid HouseholdId, DateOnly? StartDate = null, Da
 
 file static class MealPlanHelpers
 {
-    public static string DayOfWeekToRuleDay(DayOfWeek dow) => dow switch
+    public static string DayOfWeekToRuleDay(DayOfWeek dow)
     {
-        DayOfWeek.Monday => "monday",
-        DayOfWeek.Tuesday => "tuesday",
-        DayOfWeek.Wednesday => "wednesday",
-        DayOfWeek.Thursday => "thursday",
-        DayOfWeek.Friday => "friday",
-        DayOfWeek.Saturday => "saturday",
-        DayOfWeek.Sunday => "sunday",
-        _ => "unset"
-    };
+        return dow switch
+        {
+            DayOfWeek.Monday => "monday",
+            DayOfWeek.Tuesday => "tuesday",
+            DayOfWeek.Wednesday => "wednesday",
+            DayOfWeek.Thursday => "thursday",
+            DayOfWeek.Friday => "friday",
+            DayOfWeek.Saturday => "saturday",
+            DayOfWeek.Sunday => "sunday",
+            _ => "unset"
+        };
+    }
 
-    public static IQueryable<MealPlan> WithRecipe(IQueryable<MealPlan> q) =>
-        q.Include(m => m.Recipe).ThenInclude(r => r!.Tags)
-         .Include(m => m.Recipe).ThenInclude(r => r!.Categories);
+    public static IQueryable<MealPlan> WithRecipe(IQueryable<MealPlan> q)
+    {
+        return q.Include(m => m.Recipe).ThenInclude(r => r!.Tags)
+            .Include(m => m.Recipe).ThenInclude(r => r!.Categories);
+    }
 
     public static async Task LoadRecipeNav(ApplicationDbContext db, MealPlan plan, CancellationToken ct)
     {
-        if (plan.RecipeId is null) return;
+        if (plan.RecipeId is null)
+        {
+            return;
+        }
+
         await db.Entry(plan).Reference(p => p.Recipe).LoadAsync(ct);
         if (plan.Recipe is not null)
         {
@@ -61,7 +79,8 @@ file static class MealPlanHelpers
             .ToListAsync(ct);
 
         var tagSets = rules.Where(r => r.Tags.Count > 0).Select(r => r.Tags.Select(t => t.Id).ToHashSet()).ToList();
-        var catSets = rules.Where(r => r.Categories.Count > 0).Select(r => r.Categories.Select(c => c.Id).ToHashSet()).ToList();
+        var catSets = rules.Where(r => r.Categories.Count > 0).Select(r => r.Categories.Select(c => c.Id).ToHashSet())
+            .ToList();
 
         if (tagSets.Count > 0 || catSets.Count > 0)
         {
@@ -72,11 +91,14 @@ file static class MealPlanHelpers
                 tagSets.All(set => r.Tags.Any(t => set.Contains(t.Id))) &&
                 catSets.All(set => r.Categories.Any(c => set.Contains(c.Id)))).ToList();
 
-            logger.LogDebug("MealPlan rules filter: entryType={EntryType} rules={Rules} candidates={Candidates} filtered={Filtered}",
+            logger.LogDebug(
+                "MealPlan rules filter: entryType={EntryType} rules={Rules} candidates={Candidates} filtered={Filtered}",
                 entryType, rules.Count, candidates.Count, filtered.Count);
 
             if (filtered.Count > 0)
+            {
                 return filtered[Random.Shared.Next(filtered.Count)].Id;
+            }
         }
 
         var entrySlug = entryType.ToLowerInvariant();
@@ -85,7 +107,8 @@ file static class MealPlanHelpers
         var matchingCatIds = await db.Categories.IgnoreQueryFilters()
             .Where(c => c.GroupId == groupId && c.Slug == entrySlug).Select(c => c.Id).ToListAsync(ct);
 
-        logger.LogDebug("MealPlan auto-filter: entryType={EntryType} slug={Slug} matchingTags={Tags} matchingCats={Cats}",
+        logger.LogDebug(
+            "MealPlan auto-filter: entryType={EntryType} slug={Slug} matchingTags={Tags} matchingCats={Cats}",
             entryType, entrySlug, matchingTagIds.Count, matchingCatIds.Count);
 
         if (matchingTagIds.Count > 0 || matchingCatIds.Count > 0)
@@ -96,12 +119,16 @@ file static class MealPlanHelpers
                              r.Categories.Any(c => matchingCatIds.Contains(c.Id))))
                 .Select(r => r.Id).ToListAsync(ct);
 
-            logger.LogDebug("MealPlan auto-filter results: {Count} recipes match slug '{Slug}'", autoFiltered.Count, entrySlug);
+            logger.LogDebug("MealPlan auto-filter results: {Count} recipes match slug '{Slug}'", autoFiltered.Count,
+                entrySlug);
             if (autoFiltered.Count > 0)
+            {
                 return autoFiltered[Random.Shared.Next(autoFiltered.Count)];
+            }
         }
 
-        logger.LogDebug("MealPlan fallback: no recipes matched slug '{Slug}', picking from all group recipes", entrySlug);
+        logger.LogDebug("MealPlan fallback: no recipes matched slug '{Slug}', picking from all group recipes",
+            entrySlug);
         var allIds = await db.Recipes.IgnoreQueryFilters()
             .Where(r => r.GroupId == groupId).Select(r => r.Id).ToListAsync(ct);
         return allIds.Count == 0 ? null : allIds[Random.Shared.Next(allIds.Count)];
@@ -119,25 +146,31 @@ file static class MealPlanHelpers
             (tagIds.Count == 0 || r.Tags.Any(t => tagIds.Contains(t.Id))) &&
             (catIds.Count == 0 || r.Categories.Any(c => catIds.Contains(c.Id)))).ToList();
 
-        logger.LogDebug("Rule {Rule}: {Filtered}/{Total} recipes match constraints", rule.Id, filtered.Count, candidates.Count);
+        logger.LogDebug("Rule {Rule}: {Filtered}/{Total} recipes match constraints", rule.Id, filtered.Count,
+            candidates.Count);
         return filtered.Count == 0 ? null : filtered[Random.Shared.Next(filtered.Count)].Id;
     }
 
-    public static MealPlanResponse MapToResponse(MealPlan m) =>
-        new()
+    public static MealPlanResponse MapToResponse(MealPlan m)
+    {
+        return new MealPlanResponse
         {
             Id = m.Id, Title = m.Title, Text = m.Text, EntryType = m.EntryType, Date = m.Date,
             RecipeId = m.RecipeId,
-            Recipe = m.Recipe is null ? null : new MealPlanRecipeSummary
-            {
-                Id = m.Recipe.Id.ToString(), Name = m.Recipe.Name, Slug = m.Recipe.Slug,
-                Image = m.Recipe.Image, Description = m.Recipe.Description,
-                Tags = m.Recipe.Tags.Select(t => new MealPlanRecipeTagSummary
-                    { Id = t.Id.ToString(), GroupId = t.GroupId.ToString(), Name = t.Name, Slug = t.Slug }).ToList(),
-                RecipeCategory = m.Recipe.Categories.Select(c => new MealPlanRecipeTagSummary
-                    { Id = c.Id.ToString(), GroupId = c.GroupId.ToString(), Name = c.Name, Slug = c.Slug }).ToList()
-            },
+            Recipe = m.Recipe is null
+                ? null
+                : new MealPlanRecipeSummary
+                {
+                    Id = m.Recipe.Id.ToString(), Name = m.Recipe.Name, Slug = m.Recipe.Slug,
+                    Image = m.Recipe.Image, Description = m.Recipe.Description,
+                    Tags = m.Recipe.Tags.Select(t => new MealPlanRecipeTagSummary
+                            { Id = t.Id.ToString(), GroupId = t.GroupId.ToString(), Name = t.Name, Slug = t.Slug })
+                        .ToList(),
+                    RecipeCategory = m.Recipe.Categories.Select(c => new MealPlanRecipeTagSummary
+                        { Id = c.Id.ToString(), GroupId = c.GroupId.ToString(), Name = c.Name, Slug = c.Slug }).ToList()
+                },
             GroupId = m.GroupId, HouseholdId = m.HouseholdId, UserId = m.UserId,
             CreatedAt = m.CreatedAt, UpdateAt = m.UpdateAt
         };
+    }
 }

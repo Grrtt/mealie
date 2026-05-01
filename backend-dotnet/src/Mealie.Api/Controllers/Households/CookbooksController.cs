@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.Cookbooks;
 using Mealie.Application.Dtos.Organizers;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Cookbooks;
-using Mealie.Application.Commands.Cookbooks;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -16,13 +16,19 @@ public class CookbooksController(QueryExecutor executor, ITenantContext tenantCo
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<CookbookResponse>>> GetCookbooks(
         [FromQuery] PaginationParams pagination, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new GetCookbooksQuery(CurrentHouseholdId, pagination), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetCookbooksQuery(CurrentHouseholdId, pagination), ct));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CookbookResponse>> GetCookbook(Guid id, CancellationToken ct)
     {
         var cookbook = await executor.ExecuteAsync(new GetCookbookByIdQuery(CurrentHouseholdId, id), ct);
-        if (cookbook is null) return NotFoundOrForbidden();
+        if (cookbook is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(cookbook);
     }
 
@@ -30,7 +36,8 @@ public class CookbooksController(QueryExecutor executor, ITenantContext tenantCo
     public async Task<ActionResult<CookbookResponse>> CreateCookbook([FromBody] CreateCookbookRequest request,
         CancellationToken ct)
     {
-        var cookbook = await executor.ExecuteAsync(new CreateCookbookCommand(CurrentGroupId, CurrentHouseholdId, request), ct);
+        var cookbook =
+            await executor.ExecuteAsync(new CreateCookbookCommand(CurrentGroupId, CurrentHouseholdId, request), ct);
         return CreatedAtAction(nameof(GetCookbook), new { id = cookbook.Id }, cookbook);
     }
 
@@ -40,7 +47,11 @@ public class CookbooksController(QueryExecutor executor, ITenantContext tenantCo
         CancellationToken ct)
     {
         var cookbook = await executor.ExecuteAsync(new UpdateCookbookCommand(CurrentHouseholdId, id, request), ct);
-        if (cookbook is null) return NotFoundOrForbidden();
+        if (cookbook is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(cookbook);
     }
 
@@ -48,7 +59,11 @@ public class CookbooksController(QueryExecutor executor, ITenantContext tenantCo
     public async Task<IActionResult> DeleteCookbook(Guid id, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteCookbookCommand(CurrentHouseholdId, id), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
@@ -57,7 +72,11 @@ public class CookbooksController(QueryExecutor executor, ITenantContext tenantCo
         CancellationToken ct)
     {
         var success = await executor.ExecuteAsync(new ReorderCookbooksCommand(CurrentHouseholdId, reorderRequests), ct);
-        if (!success) return BadRequest();
+        if (!success)
+        {
+            return BadRequest();
+        }
+
         return Ok();
     }
 }

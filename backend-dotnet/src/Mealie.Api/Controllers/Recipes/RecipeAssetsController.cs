@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.Recipes;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Recipes;
-using Mealie.Application.Commands.Recipes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,7 +29,9 @@ public class RecipeAssetsController(QueryExecutor executor) : ControllerBase
         CancellationToken ct)
     {
         if (file is null || file.Length == 0)
+        {
             return BadRequest(new { detail = "No file provided" });
+        }
 
         var ext = Path.GetExtension(file.FileName).TrimStart('.');
         var assetName = name ?? Path.GetFileNameWithoutExtension(file.FileName);
@@ -37,7 +39,11 @@ public class RecipeAssetsController(QueryExecutor executor) : ControllerBase
 
         await using var stream = file.OpenReadStream();
         var asset = await executor.ExecuteAsync(new UploadAssetCommand(slug, stream, assetName, ext, assetIcon), ct);
-        if (asset is null) return NotFound(new { detail = "Recipe not found" });
+        if (asset is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(asset);
     }
 
@@ -45,7 +51,11 @@ public class RecipeAssetsController(QueryExecutor executor) : ControllerBase
     public async Task<IActionResult> DeleteAsset(string slug, string fileName, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteAssetCommand(slug, fileName), ct);
-        if (!deleted) return NotFound(new { detail = "Asset not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Asset not found" });
+        }
+
         return NoContent();
     }
 }

@@ -3,7 +3,6 @@ using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Planning;
 using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
-using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.ShoppingLists;
@@ -28,16 +27,19 @@ public record CreateShoppingListCommand(Guid GroupId, Guid HouseholdId, CreateSh
 
 file static class ShoppingListMappings
 {
-    public static ShoppingListResponse MapToResponse(ShoppingList s) =>
-        new()
+    public static ShoppingListResponse MapToResponse(ShoppingList s)
+    {
+        return new ShoppingListResponse
         {
             Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
             CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt,
             Items = s.Items.Select(MapItemToResponse).ToList()
         };
+    }
 
-    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i) =>
-        new()
+    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i)
+    {
+        return new ShoppingListItemResponse
         {
             Id = i.Id, Note = i.Note, IsFood = i.IsFood, Checked = i.Checked,
             DisableAmount = i.DisableAmount, Quantity = i.Quantity,
@@ -45,6 +47,7 @@ file static class ShoppingListMappings
             Position = i.Position, UnitName = i.Unit?.Name, FoodName = i.Food?.Name,
             CreatedAt = i.CreatedAt, UpdateAt = i.UpdateAt
         };
+    }
 
     public static async Task<ShoppingListItemResponse> CreateItemWithMergeAsync(
         ApplicationDbContext db, Guid listId, CreateShoppingListItemRequest request, CancellationToken ct)
@@ -83,11 +86,21 @@ file static class ShoppingListMappings
 
     private static bool CanMerge(ShoppingListItem existing, CreateShoppingListItemRequest incoming)
     {
-        if (existing.DisableAmount || incoming.DisableAmount) return false;
+        if (existing.DisableAmount || incoming.DisableAmount)
+        {
+            return false;
+        }
+
         if (incoming.FoodId.HasValue && existing.FoodId.HasValue)
+        {
             return existing.FoodId == incoming.FoodId && existing.UnitId == incoming.UnitId;
+        }
+
         if (!incoming.FoodId.HasValue && !existing.FoodId.HasValue)
+        {
             return !string.IsNullOrEmpty(existing.Note) && existing.Note == incoming.Note;
+        }
+
         return false;
     }
 }

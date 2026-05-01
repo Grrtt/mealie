@@ -8,14 +8,18 @@ namespace Mealie.Application.Queries.ShoppingLists;
 public record GetShoppingListItemsQuery(Guid HouseholdId, PaginationParams Pagination, bool? Checked = null)
     : IQuery<PaginatedResponse<ShoppingListItemResponse>>
 {
-    public async Task<PaginatedResponse<ShoppingListItemResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
+    public async Task<PaginatedResponse<ShoppingListItemResponse>> ExecuteAsync(IQueryServices services,
+        CancellationToken ct = default)
     {
         var db = services.Db;
         var query = db.ShoppingListItems
             .Include(i => i.Unit).Include(i => i.Food)
             .Where(i => i.ShoppingList.HouseholdId == HouseholdId)
             .AsQueryable();
-        if (Checked.HasValue) query = query.Where(i => i.Checked == Checked.Value);
+        if (Checked.HasValue)
+        {
+            query = query.Where(i => i.Checked == Checked.Value);
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderByDescending(i => i.UpdateAt).ThenBy(i => i.Position)
@@ -32,8 +36,9 @@ public record GetShoppingListItemsQuery(Guid HouseholdId, PaginationParams Pagin
 
 file static class ShoppingListItemMappings
 {
-    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i) =>
-        new()
+    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i)
+    {
+        return new ShoppingListItemResponse
         {
             Id = i.Id, Note = i.Note, IsFood = i.IsFood, Checked = i.Checked,
             DisableAmount = i.DisableAmount, Quantity = i.Quantity,
@@ -41,4 +46,5 @@ file static class ShoppingListItemMappings
             Position = i.Position, UnitName = i.Unit?.Name, FoodName = i.Food?.Name,
             CreatedAt = i.CreatedAt, UpdateAt = i.UpdateAt
         };
+    }
 }

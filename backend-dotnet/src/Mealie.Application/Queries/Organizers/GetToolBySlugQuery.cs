@@ -9,7 +9,15 @@ public record GetToolBySlugQuery(Guid GroupId, string Slug) : IQuery<ToolRespons
     {
         var t = await services.Db.Tools.IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.GroupId == GroupId && t.Slug == Slug, ct);
-        if (t is null) return null;
-        return new ToolResponse { Id = t.Id, Name = t.Name, Slug = t.Slug, GroupId = t.GroupId, OnHand = t.OnHand, CreatedAt = t.CreatedAt, UpdateAt = t.UpdateAt };
+        if (t is null)
+        {
+            return null;
+        }
+
+        return new ToolResponse
+        {
+            Id = t.Id, Name = t.Name, Slug = t.Slug, GroupId = t.GroupId, OnHand = t.OnHand, CreatedAt = t.CreatedAt,
+            UpdateAt = t.UpdateAt
+        };
     }
 }

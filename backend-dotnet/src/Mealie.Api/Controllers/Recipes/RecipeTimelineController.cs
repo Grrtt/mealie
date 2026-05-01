@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.Recipes;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Recipes;
-using Mealie.Application.Commands.Recipes;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authorization;
@@ -25,7 +25,8 @@ public class RecipeTimelineController(
         [FromQuery] string? queryFilter = null,
         CancellationToken ct = default)
     {
-        var result = await executor.ExecuteAsync(new GetAllTimelineEventsQuery(tenantContext.GroupId, page, perPage), ct);
+        var result =
+            await executor.ExecuteAsync(new GetAllTimelineEventsQuery(tenantContext.GroupId, page, perPage), ct);
         return Ok(result);
     }
 
@@ -41,7 +42,11 @@ public class RecipeTimelineController(
         string slug, [FromBody] CreateTimelineEventRequest request, CancellationToken ct)
     {
         var ev = await executor.ExecuteAsync(new AddTimelineEventCommand(slug, tenantContext.UserId, request), ct);
-        if (ev is null) return NotFound(new { detail = "Recipe not found" });
+        if (ev is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(ev);
     }
 
@@ -50,7 +55,11 @@ public class RecipeTimelineController(
         string slug, Guid eventId, [FromBody] UpdateTimelineEventRequest request, CancellationToken ct)
     {
         var ev = await executor.ExecuteAsync(new UpdateTimelineEventCommand(eventId, request), ct);
-        if (ev is null) return NotFound(new { detail = "Timeline event not found" });
+        if (ev is null)
+        {
+            return NotFound(new { detail = "Timeline event not found" });
+        }
+
         return Ok(ev);
     }
 
@@ -58,7 +67,11 @@ public class RecipeTimelineController(
     public async Task<IActionResult> DeleteEvent(string slug, Guid eventId, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteTimelineEventCommand(eventId), ct);
-        if (!deleted) return NotFound(new { detail = "Timeline event not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Timeline event not found" });
+        }
+
         return NoContent();
     }
 
@@ -67,10 +80,17 @@ public class RecipeTimelineController(
         [FromBody] CreateTimelineEventRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.RecipeSlug))
+        {
             return BadRequest(new { detail = "RecipeSlug is required" });
+        }
 
-        var ev = await executor.ExecuteAsync(new AddTimelineEventCommand(request.RecipeSlug, tenantContext.UserId, request), ct);
-        if (ev is null) return NotFound(new { detail = "Recipe not found" });
+        var ev = await executor.ExecuteAsync(
+            new AddTimelineEventCommand(request.RecipeSlug, tenantContext.UserId, request), ct);
+        if (ev is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(ev);
     }
 
@@ -79,7 +99,11 @@ public class RecipeTimelineController(
         Guid eventId, [FromBody] UpdateTimelineEventRequest request, CancellationToken ct)
     {
         var ev = await executor.ExecuteAsync(new UpdateTimelineEventCommand(eventId, request), ct);
-        if (ev is null) return NotFound(new { detail = "Timeline event not found" });
+        if (ev is null)
+        {
+            return NotFound(new { detail = "Timeline event not found" });
+        }
+
         return Ok(ev);
     }
 
@@ -87,7 +111,11 @@ public class RecipeTimelineController(
     public async Task<IActionResult> DeleteEventFlat(Guid eventId, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteTimelineEventCommand(eventId), ct);
-        if (!deleted) return NotFound(new { detail = "Timeline event not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Timeline event not found" });
+        }
+
         return NoContent();
     }
 
@@ -97,12 +125,18 @@ public class RecipeTimelineController(
         Guid eventId, IFormFile image, CancellationToken ct)
     {
         if (image is null || image.Length == 0)
+        {
             return BadRequest(new { detail = "No image provided" });
+        }
 
         using var ms = new MemoryStream();
         await image.CopyToAsync(ms, ct);
         var result = await executor.ExecuteAsync(new UploadTimelineImageCommand(eventId, ms.ToArray()), ct);
-        if (result is null) return NotFound(new { detail = "Timeline event not found" });
+        if (result is null)
+        {
+            return NotFound(new { detail = "Timeline event not found" });
+        }
+
         return Ok(result);
     }
 }

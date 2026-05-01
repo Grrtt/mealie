@@ -76,14 +76,40 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
             .Include(f => f.Aliases)
             .Include(f => f.Label)
             .FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == id, ct);
-        if (food is null) return null;
+        if (food is null)
+        {
+            return null;
+        }
 
-        if (request.Name is not null) food.Name = request.Name;
-        if (request.Description is not null) food.Description = request.Description;
-        if (request.PluralName is not null) food.PluralName = request.PluralName;
-        if (request.UnitId.HasValue) food.UnitId = request.UnitId;
-        if (request.LabelId.HasValue) food.LabelId = request.LabelId;
-        if (request.OnHand.HasValue) food.OnHand = request.OnHand.Value;
+        if (request.Name is not null)
+        {
+            food.Name = request.Name;
+        }
+
+        if (request.Description is not null)
+        {
+            food.Description = request.Description;
+        }
+
+        if (request.PluralName is not null)
+        {
+            food.PluralName = request.PluralName;
+        }
+
+        if (request.UnitId.HasValue)
+        {
+            food.UnitId = request.UnitId;
+        }
+
+        if (request.LabelId.HasValue)
+        {
+            food.LabelId = request.LabelId;
+        }
+
+        if (request.OnHand.HasValue)
+        {
+            food.OnHand = request.OnHand.Value;
+        }
 
         if (request.Aliases is not null)
         {
@@ -109,7 +135,10 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
     public async Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
         var food = await db.Foods.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == id, ct);
-        if (food is null) return false;
+        if (food is null)
+        {
+            return false;
+        }
 
         db.Foods.Remove(food);
         await db.SaveChangesAsync(ct);
@@ -123,7 +152,10 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
             .FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == fromFoodId, ct);
         var toFood = await db.Foods.IgnoreQueryFilters()
             .FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == toFoodId, ct);
-        if (fromFood is null || toFood is null) return false;
+        if (fromFood is null || toFood is null)
+        {
+            return false;
+        }
 
         await db.RecipeIngredients
             .Where(i => i.FoodId == fromFoodId)
@@ -141,10 +173,12 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
         {
             Id = f.Id, Name = f.Name, Description = f.Description, PluralName = f.PluralName,
             UnitId = f.UnitId, LabelId = f.LabelId,
-            Label = f.Label is null ? null : new LabelSummaryResponse
-            {
-                Id = f.Label.Id, Name = f.Label.Name, Color = f.Label.Color
-            },
+            Label = f.Label is null
+                ? null
+                : new LabelSummaryResponse
+                {
+                    Id = f.Label.Id, Name = f.Label.Name, Color = f.Label.Color
+                },
             GroupId = f.GroupId, OnHand = f.OnHand,
             Aliases = f.Aliases.Select(a => new AliasResponse { Id = a.Id, Name = a.Name }).ToList(),
             CreatedAt = f.CreatedAt, UpdateAt = f.UpdateAt

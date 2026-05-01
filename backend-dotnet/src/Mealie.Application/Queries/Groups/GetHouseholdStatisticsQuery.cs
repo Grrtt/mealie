@@ -15,7 +15,8 @@ public record GetHouseholdStatisticsQuery(Guid HouseholdId) : IQuery<HouseholdSt
         int totalCategories = 0, totalTags = 0, totalTools = 0;
         if (household is not null)
         {
-            totalCategories = await db.Categories.IgnoreQueryFilters().CountAsync(c => c.GroupId == household.GroupId, ct);
+            totalCategories =
+                await db.Categories.IgnoreQueryFilters().CountAsync(c => c.GroupId == household.GroupId, ct);
             totalTags = await db.Tags.IgnoreQueryFilters().CountAsync(t => t.GroupId == household.GroupId, ct);
             totalTools = await db.Tools.IgnoreQueryFilters().CountAsync(t => t.GroupId == household.GroupId, ct);
         }

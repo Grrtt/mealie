@@ -16,6 +16,9 @@ public record GetWebhookByIdQuery(Guid HouseholdId, Guid Id) : IQuery<WebhookRes
 
 file static class WebhookMappings
 {
-    public static WebhookResponse MapToResponse(Webhook w) =>
-        new() { Id = w.Id, Name = w.Name, Url = w.Url, Enabled = w.Enabled, ScheduledTime = w.ScheduledTime };
+    public static WebhookResponse MapToResponse(Webhook w)
+    {
+        return new WebhookResponse
+            { Id = w.Id, Name = w.Name, Url = w.Url, Enabled = w.Enabled, ScheduledTime = w.ScheduledTime };
+    }
 }

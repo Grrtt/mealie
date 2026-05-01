@@ -28,10 +28,13 @@ public record GetAllTimelineEventsQuery(Guid GroupId, int Page, int PerPage) : I
 
 file static class TimelineMappings
 {
-    public static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev) => new()
+    public static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev)
     {
-        Id = ev.Id, Subject = ev.Subject, EventType = ev.EventType, EventMessage = ev.EventMessage,
-        Image = ev.Image, RecipeId = ev.RecipeId, UserId = ev.UserId, Timestamp = ev.Timestamp,
-        CreatedAt = ev.CreatedAt, UpdateAt = ev.UpdateAt
-    };
+        return new TimelineEventResponse
+        {
+            Id = ev.Id, Subject = ev.Subject, EventType = ev.EventType, EventMessage = ev.EventMessage,
+            Image = ev.Image, RecipeId = ev.RecipeId, UserId = ev.UserId, Timestamp = ev.Timestamp,
+            CreatedAt = ev.CreatedAt, UpdateAt = ev.UpdateAt
+        };
+    }
 }

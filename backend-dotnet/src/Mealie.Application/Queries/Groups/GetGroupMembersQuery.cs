@@ -9,7 +9,8 @@ public record GetGroupMembersQuery(Guid GroupId) : IQuery<IList<UserSummaryDto>>
     {
         return await services.Db.Users.IgnoreQueryFilters()
             .Where(u => u.GroupId == GroupId)
-            .Select(u => new UserSummaryDto { Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email })
+            .Select(u => new UserSummaryDto
+                { Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email })
             .ToListAsync(ct);
     }
 }

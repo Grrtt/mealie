@@ -9,7 +9,8 @@ public record GetGroupInviteTokensQuery(Guid GroupId) : IQuery<IList<InviteToken
     {
         return await services.Db.InviteTokens.IgnoreQueryFilters()
             .Where(t => t.GroupId == GroupId)
-            .Select(t => new InviteTokenResponse { Id = t.Id, Token = t.Token, GroupId = t.GroupId, HouseholdId = t.HouseholdId })
+            .Select(t => new InviteTokenResponse
+                { Id = t.Id, Token = t.Token, GroupId = t.GroupId, HouseholdId = t.HouseholdId })
             .ToListAsync(ct);
     }
 }

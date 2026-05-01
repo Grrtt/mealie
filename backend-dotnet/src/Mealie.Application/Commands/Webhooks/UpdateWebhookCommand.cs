@@ -12,7 +12,11 @@ public record UpdateWebhookCommand(Guid HouseholdId, Guid Id, CreateWebhookReque
         var db = services.Db;
         var webhook = await db.Webhooks.IgnoreQueryFilters()
             .FirstOrDefaultAsync(w => w.HouseholdId == HouseholdId && w.Id == Id, ct);
-        if (webhook is null) return null;
+        if (webhook is null)
+        {
+            return null;
+        }
+
         webhook.Name = Request.Name;
         webhook.Url = Request.Url;
         webhook.Enabled = Request.Enabled;
@@ -25,6 +29,9 @@ public record UpdateWebhookCommand(Guid HouseholdId, Guid Id, CreateWebhookReque
 
 file static class WebhookMappings
 {
-    public static WebhookResponse MapToResponse(Webhook w) =>
-        new() { Id = w.Id, Name = w.Name, Url = w.Url, Enabled = w.Enabled, ScheduledTime = w.ScheduledTime };
+    public static WebhookResponse MapToResponse(Webhook w)
+    {
+        return new WebhookResponse
+            { Id = w.Id, Name = w.Name, Url = w.Url, Enabled = w.Enabled, ScheduledTime = w.ScheduledTime };
+    }
 }

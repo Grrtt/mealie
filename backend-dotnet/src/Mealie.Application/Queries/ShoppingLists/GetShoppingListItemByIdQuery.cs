@@ -18,8 +18,9 @@ public record GetShoppingListItemByIdQuery(Guid HouseholdId, Guid ItemId) : IQue
 
 file static class ShoppingListItemMappings
 {
-    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i) =>
-        new()
+    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i)
+    {
+        return new ShoppingListItemResponse
         {
             Id = i.Id, Note = i.Note, IsFood = i.IsFood, Checked = i.Checked,
             DisableAmount = i.DisableAmount, Quantity = i.Quantity,
@@ -27,4 +28,5 @@ file static class ShoppingListItemMappings
             Position = i.Position, UnitName = i.Unit?.Name, FoodName = i.Food?.Name,
             CreatedAt = i.CreatedAt, UpdateAt = i.UpdateAt
         };
+    }
 }

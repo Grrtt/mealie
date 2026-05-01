@@ -1,10 +1,9 @@
+using Mealie.Application.Commands.Groups;
 using Mealie.Application.Dtos.Groups;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Groups;
-using Mealie.Application.Commands.Groups;
 using Mealie.Application.Queries.Recipes;
-using Mealie.Application.Commands.Recipes;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Email;
@@ -25,33 +24,50 @@ public class HouseholdsController(
     public async Task<ActionResult<HouseholdResponse>> GetSelf(CancellationToken ct = default)
     {
         var h = await executor.ExecuteAsync(new GetHouseholdQuery(CurrentHouseholdId), ct);
-        if (h is null) return NotFoundOrForbidden();
+        if (h is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(h);
     }
 
     [HttpPut("self")]
-    public async Task<ActionResult<HouseholdResponse>> UpdateSelf([FromBody] UpdateHouseholdRequest request, CancellationToken ct = default)
+    public async Task<ActionResult<HouseholdResponse>> UpdateSelf([FromBody] UpdateHouseholdRequest request,
+        CancellationToken ct = default)
     {
         var h = await executor.ExecuteAsync(new UpdateHouseholdCommand(CurrentHouseholdId, request), ct);
-        if (h is null) return NotFoundOrForbidden();
+        if (h is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(h);
     }
 
     [HttpGet("self/members")]
     [HttpGet("members")]
     public async Task<ActionResult<IList<UserSummaryDto>>> GetMembers(CancellationToken ct = default)
-        => Ok(await executor.ExecuteAsync(new GetHouseholdMembersQuery(CurrentHouseholdId), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetHouseholdMembersQuery(CurrentHouseholdId), ct));
+    }
 
     [HttpGet("self/statistics")]
     [HttpGet("statistics")]
     public async Task<ActionResult<HouseholdStatisticsResponse>> GetStatistics(CancellationToken ct = default)
-        => Ok(await executor.ExecuteAsync(new GetHouseholdStatisticsQuery(CurrentHouseholdId), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetHouseholdStatisticsQuery(CurrentHouseholdId), ct));
+    }
 
     [HttpGet("self/recipes/{slug}")]
     public async Task<ActionResult<RecipeDetailResponse>> GetRecipeBySlug(string slug, CancellationToken ct = default)
     {
         var recipe = await executor.ExecuteAsync(new GetRecipeDetailBySlugQuery(CurrentGroupId, slug), ct);
-        if (recipe is null) return NotFoundOrForbidden();
+        if (recipe is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(recipe);
     }
 
@@ -59,7 +75,11 @@ public class HouseholdsController(
     public async Task<ActionResult<HouseholdPreferencesResponse>> GetPreferences(CancellationToken ct = default)
     {
         var prefs = await executor.ExecuteAsync(new GetHouseholdPreferencesQuery(CurrentHouseholdId), ct);
-        if (prefs is null) return NotFoundOrForbidden();
+        if (prefs is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(prefs);
     }
 
@@ -68,17 +88,25 @@ public class HouseholdsController(
         [FromBody] UpdateHouseholdPreferencesRequest request, CancellationToken ct = default)
     {
         var prefs = await executor.ExecuteAsync(new UpdateHouseholdPreferencesCommand(CurrentHouseholdId, request), ct);
-        if (prefs is null) return NotFoundOrForbidden();
+        if (prefs is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(prefs);
     }
 
     [HttpPost("invitations")]
-    public async Task<ActionResult<InviteTokenResponse>> CreateInvitation([FromBody] CreateInviteTokenRequest request, CancellationToken ct = default)
-        => Ok(await executor.ExecuteAsync(
+    public async Task<ActionResult<InviteTokenResponse>> CreateInvitation([FromBody] CreateInviteTokenRequest request,
+        CancellationToken ct = default)
+    {
+        return Ok(await executor.ExecuteAsync(
             new CreateHouseholdInviteTokenCommand(CurrentGroupId, CurrentHouseholdId, request), ct));
+    }
 
     [HttpPost("invitations/email")]
-    public async Task<IActionResult> SendInvitationEmail([FromBody] HouseholdInvitationEmailRequest request, CancellationToken ct = default)
+    public async Task<IActionResult> SendInvitationEmail([FromBody] HouseholdInvitationEmailRequest request,
+        CancellationToken ct = default)
     {
         if (emailService.IsConfigured && !string.IsNullOrEmpty(request.Email))
         {
@@ -92,11 +120,16 @@ public class HouseholdsController(
     }
 
     [HttpPut("permissions")]
-    public async Task<IActionResult> UpdateHouseholdPermissions([FromBody] HouseholdMemberPermissions request, CancellationToken ct = default)
+    public async Task<IActionResult> UpdateHouseholdPermissions([FromBody] HouseholdMemberPermissions request,
+        CancellationToken ct = default)
     {
         var success = await executor.ExecuteAsync(new UpdateHouseholdMemberPermissionsCommand(
             CurrentHouseholdId, request.UserId, request.Admin, request.CanOrganize, request.CanInvite), ct);
-        if (!success) return NotFoundOrForbidden();
+        if (!success)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok();
     }
 }

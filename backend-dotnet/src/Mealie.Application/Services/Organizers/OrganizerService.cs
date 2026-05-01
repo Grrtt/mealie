@@ -2,6 +2,7 @@ using Mealie.Application.Common;
 using Mealie.Application.Dtos.Organizers;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Domain.Entities.Organizers;
+using Mealie.Domain.Entities.Recipes;
 using Mealie.Infrastructure.Data;
 using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
@@ -385,8 +386,9 @@ public class OrganizerService(ApplicationDbContext db) : IOrganizerService
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static RecipeSummaryResponse MapRecipeSummary(Domain.Entities.Recipes.Recipe r) =>
-        new()
+    private static RecipeSummaryResponse MapRecipeSummary(Recipe r)
+    {
+        return new RecipeSummaryResponse
         {
             Id = r.Id,
             Name = r.Name,
@@ -405,6 +407,7 @@ public class OrganizerService(ApplicationDbContext db) : IOrganizerService
                 .Select(c => new OrganizerSimpleResponse { Id = c.Id, Name = c.Name, Slug = c.Slug })
                 .ToList()
         };
+    }
 
     private async Task<string> EnsureUniqueTagSlugAsync(string slug, Guid groupId, CancellationToken ct)
     {

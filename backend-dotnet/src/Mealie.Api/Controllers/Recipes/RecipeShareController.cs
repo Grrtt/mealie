@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.Recipes;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Recipes;
-using Mealie.Application.Commands.Recipes;
 using Mealie.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +28,11 @@ public class RecipeShareController(
         string slug, [FromBody] CreateShareTokenRequest request, CancellationToken ct)
     {
         var token = await executor.ExecuteAsync(new CreateShareTokenCommand(slug, tenantContext.GroupId, request), ct);
-        if (token is null) return NotFound(new { detail = "Recipe not found" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(token);
     }
 
@@ -37,7 +41,11 @@ public class RecipeShareController(
     public async Task<IActionResult> DeleteShareToken(string slug, Guid tokenId, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteShareTokenCommand(tokenId), ct);
-        if (!deleted) return NotFound(new { detail = "Share token not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Share token not found" });
+        }
+
         return NoContent();
     }
 
@@ -46,7 +54,11 @@ public class RecipeShareController(
     public async Task<ActionResult<ShareTokenResponse>> GetSharedRecipe(Guid tokenId, CancellationToken ct)
     {
         var token = await executor.ExecuteAsync(new GetShareTokenQuery(tokenId), ct);
-        if (token is null) return NotFound(new { detail = "Share token not found or expired" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Share token not found or expired" });
+        }
+
         return Ok(token);
     }
 }

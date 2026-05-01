@@ -1,14 +1,16 @@
 using Mealie.Application.Dtos.ShoppingLists;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Planning;
-using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
-using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.ShoppingLists;
 
-public record UpdateShoppingListItemCommand(Guid HouseholdId, Guid ListId, Guid ItemId, UpdateShoppingListItemRequest Request)
+public record UpdateShoppingListItemCommand(
+    Guid HouseholdId,
+    Guid ListId,
+    Guid ItemId,
+    UpdateShoppingListItemRequest Request)
     : IQuery<ShoppingListItemResponse?>
 {
     public async Task<ShoppingListItemResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
@@ -17,15 +19,45 @@ public record UpdateShoppingListItemCommand(Guid HouseholdId, Guid ListId, Guid 
         var item = await db.ShoppingListItems
             .Include(i => i.Unit).Include(i => i.Food)
             .FirstOrDefaultAsync(i => i.ShoppingListId == ListId && i.Id == ItemId, ct);
-        if (item is null) return null;
+        if (item is null)
+        {
+            return null;
+        }
 
-        if (Request.Note is not null) item.Note = Request.Note;
-        if (Request.Checked.HasValue) item.Checked = Request.Checked.Value;
-        if (Request.DisableAmount.HasValue) item.DisableAmount = Request.DisableAmount.Value;
-        if (Request.Quantity.HasValue) item.Quantity = Request.Quantity;
-        if (Request.UnitId.HasValue) item.UnitId = Request.UnitId;
-        if (Request.FoodId.HasValue) item.FoodId = Request.FoodId;
-        if (Request.LabelId.HasValue) item.LabelId = Request.LabelId;
+        if (Request.Note is not null)
+        {
+            item.Note = Request.Note;
+        }
+
+        if (Request.Checked.HasValue)
+        {
+            item.Checked = Request.Checked.Value;
+        }
+
+        if (Request.DisableAmount.HasValue)
+        {
+            item.DisableAmount = Request.DisableAmount.Value;
+        }
+
+        if (Request.Quantity.HasValue)
+        {
+            item.Quantity = Request.Quantity;
+        }
+
+        if (Request.UnitId.HasValue)
+        {
+            item.UnitId = Request.UnitId;
+        }
+
+        if (Request.FoodId.HasValue)
+        {
+            item.FoodId = Request.FoodId;
+        }
+
+        if (Request.LabelId.HasValue)
+        {
+            item.LabelId = Request.LabelId;
+        }
 
         item.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
@@ -35,16 +67,19 @@ public record UpdateShoppingListItemCommand(Guid HouseholdId, Guid ListId, Guid 
 
 file static class ShoppingListMappings
 {
-    public static ShoppingListResponse MapToResponse(ShoppingList s) =>
-        new()
+    public static ShoppingListResponse MapToResponse(ShoppingList s)
+    {
+        return new ShoppingListResponse
         {
             Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
             CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt,
             Items = s.Items.Select(MapItemToResponse).ToList()
         };
+    }
 
-    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i) =>
-        new()
+    public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i)
+    {
+        return new ShoppingListItemResponse
         {
             Id = i.Id, Note = i.Note, IsFood = i.IsFood, Checked = i.Checked,
             DisableAmount = i.DisableAmount, Quantity = i.Quantity,
@@ -52,6 +87,7 @@ file static class ShoppingListMappings
             Position = i.Position, UnitName = i.Unit?.Name, FoodName = i.Food?.Name,
             CreatedAt = i.CreatedAt, UpdateAt = i.UpdateAt
         };
+    }
 
     public static async Task<ShoppingListItemResponse> CreateItemWithMergeAsync(
         ApplicationDbContext db, Guid listId, CreateShoppingListItemRequest request, CancellationToken ct)
@@ -90,11 +126,21 @@ file static class ShoppingListMappings
 
     private static bool CanMerge(ShoppingListItem existing, CreateShoppingListItemRequest incoming)
     {
-        if (existing.DisableAmount || incoming.DisableAmount) return false;
+        if (existing.DisableAmount || incoming.DisableAmount)
+        {
+            return false;
+        }
+
         if (incoming.FoodId.HasValue && existing.FoodId.HasValue)
+        {
             return existing.FoodId == incoming.FoodId && existing.UnitId == incoming.UnitId;
+        }
+
         if (!incoming.FoodId.HasValue && !existing.FoodId.HasValue)
+        {
             return !string.IsNullOrEmpty(existing.Note) && existing.Note == incoming.Note;
+        }
+
         return false;
     }
 }

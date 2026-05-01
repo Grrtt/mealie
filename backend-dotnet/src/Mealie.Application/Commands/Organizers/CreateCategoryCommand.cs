@@ -13,21 +13,33 @@ public record CreateCategoryCommand(Guid GroupId, CreateOrganizerRequest Request
     {
         var db = services.Db;
         var slug = await CategorySlugHelper.EnsureUniqueAsync(db, SlugHelper.Generate(Request.Name), GroupId, ct);
-        var cat = new Category { Id = Guid.NewGuid(), Name = Request.Name, Slug = slug, GroupId = GroupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow };
+        var cat = new Category
+        {
+            Id = Guid.NewGuid(), Name = Request.Name, Slug = slug, GroupId = GroupId, CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
+        };
         db.Categories.Add(cat);
         await db.SaveChangesAsync(ct);
-        return new CategoryResponse { Id = cat.Id, Name = cat.Name, Slug = cat.Slug, GroupId = cat.GroupId, CreatedAt = cat.CreatedAt, UpdateAt = cat.UpdateAt };
+        return new CategoryResponse
+        {
+            Id = cat.Id, Name = cat.Name, Slug = cat.Slug, GroupId = cat.GroupId, CreatedAt = cat.CreatedAt,
+            UpdateAt = cat.UpdateAt
+        };
     }
 }
 
 file static class CategorySlugHelper
 {
-    public static async Task<string> EnsureUniqueAsync(ApplicationDbContext db, string slug, Guid groupId, CancellationToken ct)
+    public static async Task<string> EnsureUniqueAsync(ApplicationDbContext db, string slug, Guid groupId,
+        CancellationToken ct)
     {
         var candidate = slug;
         var counter = 1;
         while (await db.Categories.IgnoreQueryFilters().AnyAsync(c => c.GroupId == groupId && c.Slug == candidate, ct))
+        {
             candidate = $"{slug}-{counter++}";
+        }
+
         return candidate;
     }
 }

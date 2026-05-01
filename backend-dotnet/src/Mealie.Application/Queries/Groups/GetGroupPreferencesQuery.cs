@@ -16,10 +16,12 @@ public record GetGroupPreferencesQuery(Guid GroupId) : IQuery<GroupPreferencesRe
 
 file static class GroupMappings
 {
-    public static GroupPreferencesResponse MapToGroupPreferencesResponse(GroupPreferences prefs) =>
-        new()
+    public static GroupPreferencesResponse MapToGroupPreferencesResponse(GroupPreferences prefs)
+    {
+        return new GroupPreferencesResponse
         {
             Id = prefs.Id, GroupId = prefs.GroupId,
             PrivateGroup = prefs.PrivateGroup, FirstDayOfWeek = prefs.FirstDayOfWeek
         };
+    }
 }

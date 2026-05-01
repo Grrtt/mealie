@@ -622,8 +622,8 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
     }
 
     /// <summary>
-    /// Creates an item, merging into an existing item if one is eligible (same food+unit, or same note when no food).
-    /// Mimics Python's bulk_create_items merge behaviour.
+    ///     Creates an item, merging into an existing item if one is eligible (same food+unit, or same note when no food).
+    ///     Mimics Python's bulk_create_items merge behaviour.
     /// </summary>
     private async Task<ShoppingListItemResponse> CreateItemWithMergeAsync(
         Guid listId, CreateShoppingListItemRequest request, CancellationToken ct)
@@ -662,14 +662,25 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
 
     private static bool CanMerge(ShoppingListItem existing, CreateShoppingListItemRequest incoming)
     {
-        if (existing.DisableAmount) return false;
-        if (incoming.DisableAmount) return false;
+        if (existing.DisableAmount)
+        {
+            return false;
+        }
+
+        if (incoming.DisableAmount)
+        {
+            return false;
+        }
 
         if (incoming.FoodId.HasValue && existing.FoodId.HasValue)
+        {
             return existing.FoodId == incoming.FoodId && existing.UnitId == incoming.UnitId;
+        }
 
         if (!incoming.FoodId.HasValue && !existing.FoodId.HasValue)
+        {
             return !string.IsNullOrEmpty(existing.Note) && existing.Note == incoming.Note;
+        }
 
         return false;
     }

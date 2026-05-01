@@ -1,8 +1,6 @@
 using Mealie.Application.Dtos.Webhooks;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Settings;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Commands.Webhooks;
 
@@ -26,6 +24,8 @@ public record CreateEventNotifierCommand(Guid GroupId, Guid HouseholdId, CreateE
 
 file static class NotifierMappings
 {
-    public static EventNotifierResponse MapToResponse(EventNotifier e) =>
-        new() { Id = e.Id, Name = e.Name, ApprisUrl = e.ApprisUrl, Enabled = e.Enabled };
+    public static EventNotifierResponse MapToResponse(EventNotifier e)
+    {
+        return new EventNotifierResponse { Id = e.Id, Name = e.Name, ApprisUrl = e.ApprisUrl, Enabled = e.Enabled };
+    }
 }

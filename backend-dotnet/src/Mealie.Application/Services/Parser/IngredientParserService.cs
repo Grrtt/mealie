@@ -70,8 +70,9 @@ public class IngredientParserService(
         return bruteResults;
     }
 
-    private static ParsedIngredientDto MapNlpResult(ParsedIngredientResult nlp) =>
-        new()
+    private static ParsedIngredientDto MapNlpResult(ParsedIngredientResult nlp)
+    {
+        return new ParsedIngredientDto
         {
             Input = nlp.Input,
             Confidence = new IngredientConfidenceDto
@@ -91,6 +92,7 @@ public class IngredientParserService(
                 OriginalText = nlp.Input
             }
         };
+    }
 
     private async Task<ParsedIngredientDto> ParseBruteAsync(Guid groupId, string ingredientString,
         CancellationToken ct)
@@ -142,13 +144,13 @@ public class IngredientParserService(
                     {
                         role = "system",
                         content = """
-                            You are a recipe ingredient parser. Given an ingredient string, extract the structured data.
-                            Respond with a JSON object containing exactly these fields:
-                            - quantity: number or null
-                            - unit: string or null (the unit of measure, e.g. "cup", "tablespoon")
-                            - food: string or null (the main ingredient, e.g. "flour", "butter")
-                            - note: string or null (preparation notes, e.g. "finely chopped", "room temperature")
-                            """
+                                  You are a recipe ingredient parser. Given an ingredient string, extract the structured data.
+                                  Respond with a JSON object containing exactly these fields:
+                                  - quantity: number or null
+                                  - unit: string or null (the unit of measure, e.g. "cup", "tablespoon")
+                                  - food: string or null (the main ingredient, e.g. "flour", "butter")
+                                  - note: string or null (preparation notes, e.g. "finely chopped", "room temperature")
+                                  """
                     },
                     new { role = "user", content = ingredientString }
                 }
@@ -160,7 +162,7 @@ public class IngredientParserService(
                 return null;
             }
 
-            var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
             var content = json.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             if (content is null)
             {
@@ -169,13 +171,17 @@ public class IngredientParserService(
 
             var parsed = JsonSerializer.Deserialize<JsonElement>(content);
             var quantity = parsed.TryGetProperty("quantity", out var q) && q.ValueKind == JsonValueKind.Number
-                ? (decimal?)q.GetDecimal() : null;
+                ? (decimal?)q.GetDecimal()
+                : null;
             var unit = parsed.TryGetProperty("unit", out var u) && u.ValueKind == JsonValueKind.String
-                ? u.GetString() : null;
+                ? u.GetString()
+                : null;
             var food = parsed.TryGetProperty("food", out var f) && f.ValueKind == JsonValueKind.String
-                ? f.GetString() : null;
+                ? f.GetString()
+                : null;
             var note = parsed.TryGetProperty("note", out var n) && n.ValueKind == JsonValueKind.String
-                ? n.GetString() : null;
+                ? n.GetString()
+                : null;
 
             return new ParsedIngredientDto
             {

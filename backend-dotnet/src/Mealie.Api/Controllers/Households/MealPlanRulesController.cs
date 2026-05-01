@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.MealPlans;
 using Mealie.Application.Dtos.MealPlans;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.MealPlans;
-using Mealie.Application.Commands.MealPlans;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +33,11 @@ public class MealPlanRulesController(QueryExecutor executor, ITenantContext tena
     public async Task<ActionResult<MealPlanRuleResponse>> GetMealPlanRule(Guid id, CancellationToken ct)
     {
         var rule = await executor.ExecuteAsync(new GetMealPlanRuleByIdQuery(CurrentGroupId, id), ct);
-        if (rule is null) return NotFoundOrForbidden();
+        if (rule is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(rule);
     }
 
@@ -52,7 +56,11 @@ public class MealPlanRulesController(QueryExecutor executor, ITenantContext tena
         [FromBody] UpdateMealPlanRuleRequest request, CancellationToken ct)
     {
         var rule = await executor.ExecuteAsync(new UpdateMealPlanRuleCommand(CurrentGroupId, id, request), ct);
-        if (rule is null) return NotFoundOrForbidden();
+        if (rule is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(rule);
     }
 
@@ -60,7 +68,11 @@ public class MealPlanRulesController(QueryExecutor executor, ITenantContext tena
     public async Task<IActionResult> DeleteMealPlanRule(Guid id, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteMealPlanRuleCommand(CurrentGroupId, id), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 }

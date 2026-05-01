@@ -8,12 +8,15 @@ namespace Mealie.Application.Queries.Ingredients;
 public record GetUnitsQuery(Guid GroupId, PaginationParams Pagination, string? Search = null)
     : IQuery<PaginatedResponse<UnitResponse>>
 {
-    public async Task<PaginatedResponse<UnitResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
+    public async Task<PaginatedResponse<UnitResponse>> ExecuteAsync(IQueryServices services,
+        CancellationToken ct = default)
     {
         var db = services.Db;
         var query = db.Units.IgnoreQueryFilters().Include(u => u.Aliases).Where(u => u.GroupId == GroupId);
         if (!string.IsNullOrWhiteSpace(Search))
+        {
             query = query.Where(u => u.Name.Contains(Search));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query.OrderBy(u => u.Name).Skip(Pagination.Skip).Take(Pagination.PerPage).ToListAsync(ct);
@@ -28,8 +31,9 @@ public record GetUnitsQuery(Guid GroupId, PaginationParams Pagination, string? S
 
 file static class UnitMappings
 {
-    public static UnitResponse MapToResponse(IngredientUnit u) =>
-        new()
+    public static UnitResponse MapToResponse(IngredientUnit u)
+    {
+        return new UnitResponse
         {
             Id = u.Id, Name = u.Name, Description = u.Description, Abbreviation = u.Abbreviation,
             PluralName = u.PluralName, PluralAbbreviation = u.PluralAbbreviation,
@@ -37,4 +41,5 @@ file static class UnitMappings
             GroupId = u.GroupId, CreatedAt = u.CreatedAt, UpdateAt = u.UpdateAt,
             Aliases = u.Aliases.Select(a => new AliasResponse { Id = a.Id, Name = a.Name }).ToList()
         };
+    }
 }

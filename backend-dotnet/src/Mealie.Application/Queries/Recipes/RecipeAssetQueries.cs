@@ -9,10 +9,15 @@ public record GetAssetsQuery(string Slug) : IQuery<IList<AssetResponse>>
     {
         var db = services.Db;
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == Slug, ct);
-        if (recipe is null) return [];
+        if (recipe is null)
+        {
+            return [];
+        }
+
         return await db.RecipeAssets
             .Where(a => a.RecipeId == recipe.Id)
-            .Select(a => new AssetResponse { Id = a.Id, Name = a.Name, Icon = a.Icon, Extension = a.Extension, RecipeId = a.RecipeId })
+            .Select(a => new AssetResponse
+                { Id = a.Id, Name = a.Name, Icon = a.Icon, Extension = a.Extension, RecipeId = a.RecipeId })
             .ToListAsync(ct);
     }
 }

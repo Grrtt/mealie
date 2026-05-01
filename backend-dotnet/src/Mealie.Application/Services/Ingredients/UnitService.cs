@@ -68,15 +68,45 @@ public class UnitService(ApplicationDbContext db) : IUnitService
         var unit = await db.Units.IgnoreQueryFilters()
             .Include(u => u.Aliases)
             .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
-        if (unit is null) return null;
+        if (unit is null)
+        {
+            return null;
+        }
 
-        if (request.Name is not null) unit.Name = request.Name;
-        if (request.Description is not null) unit.Description = request.Description;
-        if (request.Abbreviation is not null) unit.Abbreviation = request.Abbreviation;
-        if (request.PluralName is not null) unit.PluralName = request.PluralName;
-        if (request.PluralAbbreviation is not null) unit.PluralAbbreviation = request.PluralAbbreviation;
-        if (request.UseAbbreviation.HasValue) unit.UseAbbreviation = request.UseAbbreviation.Value;
-        if (request.Fraction.HasValue) unit.Fraction = request.Fraction.Value;
+        if (request.Name is not null)
+        {
+            unit.Name = request.Name;
+        }
+
+        if (request.Description is not null)
+        {
+            unit.Description = request.Description;
+        }
+
+        if (request.Abbreviation is not null)
+        {
+            unit.Abbreviation = request.Abbreviation;
+        }
+
+        if (request.PluralName is not null)
+        {
+            unit.PluralName = request.PluralName;
+        }
+
+        if (request.PluralAbbreviation is not null)
+        {
+            unit.PluralAbbreviation = request.PluralAbbreviation;
+        }
+
+        if (request.UseAbbreviation.HasValue)
+        {
+            unit.UseAbbreviation = request.UseAbbreviation.Value;
+        }
+
+        if (request.Fraction.HasValue)
+        {
+            unit.Fraction = request.Fraction.Value;
+        }
 
         if (request.Aliases is not null)
         {
@@ -95,7 +125,10 @@ public class UnitService(ApplicationDbContext db) : IUnitService
     public async Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
         var unit = await db.Units.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
-        if (unit is null) return false;
+        if (unit is null)
+        {
+            return false;
+        }
 
         db.Units.Remove(unit);
         await db.SaveChangesAsync(ct);
@@ -108,7 +141,10 @@ public class UnitService(ApplicationDbContext db) : IUnitService
             .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == fromUnitId, ct);
         var toUnit = await db.Units.IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == toUnitId, ct);
-        if (fromUnit is null || toUnit is null) return false;
+        if (fromUnit is null || toUnit is null)
+        {
+            return false;
+        }
 
         await db.RecipeIngredients
             .Where(i => i.UnitId == fromUnitId)

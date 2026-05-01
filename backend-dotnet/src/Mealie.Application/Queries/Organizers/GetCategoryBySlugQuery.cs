@@ -9,7 +9,14 @@ public record GetCategoryBySlugQuery(Guid GroupId, string Slug) : IQuery<Categor
     {
         var c = await services.Db.Categories.IgnoreQueryFilters()
             .FirstOrDefaultAsync(c => c.GroupId == GroupId && c.Slug == Slug, ct);
-        if (c is null) return null;
-        return new CategoryResponse { Id = c.Id, Name = c.Name, Slug = c.Slug, GroupId = c.GroupId, CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt };
+        if (c is null)
+        {
+            return null;
+        }
+
+        return new CategoryResponse
+        {
+            Id = c.Id, Name = c.Name, Slug = c.Slug, GroupId = c.GroupId, CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
+        };
     }
 }

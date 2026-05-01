@@ -22,17 +22,29 @@ public record CreateMealPlanRuleCommand(Guid GroupId, Guid HouseholdId, CreateMe
         if (Request.TagIds.Count > 0)
         {
             var tags = await db.Tags.IgnoreQueryFilters().Where(t => Request.TagIds.Contains(t.Id)).ToListAsync(ct);
-            foreach (var tag in tags) rule.Tags.Add(tag);
+            foreach (var tag in tags)
+            {
+                rule.Tags.Add(tag);
+            }
         }
+
         if (Request.CategoryIds.Count > 0)
         {
-            var cats = await db.Categories.IgnoreQueryFilters().Where(c => Request.CategoryIds.Contains(c.Id)).ToListAsync(ct);
-            foreach (var cat in cats) rule.Categories.Add(cat);
+            var cats = await db.Categories.IgnoreQueryFilters().Where(c => Request.CategoryIds.Contains(c.Id))
+                .ToListAsync(ct);
+            foreach (var cat in cats)
+            {
+                rule.Categories.Add(cat);
+            }
         }
+
         if (Request.HouseholdIds.Count > 0)
         {
             var households = await db.Households.Where(h => Request.HouseholdIds.Contains(h.Id)).ToListAsync(ct);
-            foreach (var h in households) rule.Households.Add(h);
+            foreach (var h in households)
+            {
+                rule.Households.Add(h);
+            }
         }
 
         db.MealPlanRules.Add(rule);
@@ -47,17 +59,22 @@ public record CreateMealPlanRuleCommand(Guid GroupId, Guid HouseholdId, CreateMe
 
 file static class RuleHelpers
 {
-    public static IQueryable<MealPlanRule> WithNav(IQueryable<MealPlanRule> q) =>
-        q.Include(r => r.Tags).Include(r => r.Categories).Include(r => r.Households);
+    public static IQueryable<MealPlanRule> WithNav(IQueryable<MealPlanRule> q)
+    {
+        return q.Include(r => r.Tags).Include(r => r.Categories).Include(r => r.Households);
+    }
 
-    public static MealPlanRuleResponse MapToResponse(MealPlanRule r) =>
-        new()
+    public static MealPlanRuleResponse MapToResponse(MealPlanRule r)
+    {
+        return new MealPlanRuleResponse
         {
             Id = r.Id, GroupId = r.GroupId, HouseholdId = r.HouseholdId,
             Day = r.Day, EntryType = r.EntryType, QueryFilterString = r.QueryFilterString,
             Tags = r.Tags.Select(t => new MealPlanRuleTagSummary { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
-            Categories = r.Categories.Select(c => new MealPlanRuleTagSummary { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
+            Categories = r.Categories
+                .Select(c => new MealPlanRuleTagSummary { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
             Households = r.Households.Select(h => h.Id).ToList(),
             CreatedAt = r.CreatedAt, UpdateAt = r.UpdateAt
         };
+    }
 }

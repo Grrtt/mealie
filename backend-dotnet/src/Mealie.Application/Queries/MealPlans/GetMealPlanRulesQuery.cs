@@ -17,17 +17,22 @@ public record GetMealPlanRulesQuery(Guid GroupId, Guid HouseholdId) : IQuery<ILi
 
 file static class RuleHelpers
 {
-    public static IQueryable<MealPlanRule> WithNav(IQueryable<MealPlanRule> q) =>
-        q.Include(r => r.Tags).Include(r => r.Categories).Include(r => r.Households);
+    public static IQueryable<MealPlanRule> WithNav(IQueryable<MealPlanRule> q)
+    {
+        return q.Include(r => r.Tags).Include(r => r.Categories).Include(r => r.Households);
+    }
 
-    public static MealPlanRuleResponse MapToResponse(MealPlanRule r) =>
-        new()
+    public static MealPlanRuleResponse MapToResponse(MealPlanRule r)
+    {
+        return new MealPlanRuleResponse
         {
             Id = r.Id, GroupId = r.GroupId, HouseholdId = r.HouseholdId,
             Day = r.Day, EntryType = r.EntryType, QueryFilterString = r.QueryFilterString,
             Tags = r.Tags.Select(t => new MealPlanRuleTagSummary { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
-            Categories = r.Categories.Select(c => new MealPlanRuleTagSummary { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
+            Categories = r.Categories
+                .Select(c => new MealPlanRuleTagSummary { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
             Households = r.Households.Select(h => h.Id).ToList(),
             CreatedAt = r.CreatedAt, UpdateAt = r.UpdateAt
         };
+    }
 }

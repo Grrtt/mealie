@@ -1,12 +1,12 @@
 using Mealie.Application.Dtos.Organizers;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Organizers;
-using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Cookbooks;
 
-public record CreateCookbookCommand(Guid GroupId, Guid HouseholdId, CreateCookbookRequest Request) : IQuery<CookbookResponse>
+public record CreateCookbookCommand(Guid GroupId, Guid HouseholdId, CreateCookbookRequest Request)
+    : IQuery<CookbookResponse>
 {
     public async Task<CookbookResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
@@ -28,11 +28,13 @@ public record CreateCookbookCommand(Guid GroupId, Guid HouseholdId, CreateCookbo
 
 file static class CookbookMappings
 {
-    public static Mealie.Application.Dtos.Organizers.CookbookResponse MapToResponse(Mealie.Domain.Entities.Organizers.Cookbook c) =>
-        new()
+    public static CookbookResponse MapToResponse(Cookbook c)
+    {
+        return new CookbookResponse
         {
             Id = c.Id, Name = c.Name, Description = c.Description, Image = c.Image,
             Public = c.Public, RequireAllCategories = c.RequireAllCategories, Position = c.Position,
             GroupId = c.GroupId, HouseholdId = c.HouseholdId, CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
         };
+    }
 }

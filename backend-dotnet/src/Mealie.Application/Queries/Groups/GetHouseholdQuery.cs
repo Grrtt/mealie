@@ -15,6 +15,8 @@ public record GetHouseholdQuery(Guid HouseholdId) : IQuery<HouseholdResponse?>
 
 file static class HouseholdMappings
 {
-    public static HouseholdResponse MapToResponse(Household h) =>
-        new() { Id = h.Id, Name = h.Name, Slug = h.Slug, GroupId = h.GroupId };
+    public static HouseholdResponse MapToResponse(Household h)
+    {
+        return new HouseholdResponse { Id = h.Id, Name = h.Name, Slug = h.Slug, GroupId = h.GroupId };
+    }
 }

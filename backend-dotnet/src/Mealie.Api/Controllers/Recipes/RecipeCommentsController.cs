@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.Recipes;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Recipes;
-using Mealie.Application.Commands.Recipes;
 using Mealie.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -39,7 +39,8 @@ public class RecipeCommentsController(
     public async Task<ActionResult<CommentResponse>> UpdateComment(
         string slug, Guid commentId, [FromBody] UpdateCommentRequest request, CancellationToken ct)
     {
-        var comment = await executor.ExecuteAsync(new UpdateCommentCommand(commentId, tenantContext.UserId, request), ct);
+        var comment =
+            await executor.ExecuteAsync(new UpdateCommentCommand(commentId, tenantContext.UserId, request), ct);
         if (comment is null)
         {
             return NotFound(new { detail = "Comment not found or not owned by user" });

@@ -1,8 +1,8 @@
+using Mealie.Application.Commands.Groups;
 using Mealie.Application.Dtos.Groups;
 using Mealie.Application.Dtos.Reports;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Groups;
-using Mealie.Application.Commands.Groups;
 using Mealie.Application.Services.Migrations;
 using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Auth;
@@ -27,15 +27,24 @@ public class GroupsController(
     public async Task<ActionResult<GroupResponse>> GetSelf(CancellationToken ct = default)
     {
         var group = await executor.ExecuteAsync(new GetGroupQuery(CurrentGroupId), ct);
-        if (group is null) return NotFoundOrForbidden();
+        if (group is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(group);
     }
 
     [HttpPut("self")]
-    public async Task<ActionResult<GroupResponse>> UpdateSelf([FromBody] UpdateGroupRequest request, CancellationToken ct = default)
+    public async Task<ActionResult<GroupResponse>> UpdateSelf([FromBody] UpdateGroupRequest request,
+        CancellationToken ct = default)
     {
         var group = await executor.ExecuteAsync(new UpdateGroupCommand(CurrentGroupId, request), ct);
-        if (group is null) return NotFoundOrForbidden();
+        if (group is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(group);
     }
 
@@ -51,7 +60,11 @@ public class GroupsController(
     public async Task<ActionResult<UserSummaryDto>> GetMember(Guid userId, CancellationToken ct = default)
     {
         var member = await executor.ExecuteAsync(new GetGroupMemberQuery(CurrentGroupId, userId), ct);
-        if (member is null) return NotFoundOrForbidden();
+        if (member is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(member);
     }
 
@@ -67,23 +80,37 @@ public class GroupsController(
     {
         var households = await executor.ExecuteAsync(new GetGroupHouseholdsQuery(CurrentGroupId), ct);
         var household = households.FirstOrDefault(h => h.Id == householdId);
-        if (household is null) return NotFoundOrForbidden();
+        if (household is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(household);
     }
 
     [HttpGet("self/invitations")]
     public async Task<ActionResult<IList<InviteTokenResponse>>> GetInvitations(CancellationToken ct = default)
-        => Ok(await executor.ExecuteAsync(new GetGroupInviteTokensQuery(CurrentGroupId), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetGroupInviteTokensQuery(CurrentGroupId), ct));
+    }
 
     [HttpPost("self/invitations")]
-    public async Task<ActionResult<InviteTokenResponse>> CreateInvitation([FromBody] CreateInviteTokenRequest request, CancellationToken ct = default)
-        => Ok(await executor.ExecuteAsync(new CreateGroupInviteTokenCommand(CurrentGroupId, request.HouseholdId), ct));
+    public async Task<ActionResult<InviteTokenResponse>> CreateInvitation([FromBody] CreateInviteTokenRequest request,
+        CancellationToken ct = default)
+    {
+        return Ok(await executor.ExecuteAsync(new CreateGroupInviteTokenCommand(CurrentGroupId, request.HouseholdId),
+            ct));
+    }
 
     [HttpDelete("self/invitations/{tokenId:guid}")]
     public async Task<IActionResult> DeleteInvitation(Guid tokenId, CancellationToken ct = default)
     {
         var success = await executor.ExecuteAsync(new DeleteGroupInviteTokenCommand(CurrentGroupId, tokenId), ct);
-        if (!success) return NotFoundOrForbidden();
+        if (!success)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok();
     }
 
@@ -91,7 +118,11 @@ public class GroupsController(
     public async Task<ActionResult<GroupPreferencesResponse>> GetPreferences(CancellationToken ct = default)
     {
         var prefs = await executor.ExecuteAsync(new GetGroupPreferencesQuery(CurrentGroupId), ct);
-        if (prefs is null) return NotFoundOrForbidden();
+        if (prefs is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(prefs);
     }
 
@@ -100,7 +131,11 @@ public class GroupsController(
         [FromBody] UpdateGroupPreferencesRequest request, CancellationToken ct = default)
     {
         var prefs = await executor.ExecuteAsync(new UpdateGroupPreferencesCommand(CurrentGroupId, request), ct);
-        if (prefs is null) return NotFoundOrForbidden();
+        if (prefs is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(prefs);
     }
 
@@ -119,7 +154,9 @@ public class GroupsController(
     public async Task<ActionResult<ReportSummaryDto>> ImportRecipes(IFormFile archive)
     {
         if (archive is null || archive.Length == 0)
+        {
             return BadRequest(new { detail = "No file uploaded" });
+        }
 
         var queueDir = Path.Combine(appSettings.Value.DataDir, "migration-queue");
         Directory.CreateDirectory(queueDir);
@@ -162,7 +199,9 @@ public class GroupsController(
             .Where(r => r.GroupId == CurrentGroupId);
 
         if (!string.IsNullOrEmpty(reportType))
+        {
             query = query.Where(r => r.Category == reportType);
+        }
 
         var reports = await query
             .OrderByDescending(r => r.Timestamp)
@@ -179,7 +218,10 @@ public class GroupsController(
             .Include(r => r.Entries)
             .FirstOrDefaultAsync(r => r.Id == reportId && r.GroupId == CurrentGroupId);
 
-        if (report is null) return NotFoundOrForbidden();
+        if (report is null)
+        {
+            return NotFoundOrForbidden();
+        }
 
         return Ok(new ReportOutDto
         {
@@ -207,22 +249,28 @@ public class GroupsController(
         var report = await db.Reports.IgnoreQueryFilters()
             .FirstOrDefaultAsync(r => r.Id == reportId && r.GroupId == CurrentGroupId);
 
-        if (report is null) return NotFoundOrForbidden();
+        if (report is null)
+        {
+            return NotFoundOrForbidden();
+        }
 
         db.Reports.Remove(report);
         await db.SaveChangesAsync();
         return Ok();
     }
 
-    private static ReportSummaryDto MapReportSummary(Report r) => new()
+    private static ReportSummaryDto MapReportSummary(Report r)
     {
-        Id = r.Id,
-        Name = r.Name,
-        Category = r.Category,
-        Status = r.Status,
-        Timestamp = r.Timestamp.ToString("o"),
-        GroupId = r.GroupId.ToString(),
-        TotalCount = r.TotalCount,
-        ProcessedCount = r.ProcessedCount
-    };
+        return new ReportSummaryDto
+        {
+            Id = r.Id,
+            Name = r.Name,
+            Category = r.Category,
+            Status = r.Status,
+            Timestamp = r.Timestamp.ToString("o"),
+            GroupId = r.GroupId.ToString(),
+            TotalCount = r.TotalCount,
+            ProcessedCount = r.ProcessedCount
+        };
+    }
 }

@@ -17,8 +17,9 @@ public record GetUserProfileQuery(Guid UserId) : IQuery<UserResponse?>
 
 file static class UserMappings
 {
-    public static UserResponse MapToResponse(User u) =>
-        new()
+    public static UserResponse MapToResponse(User u)
+    {
+        return new UserResponse
         {
             Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email,
             AuthMethod = u.AuthMethod.ToString(), Admin = u.Admin, Advanced = u.Advanced,
@@ -29,4 +30,5 @@ file static class UserMappings
             CanManageHousehold = u.CanManageHousehold, CanManage = u.CanManage,
             CanInvite = u.CanInvite, CanOrganize = u.CanOrganize
         };
+    }
 }

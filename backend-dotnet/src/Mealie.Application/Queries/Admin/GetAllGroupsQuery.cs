@@ -1,5 +1,4 @@
 using Mealie.Application.Dtos.Admin;
-using Mealie.Domain.Entities.Core;
 using Microsoft.EntityFrameworkCore;
 using Group = Mealie.Domain.Entities.Core.Group;
 
@@ -19,17 +18,21 @@ public record GetAllGroupsQuery : IQuery<object>
 
 file static class AdminGroupMappings
 {
-    public static AdminGroupResponse MapGroupToResponse(Group g) =>
-        new()
+    public static AdminGroupResponse MapGroupToResponse(Group g)
+    {
+        return new AdminGroupResponse
         {
             Id = g.Id, Name = g.Name, Slug = g.Slug, CreatedAt = g.CreatedAt, UpdateAt = g.UpdateAt,
             UserCount = g.Users.Count, HouseholdCount = g.Households.Count,
             Users = g.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
             Households = g.Households.Select(h => (object)new { h.Id, h.Name, h.Slug }).ToList(),
-            Preferences = g.Preferences is null ? null : new GroupPreferencesDto
-            {
-                Id = g.Preferences.Id, GroupId = g.Preferences.GroupId,
-                PrivateGroup = g.Preferences.PrivateGroup, ShowAnnouncements = false
-            }
+            Preferences = g.Preferences is null
+                ? null
+                : new GroupPreferencesDto
+                {
+                    Id = g.Preferences.Id, GroupId = g.Preferences.GroupId,
+                    PrivateGroup = g.Preferences.PrivateGroup, ShowAnnouncements = false
+                }
         };
+    }
 }

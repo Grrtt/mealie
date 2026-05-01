@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.ShoppingLists;
 using Mealie.Application.Dtos.ShoppingLists;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.ShoppingLists;
-using Mealie.Application.Commands.ShoppingLists;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -16,13 +16,19 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<ShoppingListSummaryResponse>>> GetShoppingLists(
         [FromQuery] PaginationParams pagination, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new GetShoppingListsQuery(CurrentHouseholdId, pagination), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetShoppingListsQuery(CurrentHouseholdId, pagination), ct));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ShoppingListResponse>> GetShoppingList(Guid id, CancellationToken ct)
     {
         var list = await executor.ExecuteAsync(new GetShoppingListByIdQuery(CurrentHouseholdId, id), ct);
-        if (list is null) return NotFoundOrForbidden();
+        if (list is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(list);
     }
 
@@ -41,7 +47,11 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
         [FromBody] UpdateShoppingListRequest request, CancellationToken ct)
     {
         var list = await executor.ExecuteAsync(new UpdateShoppingListCommand(CurrentHouseholdId, id, request), ct);
-        if (list is null) return NotFoundOrForbidden();
+        if (list is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(list);
     }
 
@@ -49,14 +59,20 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
     public async Task<IActionResult> DeleteShoppingList(Guid id, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteShoppingListCommand(CurrentHouseholdId, id), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
     [HttpPost("{id:guid}/items")]
     public async Task<ActionResult<ShoppingListItemResponse>> AddItem(Guid id,
         [FromBody] CreateShoppingListItemRequest request, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new AddShoppingListItemCommand(CurrentHouseholdId, id, request), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new AddShoppingListItemCommand(CurrentHouseholdId, id, request), ct));
+    }
 
     [HttpPut("{id:guid}/items/{itemId:guid}")]
     public async Task<ActionResult<ShoppingListItemResponse>> UpdateItem(Guid id, Guid itemId,
@@ -64,15 +80,24 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
     {
         var item = await executor.ExecuteAsync(
             new UpdateShoppingListItemCommand(CurrentHouseholdId, id, itemId, request), ct);
-        if (item is null) return NotFoundOrForbidden();
+        if (item is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(item);
     }
 
     [HttpDelete("{id:guid}/items/{itemId:guid}")]
     public async Task<IActionResult> DeleteItem(Guid id, Guid itemId, CancellationToken ct)
     {
-        var deleted = await executor.ExecuteAsync(new DeleteShoppingListItemCommand(CurrentHouseholdId, id, itemId), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        var deleted =
+            await executor.ExecuteAsync(new DeleteShoppingListItemCommand(CurrentHouseholdId, id, itemId), ct);
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
@@ -81,7 +106,11 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
         [FromBody] AddRecipeToShoppingListRequest request, CancellationToken ct)
     {
         var list = await executor.ExecuteAsync(new AddRecipeToShoppingListCommand(CurrentHouseholdId, id, request), ct);
-        if (list is null) return NotFoundOrForbidden();
+        if (list is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(list);
     }
 
@@ -90,7 +119,11 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
     {
         var deleted = await executor.ExecuteAsync(
             new RemoveRecipeFromShoppingListCommand(CurrentHouseholdId, id, recipeId), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
@@ -100,7 +133,11 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
     {
         var list = await executor.ExecuteAsync(
             new UpdateShoppingListLabelSettingsCommand(CurrentHouseholdId, id, request), ct);
-        if (list is null) return NotFoundOrForbidden();
+        if (list is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(list);
     }
 }

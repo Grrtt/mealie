@@ -9,7 +9,7 @@ public class RecipeSummaryResponse
     public string Slug { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Image { get; set; }
-    public string? OrgUrl { get; set; }
+    [JsonPropertyName("orgURL")] public string? OrgUrl { get; set; }
     public int? Rating { get; set; }
     public Guid GroupId { get; set; }
     public Guid HouseholdId { get; set; }
@@ -34,7 +34,7 @@ public class RecipeDetailResponse
     public int? Rating { get; set; }
     public bool DisableAmount { get; set; }
     public string? Image { get; set; }
-    public string? OrgUrl { get; set; }
+    [JsonPropertyName("orgURL")] public string? OrgUrl { get; set; }
     public Guid GroupId { get; set; }
     public Guid HouseholdId { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -71,7 +71,7 @@ public class UpdateRecipeRequest
     public string? PerformTime { get; set; }
     public int? Rating { get; set; }
     public bool? DisableAmount { get; set; }
-    public string? OrgUrl { get; set; }
+    [JsonPropertyName("orgURL")] public string? OrgUrl { get; set; }
     public DateTime? LastMade { get; set; }
     public NutritionDto? Nutrition { get; set; }
     public RecipeSettingsDto? Settings { get; set; }

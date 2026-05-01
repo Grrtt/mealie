@@ -15,9 +15,12 @@ public record GetCommentByIdQuery(Guid CommentId) : IQuery<CommentResponse?>
 
 file static class CommentMappings
 {
-    public static CommentResponse MapToResponse(RecipeComment c) => new()
+    public static CommentResponse MapToResponse(RecipeComment c)
     {
-        Id = c.Id, Text = c.Text, RecipeId = c.RecipeId, UserId = c.UserId,
-        CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
-    };
+        return new CommentResponse
+        {
+            Id = c.Id, Text = c.Text, RecipeId = c.RecipeId, UserId = c.UserId,
+            CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
+        };
+    }
 }

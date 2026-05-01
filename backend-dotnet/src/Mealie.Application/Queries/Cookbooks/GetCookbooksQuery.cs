@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Queries.Cookbooks;
 
-public record GetCookbooksQuery(Guid HouseholdId, PaginationParams Pagination) : IQuery<PaginatedResponse<CookbookResponse>>
+public record GetCookbooksQuery(Guid HouseholdId, PaginationParams Pagination)
+    : IQuery<PaginatedResponse<CookbookResponse>>
 {
-    public async Task<PaginatedResponse<CookbookResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
+    public async Task<PaginatedResponse<CookbookResponse>> ExecuteAsync(IQueryServices services,
+        CancellationToken ct = default)
     {
         var db = services.Db;
         var query = db.Cookbooks.IgnoreQueryFilters().Where(c => c.HouseholdId == HouseholdId);
@@ -26,11 +28,13 @@ public record GetCookbooksQuery(Guid HouseholdId, PaginationParams Pagination) :
 
 file static class CookbookMappings
 {
-    public static CookbookResponse MapToResponse(Cookbook c) =>
-        new()
+    public static CookbookResponse MapToResponse(Cookbook c)
+    {
+        return new CookbookResponse
         {
             Id = c.Id, Name = c.Name, Description = c.Description, Image = c.Image,
             Public = c.Public, RequireAllCategories = c.RequireAllCategories, Position = c.Position,
             GroupId = c.GroupId, HouseholdId = c.HouseholdId, CreatedAt = c.CreatedAt, UpdateAt = c.UpdateAt
         };
+    }
 }

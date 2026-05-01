@@ -13,10 +13,26 @@ public record UpdateUserProfileCommand(Guid UserId, UpdateUserRequest Request) :
         var user = await db.Users.IgnoreQueryFilters()
             .Include(u => u.Group).Include(u => u.Household)
             .FirstOrDefaultAsync(u => u.Id == UserId, ct);
-        if (user is null) return null;
-        if (Request.FullName is not null) user.FullName = Request.FullName;
-        if (Request.Email is not null) user.Email = Request.Email;
-        if (Request.Username is not null) user.Username = Request.Username;
+        if (user is null)
+        {
+            return null;
+        }
+
+        if (Request.FullName is not null)
+        {
+            user.FullName = Request.FullName;
+        }
+
+        if (Request.Email is not null)
+        {
+            user.Email = Request.Email;
+        }
+
+        if (Request.Username is not null)
+        {
+            user.Username = Request.Username;
+        }
+
         user.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return UserMappings.MapToResponse(user);
@@ -25,8 +41,9 @@ public record UpdateUserProfileCommand(Guid UserId, UpdateUserRequest Request) :
 
 file static class UserMappings
 {
-    public static UserResponse MapToResponse(User u) =>
-        new()
+    public static UserResponse MapToResponse(User u)
+    {
+        return new UserResponse
         {
             Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email,
             AuthMethod = u.AuthMethod.ToString(), Admin = u.Admin, Advanced = u.Advanced,
@@ -37,4 +54,5 @@ file static class UserMappings
             CanManageHousehold = u.CanManageHousehold, CanManage = u.CanManage,
             CanInvite = u.CanInvite, CanOrganize = u.CanOrganize
         };
+    }
 }

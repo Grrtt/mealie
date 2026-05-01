@@ -1,4 +1,3 @@
-using Mealie.Application.Dtos.Organizers;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Domain.Entities.Recipes;
 
@@ -6,8 +5,9 @@ namespace Mealie.Application.Queries.Shared;
 
 internal static class RecipeMappings
 {
-    internal static RecipeSummaryResponse MapToSummary(Recipe r) =>
-        new()
+    internal static RecipeSummaryResponse MapToSummary(Recipe r)
+    {
+        return new RecipeSummaryResponse
         {
             Id = r.Id,
             Name = r.Name,
@@ -21,11 +21,14 @@ internal static class RecipeMappings
             CreatedAt = r.CreatedAt,
             UpdateAt = r.UpdateAt,
             Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
-            Categories = r.Categories.Select(c => new OrganizerSimpleResponse { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList()
+            Categories = r.Categories.Select(c => new OrganizerSimpleResponse
+                { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList()
         };
+    }
 
-    internal static RecipeDetailResponse MapToDetail(Recipe r) =>
-        new()
+    internal static RecipeDetailResponse MapToDetail(Recipe r)
+    {
+        return new RecipeDetailResponse
         {
             Id = r.Id,
             Name = r.Name,
@@ -74,7 +77,8 @@ internal static class RecipeMappings
                 DisableAmount = i.DisableAmount,
                 Unit = i.Unit is null
                     ? null
-                    : new RecipeIngredientUnitDto { Id = i.Unit.Id, Name = i.Unit.Name, Abbreviation = i.Unit.Abbreviation },
+                    : new RecipeIngredientUnitDto
+                        { Id = i.Unit.Id, Name = i.Unit.Name, Abbreviation = i.Unit.Abbreviation },
                 Food = i.Food is null ? null : new RecipeIngredientFoodDto { Id = i.Food.Id, Name = i.Food.Name }
             }).ToList(),
             RecipeInstructions = r.RecipeInstructions.Select(i => new RecipeInstructionDto
@@ -85,7 +89,10 @@ internal static class RecipeMappings
             Assets = r.Assets.Select(a => new RecipeAssetDto
                 { Id = a.Id, Name = a.Name, Icon = a.Icon, FileName = $"{a.Name}.{a.Extension}" }).ToList(),
             Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
-            Categories = r.Categories.Select(c => new OrganizerSimpleResponse { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
-            Tools = r.Tools.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList()
+            Categories = r.Categories.Select(c => new OrganizerSimpleResponse
+                { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
+            Tools = r.Tools.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug })
+                .ToList()
         };
+    }
 }

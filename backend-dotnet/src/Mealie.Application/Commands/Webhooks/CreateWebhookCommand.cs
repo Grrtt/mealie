@@ -1,11 +1,11 @@
 using Mealie.Application.Dtos.Webhooks;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Settings;
-using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Webhooks;
 
-public record CreateWebhookCommand(Guid GroupId, Guid HouseholdId, CreateWebhookRequest Request) : IQuery<WebhookResponse>
+public record CreateWebhookCommand(Guid GroupId, Guid HouseholdId, CreateWebhookRequest Request)
+    : IQuery<WebhookResponse>
 {
     public async Task<WebhookResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
@@ -24,6 +24,9 @@ public record CreateWebhookCommand(Guid GroupId, Guid HouseholdId, CreateWebhook
 
 file static class WebhookMappings
 {
-    public static WebhookResponse MapToResponse(Webhook w) =>
-        new() { Id = w.Id, Name = w.Name, Url = w.Url, Enabled = w.Enabled, ScheduledTime = w.ScheduledTime };
+    public static WebhookResponse MapToResponse(Webhook w)
+    {
+        return new WebhookResponse
+            { Id = w.Id, Name = w.Name, Url = w.Url, Enabled = w.Enabled, ScheduledTime = w.ScheduledTime };
+    }
 }

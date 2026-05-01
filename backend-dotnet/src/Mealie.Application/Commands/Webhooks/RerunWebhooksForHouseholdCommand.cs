@@ -1,6 +1,4 @@
-using Mealie.Application.Dtos.Webhooks;
 using Mealie.Application.Queries;
-using Mealie.Domain.Entities.Settings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Webhooks;
@@ -25,6 +23,7 @@ public record RerunWebhooksForHouseholdCommand(Guid HouseholdId) : IQuery<bool>
             };
             await services.WebhookDeliveryService.DeliverAsync(webhook.Url, payload);
         }
+
         return true;
     }
 }

@@ -9,9 +9,13 @@ public record SetUserRatingCommand(Guid UserId, string Slug, int? Rating, bool? 
     {
         var db = services.Db;
         if (IsFavorite == true)
+        {
             await new AddFavoriteRecipeCommand(UserId, Slug).ExecuteAsync(services, ct);
+        }
         else if (IsFavorite == false)
+        {
             await new RemoveFavoriteRecipeCommand(UserId, Slug).ExecuteAsync(services, ct);
+        }
 
         if (Rating.HasValue)
         {
@@ -22,6 +26,7 @@ public record SetUserRatingCommand(Guid UserId, string Slug, int? Rating, bool? 
                 await db.SaveChangesAsync(ct);
             }
         }
+
         return true;
     }
 }

@@ -23,12 +23,16 @@ public record BulkExportCommand(IList<string> Slugs, Guid GroupId) : IQuery<Expo
             .Include(r => r.Settings)
             .Where(r => r.GroupId == GroupId && Slugs.Contains(r.Slug))
             .ToListAsync(ct);
-        if (recipes.Count == 0) return null;
+        if (recipes.Count == 0)
+        {
+            return null;
+        }
+
         var exportsDir = Path.Combine(dataDir, "exports");
         Directory.CreateDirectory(exportsDir);
         var fileName = $"mealie-recipes-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
         var filePath = Path.Combine(exportsDir, fileName);
-        using var fs = System.IO.File.Create(filePath);
+        using var fs = File.Create(filePath);
         using (var archive = new ZipArchive(fs, ZipArchiveMode.Create, true))
         {
             foreach (var recipe in recipes)
@@ -36,15 +40,17 @@ public record BulkExportCommand(IList<string> Slugs, Guid GroupId) : IQuery<Expo
                 var json = JsonSerializer.Serialize(recipe, ExportSerializerOptions.Options);
                 await ExportHelpers.WriteRecipeToArchiveAsync(archive, recipe.Slug, json);
                 var imageFile = Path.Combine(dataDir, "recipes", recipe.Id.ToString(), "images", "original.webp");
-                if (System.IO.File.Exists(imageFile))
+                if (File.Exists(imageFile))
                 {
-                    var imageEntry = archive.CreateEntry($"{recipe.Slug}/images/original.webp", CompressionLevel.Fastest);
+                    var imageEntry =
+                        archive.CreateEntry($"{recipe.Slug}/images/original.webp", CompressionLevel.Fastest);
                     await using var imageStream = imageEntry.Open();
-                    await using var srcStream = System.IO.File.OpenRead(imageFile);
+                    await using var srcStream = File.OpenRead(imageFile);
                     await srcStream.CopyToAsync(imageStream, ct);
                 }
             }
         }
+
         var info = new FileInfo(filePath);
         return new ExportFileInfo { FileName = fileName, Size = info.Length, CreatedAt = info.CreationTimeUtc };
     }

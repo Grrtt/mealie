@@ -13,17 +13,55 @@ public record UpdateAdminUserCommand(Guid UserId, UpdateAdminUserRequest Request
         var user = await db.Users.IgnoreQueryFilters()
             .Include(u => u.Group).Include(u => u.Household)
             .FirstOrDefaultAsync(u => u.Id == UserId, ct);
-        if (user is null) return null;
+        if (user is null)
+        {
+            return null;
+        }
 
-        if (Request.FullName is not null) user.FullName = Request.FullName;
-        if (Request.Email is not null) user.Email = Request.Email;
-        if (Request.Password is not null) user.Password = BCrypt.Net.BCrypt.HashPassword(Request.Password);
-        if (Request.Admin.HasValue) user.Admin = Request.Admin.Value;
-        if (Request.Advanced.HasValue) user.Advanced = Request.Advanced.Value;
-        if (Request.CanManageHousehold.HasValue) user.CanManageHousehold = Request.CanManageHousehold.Value;
-        if (Request.CanManage.HasValue) user.CanManage = Request.CanManage.Value;
-        if (Request.CanInvite.HasValue) user.CanInvite = Request.CanInvite.Value;
-        if (Request.CanOrganize.HasValue) user.CanOrganize = Request.CanOrganize.Value;
+        if (Request.FullName is not null)
+        {
+            user.FullName = Request.FullName;
+        }
+
+        if (Request.Email is not null)
+        {
+            user.Email = Request.Email;
+        }
+
+        if (Request.Password is not null)
+        {
+            user.Password = BCrypt.Net.BCrypt.HashPassword(Request.Password);
+        }
+
+        if (Request.Admin.HasValue)
+        {
+            user.Admin = Request.Admin.Value;
+        }
+
+        if (Request.Advanced.HasValue)
+        {
+            user.Advanced = Request.Advanced.Value;
+        }
+
+        if (Request.CanManageHousehold.HasValue)
+        {
+            user.CanManageHousehold = Request.CanManageHousehold.Value;
+        }
+
+        if (Request.CanManage.HasValue)
+        {
+            user.CanManage = Request.CanManage.Value;
+        }
+
+        if (Request.CanInvite.HasValue)
+        {
+            user.CanInvite = Request.CanInvite.Value;
+        }
+
+        if (Request.CanOrganize.HasValue)
+        {
+            user.CanOrganize = Request.CanOrganize.Value;
+        }
 
         if (Request.HouseholdId.HasValue)
         {
@@ -33,7 +71,10 @@ public record UpdateAdminUserCommand(Guid UserId, UpdateAdminUserRequest Request
         {
             var hh = await db.Households.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(h => h.Name == Request.Household || h.Slug == Request.Household, ct);
-            if (hh is not null) user.HouseholdId = hh.Id;
+            if (hh is not null)
+            {
+                user.HouseholdId = hh.Id;
+            }
         }
 
         user.UpdateAt = DateTime.UtcNow;
@@ -46,8 +87,9 @@ public record UpdateAdminUserCommand(Guid UserId, UpdateAdminUserRequest Request
 
 file static class AdminUserMappings
 {
-    public static Mealie.Application.Dtos.Admin.AdminUserResponse MapToResponse(Mealie.Domain.Entities.Core.User u) =>
-        new()
+    public static AdminUserResponse MapToResponse(User u)
+    {
+        return new AdminUserResponse
         {
             Id = u.Id, FullName = u.FullName, Username = u.Username, Email = u.Email,
             Admin = u.Admin, Advanced = u.Advanced, GroupId = u.GroupId, Group = u.Group?.Name,
@@ -57,4 +99,5 @@ file static class AdminUserMappings
             LoginAttempts = u.LoginAttempts, LockedAt = u.LockedAt,
             CreatedAt = u.CreatedAt, UpdateAt = u.UpdateAt
         };
+    }
 }

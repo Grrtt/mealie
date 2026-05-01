@@ -5,13 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Recipes;
 
-public record CreateShareTokenCommand(string Slug, Guid GroupId, CreateShareTokenRequest Request) : IQuery<ShareTokenResponse?>
+public record CreateShareTokenCommand(string Slug, Guid GroupId, CreateShareTokenRequest Request)
+    : IQuery<ShareTokenResponse?>
 {
     public async Task<ShareTokenResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == Slug, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
+
         var token = new RecipeShareToken
         {
             Id = Guid.NewGuid(), RecipeId = recipe.Id, GroupId = GroupId,
@@ -25,8 +30,11 @@ public record CreateShareTokenCommand(string Slug, Guid GroupId, CreateShareToke
 
 file static class ShareMappings
 {
-    public static ShareTokenResponse MapToResponse(RecipeShareToken t) => new()
+    public static ShareTokenResponse MapToResponse(RecipeShareToken t)
     {
-        Id = t.Id, RecipeId = t.RecipeId, GroupId = t.GroupId, CreatedAt = t.CreatedAt, ExpiresAt = t.ExpiresAt
-    };
+        return new ShareTokenResponse
+        {
+            Id = t.Id, RecipeId = t.RecipeId, GroupId = t.GroupId, CreatedAt = t.CreatedAt, ExpiresAt = t.ExpiresAt
+        };
+    }
 }

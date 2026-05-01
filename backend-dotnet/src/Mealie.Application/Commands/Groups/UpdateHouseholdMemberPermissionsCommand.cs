@@ -1,14 +1,14 @@
-using Mealie.Application.Common;
-using Mealie.Application.Dtos.Groups;
 using Mealie.Application.Queries;
-using Mealie.Domain.Entities.Core;
-using Mealie.Domain.Entities.Organizers;
-using Mealie.Domain.Entities.Settings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Groups;
 
-public record UpdateHouseholdMemberPermissionsCommand(Guid HouseholdId, Guid UserId, bool Admin, bool CanOrganize, bool CanInvite)
+public record UpdateHouseholdMemberPermissionsCommand(
+    Guid HouseholdId,
+    Guid UserId,
+    bool Admin,
+    bool CanOrganize,
+    bool CanInvite)
     : IQuery<bool>
 {
     public async Task<bool> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
@@ -16,7 +16,11 @@ public record UpdateHouseholdMemberPermissionsCommand(Guid HouseholdId, Guid Use
         var db = services.Db;
         var user = await db.Users.IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.Id == UserId && u.HouseholdId == HouseholdId, ct);
-        if (user is null) return false;
+        if (user is null)
+        {
+            return false;
+        }
+
         user.Admin = Admin;
         user.CanOrganize = CanOrganize;
         user.CanInvite = CanInvite;

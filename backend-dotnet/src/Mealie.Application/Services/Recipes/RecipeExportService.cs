@@ -11,14 +11,14 @@ namespace Mealie.Application.Services.Recipes;
 
 public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> settings) : IRecipeExportService
 {
-    private readonly string _dataDir = settings.Value.DataDir;
-    private string ExportsDir => Path.Combine(_dataDir, "exports");
-
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         WriteIndented = true,
         ReferenceHandler = ReferenceHandler.IgnoreCycles
     };
+
+    private readonly string _dataDir = settings.Value.DataDir;
+    private string ExportsDir => Path.Combine(_dataDir, "exports");
 
     public Task<IList<ExportFileInfo>> GetExportsAsync(CancellationToken ct = default)
     {
@@ -100,10 +100,11 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
     }
 
     /// <summary>
-    /// Creates a combined ZIP containing all specified recipes (JSON + images) and saves it to the exports directory.
-    /// Returns file info for the saved ZIP.
+    ///     Creates a combined ZIP containing all specified recipes (JSON + images) and saves it to the exports directory.
+    ///     Returns file info for the saved ZIP.
     /// </summary>
-    public async Task<ExportFileInfo?> BulkExportAsync(IList<string> slugs, Guid groupId, CancellationToken ct = default)
+    public async Task<ExportFileInfo?> BulkExportAsync(IList<string> slugs, Guid groupId,
+        CancellationToken ct = default)
     {
         var recipes = await db.Recipes
             .Include(r => r.RecipeIngredients)
@@ -126,7 +127,7 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
         var fileName = $"mealie-recipes-{DateTime.UtcNow:yyyyMMdd-HHmmss}.zip";
         var filePath = Path.Combine(ExportsDir, fileName);
 
-        using var fs = System.IO.File.Create(filePath);
+        using var fs = File.Create(filePath);
         using (var archive = new ZipArchive(fs, ZipArchiveMode.Create, true))
         {
             foreach (var recipe in recipes)
@@ -137,11 +138,12 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
                 // Include local image if present
                 var imageDir = Path.Combine(_dataDir, "recipes", recipe.Id.ToString(), "images");
                 var imageFile = Path.Combine(imageDir, "original.webp");
-                if (System.IO.File.Exists(imageFile))
+                if (File.Exists(imageFile))
                 {
-                    var imageEntry = archive.CreateEntry($"{recipe.Slug}/images/original.webp", CompressionLevel.Fastest);
+                    var imageEntry =
+                        archive.CreateEntry($"{recipe.Slug}/images/original.webp", CompressionLevel.Fastest);
                     await using var imageStream = imageEntry.Open();
-                    await using var srcStream = System.IO.File.OpenRead(imageFile);
+                    await using var srcStream = File.OpenRead(imageFile);
                     await srcStream.CopyToAsync(imageStream, ct);
                 }
             }
@@ -159,18 +161,19 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
     public Task<(Stream Stream, string FileName)?> DownloadExportAsync(string fileName, CancellationToken ct = default)
     {
         // Sanitize: only allow simple file names with no path traversal
-        if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains('/') || fileName.Contains('\\') || fileName.Contains(".."))
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.Contains('/') || fileName.Contains('\\') ||
+            fileName.Contains(".."))
         {
             return Task.FromResult<(Stream, string)?>(null);
         }
 
         var filePath = Path.Combine(ExportsDir, fileName);
-        if (!System.IO.File.Exists(filePath))
+        if (!File.Exists(filePath))
         {
             return Task.FromResult<(Stream, string)?>(null);
         }
 
-        Stream stream = System.IO.File.OpenRead(filePath);
+        Stream stream = File.OpenRead(filePath);
         return Task.FromResult<(Stream, string)?>((stream, fileName));
     }
 
@@ -186,7 +189,7 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
         {
             try
             {
-                System.IO.File.Delete(file);
+                File.Delete(file);
                 deleted++;
             }
             catch

@@ -1,6 +1,4 @@
-using Mealie.Application.Dtos.Webhooks;
 using Mealie.Application.Queries;
-using Mealie.Domain.Entities.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +10,11 @@ public record TestEventNotifierCommand(Guid HouseholdId, Guid Id) : IQuery<bool>
     {
         var notifier = await services.Db.EventNotifiers.IgnoreQueryFilters()
             .FirstOrDefaultAsync(e => e.HouseholdId == HouseholdId && e.Id == Id, ct);
-        if (notifier is null) return false;
+        if (notifier is null)
+        {
+            return false;
+        }
+
         var logger = services.LoggerFactory.CreateLogger("EventNotifierCommands");
         logger.LogInformation("Test notification sent to {ApprisUrl}", notifier.ApprisUrl);
         return true;

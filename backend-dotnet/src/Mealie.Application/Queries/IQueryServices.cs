@@ -12,9 +12,9 @@ using Microsoft.Extensions.Options;
 namespace Mealie.Application.Queries;
 
 /// <summary>
-/// Common services made available to every query via <see cref="QueryExecutor"/>.
-/// Add shared cross-cutting services here (logging, caching, etc.) as the need
-/// arises rather than threading them through every query constructor.
+///     Common services made available to every query via <see cref="QueryExecutor" />.
+///     Add shared cross-cutting services here (logging, caching, etc.) as the need
+///     arises rather than threading them through every query constructor.
 /// </summary>
 public interface IQueryServices
 {

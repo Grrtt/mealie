@@ -1,7 +1,6 @@
 using Mealie.Application.Dtos.Users;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Core;
-using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.Users;
 

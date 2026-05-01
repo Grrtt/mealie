@@ -1,7 +1,7 @@
+using Mealie.Application.Commands.ShoppingLists;
 using Mealie.Application.Dtos.ShoppingLists;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.ShoppingLists;
-using Mealie.Application.Commands.ShoppingLists;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -18,13 +18,20 @@ public class ShoppingItemsController(QueryExecutor executor, ITenantContext tena
         [FromQuery] PaginationParams pagination,
         [FromQuery] bool? checked_,
         CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new GetShoppingListItemsQuery(CurrentHouseholdId, pagination, checked_), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new GetShoppingListItemsQuery(CurrentHouseholdId, pagination, checked_),
+            ct));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ShoppingListItemResponse>> GetItem(Guid id, CancellationToken ct)
     {
         var item = await executor.ExecuteAsync(new GetShoppingListItemByIdQuery(CurrentHouseholdId, id), ct);
-        if (item is null) return NotFoundOrForbidden();
+        if (item is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(item);
     }
 
@@ -53,7 +60,11 @@ public class ShoppingItemsController(QueryExecutor executor, ITenantContext tena
         [FromBody] UpdateShoppingListItemRequest request, CancellationToken ct)
     {
         var item = await executor.ExecuteAsync(new UpdateStandaloneItemCommand(CurrentHouseholdId, id, request), ct);
-        if (item is null) return NotFoundOrForbidden();
+        if (item is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(item);
     }
 
@@ -61,26 +72,39 @@ public class ShoppingItemsController(QueryExecutor executor, ITenantContext tena
     public async Task<IActionResult> DeleteItem(Guid id, CancellationToken ct)
     {
         var deleted = await executor.ExecuteAsync(new DeleteStandaloneItemCommand(CurrentHouseholdId, id), ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
     [HttpPost("create-bulk")]
     public async Task<ActionResult<IList<ShoppingListItemResponse>>> CreateBulkItems(
         [FromBody] BulkCreateShoppingListItemRequest request, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new CreateBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new CreateBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct));
+    }
 
     [HttpPut]
     public async Task<ActionResult<IList<ShoppingListItemResponse>>> UpdateBulkItems(
         [FromBody] BulkUpdateShoppingListItemRequest request, CancellationToken ct)
-        => Ok(await executor.ExecuteAsync(new UpdateBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct));
+    {
+        return Ok(await executor.ExecuteAsync(new UpdateBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct));
+    }
 
     [HttpDelete]
     public async Task<IActionResult> DeleteBulkItems([FromBody] BulkDeleteShoppingListItemRequest request,
         CancellationToken ct)
     {
-        var deleted = await executor.ExecuteAsync(new DeleteBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct);
-        if (!deleted) return BadRequest(new { detail = "No items were deleted" });
+        var deleted =
+            await executor.ExecuteAsync(new DeleteBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct);
+        if (!deleted)
+        {
+            return BadRequest(new { detail = "No items were deleted" });
+        }
+
         return NoContent();
     }
 }

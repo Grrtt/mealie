@@ -6,11 +6,16 @@ namespace Mealie.Application.Queries.Recipes;
 
 public record GetTimelineEventsQuery(string Slug) : IQuery<IList<TimelineEventResponse>>
 {
-    public async Task<IList<TimelineEventResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
+    public async Task<IList<TimelineEventResponse>> ExecuteAsync(IQueryServices services,
+        CancellationToken ct = default)
     {
         var db = services.Db;
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == Slug, ct);
-        if (recipe is null) return [];
+        if (recipe is null)
+        {
+            return [];
+        }
+
         return await db.RecipeTimelineEvents
             .Where(e => e.RecipeId == recipe.Id)
             .OrderByDescending(e => e.Timestamp)
@@ -21,10 +26,13 @@ public record GetTimelineEventsQuery(string Slug) : IQuery<IList<TimelineEventRe
 
 file static class TimelineMappings
 {
-    public static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev) => new()
+    public static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev)
     {
-        Id = ev.Id, Subject = ev.Subject, EventType = ev.EventType, EventMessage = ev.EventMessage,
-        Image = ev.Image, RecipeId = ev.RecipeId, UserId = ev.UserId, Timestamp = ev.Timestamp,
-        CreatedAt = ev.CreatedAt, UpdateAt = ev.UpdateAt
-    };
+        return new TimelineEventResponse
+        {
+            Id = ev.Id, Subject = ev.Subject, EventType = ev.EventType, EventMessage = ev.EventMessage,
+            Image = ev.Image, RecipeId = ev.RecipeId, UserId = ev.UserId, Timestamp = ev.Timestamp,
+            CreatedAt = ev.CreatedAt, UpdateAt = ev.UpdateAt
+        };
+    }
 }

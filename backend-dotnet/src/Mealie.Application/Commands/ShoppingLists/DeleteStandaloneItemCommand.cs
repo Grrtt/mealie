@@ -1,9 +1,4 @@
-using Mealie.Application.Dtos.ShoppingLists;
 using Mealie.Application.Queries;
-using Mealie.Domain.Entities.Planning;
-using Mealie.Domain.Events;
-using Mealie.Infrastructure.Data;
-using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.ShoppingLists;
@@ -17,7 +12,11 @@ public record DeleteStandaloneItemCommand(Guid HouseholdId, Guid ItemId) : IQuer
             .Include(i => i.ShoppingList)
             .Where(i => i.ShoppingList.HouseholdId == HouseholdId && i.Id == ItemId)
             .FirstOrDefaultAsync(ct);
-        if (item is null) return false;
+        if (item is null)
+        {
+            return false;
+        }
+
         db.ShoppingListItems.Remove(item);
         await db.SaveChangesAsync(ct);
         return true;
