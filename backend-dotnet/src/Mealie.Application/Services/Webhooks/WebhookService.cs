@@ -16,6 +16,13 @@ public class WebhookService(ApplicationDbContext db, IWebhookDeliveryService del
         return webhooks.Select(MapToResponse).ToList();
     }
 
+    public async Task<WebhookResponse?> GetByIdAsync(Guid householdId, Guid id, CancellationToken ct = default)
+    {
+        var webhook = await db.Webhooks.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(w => w.HouseholdId == householdId && w.Id == id, ct);
+        return webhook is null ? null : MapToResponse(webhook);
+    }
+
     public async Task<WebhookResponse> CreateAsync(Guid groupId, Guid householdId, CreateWebhookRequest request, CancellationToken ct = default)
     {
         var webhook = new Webhook
@@ -62,6 +69,24 @@ public class WebhookService(ApplicationDbContext db, IWebhookDeliveryService del
 
     public Task TestAsync(string url, CancellationToken ct = default)
         => deliveryService.DeliverAsync(url, new { event_type = "test", timestamp = DateTime.UtcNow });
+
+    public async Task RerunForHouseholdAsync(Guid householdId, CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var webhooks = await db.Webhooks.IgnoreQueryFilters()
+            .Where(w => w.HouseholdId == householdId && w.Enabled)
+            .ToListAsync(ct);
+
+        var plans = await db.MealPlans.IgnoreQueryFilters()
+            .Where(mp => mp.HouseholdId == householdId && mp.Date == today)
+            .ToListAsync(ct);
+
+        foreach (var webhook in webhooks)
+        {
+            var payload = new { event_type = "meal_plan", date = today.ToString("yyyy-MM-dd"), household_id = householdId, plan_count = plans.Count };
+            await deliveryService.DeliverAsync(webhook.Url, payload);
+        }
+    }
 
     private static WebhookResponse MapToResponse(Webhook w) => new()
     {

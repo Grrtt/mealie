@@ -16,6 +16,21 @@ public class WebhooksController(IWebhookService webhookService, ITenantContext t
         return Ok(items);
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetOne(Guid id)
+    {
+        var item = await webhookService.GetByIdAsync(CurrentHouseholdId, id);
+        if (item is null) return NotFoundOrForbidden();
+        return Ok(item);
+    }
+
+    [HttpPost("rerun")]
+    public async Task<IActionResult> Rerun()
+    {
+        await webhookService.RerunForHouseholdAsync(CurrentHouseholdId);
+        return Ok(new { detail = "Webhooks rerun for today" });
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateWebhookRequest request)
     {
