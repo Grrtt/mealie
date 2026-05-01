@@ -7,6 +7,7 @@ using Mealie.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SkiaSharp;
 
 namespace Mealie.Api.Controllers.Users;
 
@@ -206,5 +207,48 @@ public class UsersController(
     {
         await userService.SetRatingAsync(userId, slug, request.Rating, request.IsFavorite);
         return Ok();
+    }
+
+    // ── Profile Image ──────────────────────────────────────────────────────
+
+    [HttpPost("self/image")]
+    [Authorize]
+    public Task<IActionResult> UploadSelfImage(IFormFile image)
+        => SaveProfileImageAsync(tenantContext.UserId, image);
+
+    [HttpPost("{userId:guid}/image")]
+    [Authorize]
+    public Task<IActionResult> UploadUserImage(Guid userId, IFormFile image)
+        => SaveProfileImageAsync(userId, image);
+
+    private async Task<IActionResult> SaveProfileImageAsync(Guid userId, IFormFile image)
+    {
+        if (image is null || image.Length == 0)
+            return BadRequest(new { detail = "No image provided" });
+
+        var dir = Path.Combine(settings.Value.DataDir, "users", userId.ToString());
+        Directory.CreateDirectory(dir);
+        var destPath = Path.Combine(dir, "profile.webp");
+
+        using var stream = image.OpenReadStream();
+        using var original = SKBitmap.Decode(stream);
+        if (original is null)
+            return BadRequest(new { detail = "Invalid image format" });
+
+        // Resize to 200×200 for the profile thumbnail
+        var size = Math.Min(original.Width, original.Height);
+        var resized = original.Width != 200 || original.Height != 200
+            ? original.Resize(new SKImageInfo(200, 200), new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear))
+            : original;
+
+        using var skImage = SKImage.FromBitmap(resized);
+        using var data = skImage.Encode(SKEncodedImageFormat.Webp, 90);
+        await using var output = System.IO.File.OpenWrite(destPath);
+        data.SaveTo(output);
+
+        if (!ReferenceEquals(resized, original))
+            resized?.Dispose();
+
+        return Ok(new { detail = "Profile image updated" });
     }
 }

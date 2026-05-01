@@ -157,6 +157,12 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ILdapAuthService, LdapAuthService>();
+builder.Services.AddScoped<IOidcService, OidcService>();
+builder.Services.AddHttpClient("oidc", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
 
 // Application services — Recipes
 builder.Services.AddScoped<IRecipeService, RecipeService>();

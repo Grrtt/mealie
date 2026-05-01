@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Auth;
+using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ namespace Mealie.Application.Services.Auth;
 public class AuthService(
     ApplicationDbContext db,
     IJwtTokenService jwtService,
+    ILdapAuthService ldapAuthService,
     ILogger<AuthService> logger) : IAuthService
 {
     private const int MaxLoginAttempts = 5;
@@ -31,16 +33,29 @@ public class AuthService(
             return null;
         }
 
-        if (user.Password is null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
+        // Route to the appropriate auth strategy based on the user's registered method
+        if (user.AuthMethod == AuthMethod.LDAP)
         {
-            user.LoginAttempts++;
-            if (user.LoginAttempts >= MaxLoginAttempts)
+            var ldapOk = await ldapAuthService.AuthenticateAsync(username, password);
+            if (!ldapOk)
             {
-                user.LockedAt = DateTime.UtcNow;
-                logger.LogWarning("Account locked after {Attempts} failed attempts for {Username}", user.LoginAttempts, username);
+                logger.LogWarning("LDAP login failed for {Username}", username);
+                return null;
             }
-            await db.SaveChangesAsync();
-            return null;
+        }
+        else
+        {
+            if (user.Password is null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
+            {
+                user.LoginAttempts++;
+                if (user.LoginAttempts >= MaxLoginAttempts)
+                {
+                    user.LockedAt = DateTime.UtcNow;
+                    logger.LogWarning("Account locked after {Attempts} failed attempts for {Username}", user.LoginAttempts, username);
+                }
+                await db.SaveChangesAsync();
+                return null;
+            }
         }
 
         // Successful login — reset attempts
