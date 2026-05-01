@@ -1,5 +1,6 @@
 using Mealie.Application.Dtos.MealPlans;
-using Mealie.Application.Services.MealPlans;
+using Mealie.Application.Queries;
+using Mealie.Application.Queries.MealPlans;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
 [Route("api/households/mealplans")]
-public class MealPlansController(IMealPlanService mealPlanService, ITenantContext tenantContext)
+public class MealPlansController(QueryExecutor executor, ITenantContext tenantContext)
     : MealieControllerBase(tenantContext)
 {
     [HttpGet]
@@ -17,7 +18,7 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
         [FromQuery(Name = "end_date")] DateOnly? endDate,
         CancellationToken ct)
     {
-        var items = await mealPlanService.GetMealPlansAsync(CurrentHouseholdId, startDate, endDate, ct);
+        var items = await executor.ExecuteAsync(new GetMealPlansQuery(CurrentHouseholdId, startDate, endDate), ct);
         return Ok(new PaginatedResponse<MealPlanResponse>
         {
             Page = 1,
@@ -30,9 +31,7 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
 
     [HttpGet("today")]
     public async Task<ActionResult<IList<MealPlanResponse>>> GetTodayMealPlans(CancellationToken ct)
-    {
-        return Ok(await mealPlanService.GetTodayAsync(CurrentHouseholdId, ct));
-    }
+        => Ok(await executor.ExecuteAsync(new GetTodayMealPlansQuery(CurrentHouseholdId), ct));
 
     [HttpGet("random")]
     public async Task<IActionResult> GetRandomRecipe(
@@ -41,24 +40,16 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
         CancellationToken ct = default)
     {
         var queryDate = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        var recipeId = await mealPlanService.GetRandomRecipeIdAsync(CurrentGroupId, queryDate, entryType, ct);
-        if (recipeId is null)
-        {
-            return NotFound(new { detail = "No recipes available for the given filters." });
-        }
-
+        var recipeId = await executor.ExecuteAsync(new GetRandomRecipeIdQuery(CurrentGroupId, queryDate, entryType), ct);
+        if (recipeId is null) return NotFound(new { detail = "No recipes available for the given filters." });
         return Ok(new { recipeId });
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<MealPlanResponse>> GetMealPlan(Guid id, CancellationToken ct)
     {
-        var plan = await mealPlanService.GetByIdAsync(CurrentHouseholdId, id, ct);
-        if (plan is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
+        var plan = await executor.ExecuteAsync(new GetMealPlanByIdQuery(CurrentHouseholdId, id), ct);
+        if (plan is null) return NotFoundOrForbidden();
         return Ok(plan);
     }
 
@@ -66,37 +57,28 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
     public async Task<ActionResult<MealPlanResponse>> CreateRandomMealPlan(
         [FromBody] CreateRandomMealPlanRequest request, CancellationToken ct)
     {
-        var plan = await mealPlanService.CreateRandomAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request,
-            ct);
-        if (plan is null)
-        {
-            return BadRequest("No recipes available to pick from.");
-        }
-
+        var plan = await executor.ExecuteAsync(
+            new CreateRandomMealPlanCommand(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request), ct);
+        if (plan is null) return BadRequest("No recipes available to pick from.");
         return Ok(plan);
     }
 
     [HttpPost("fill-day")]
     public async Task<ActionResult<IList<MealPlanResponse>>> FillDay([FromBody] FillDayRequest request,
         CancellationToken ct)
-    {
-        var plans = await mealPlanService.FillDayAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
-        return Ok(plans);
-    }
+        => Ok(await executor.ExecuteAsync(new FillDayCommand(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request), ct));
 
     [HttpPost("fill-week")]
     public async Task<ActionResult<IList<MealPlanResponse>>> FillWeek([FromBody] FillWeekRequest request,
         CancellationToken ct)
-    {
-        var plans = await mealPlanService.FillWeekAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
-        return Ok(plans);
-    }
+        => Ok(await executor.ExecuteAsync(new FillWeekCommand(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request), ct));
 
     [HttpPost]
     public async Task<ActionResult<MealPlanResponse>> CreateMealPlan([FromBody] CreateMealPlanRequest request,
         CancellationToken ct)
     {
-        var plan = await mealPlanService.CreateAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
+        var plan = await executor.ExecuteAsync(
+            new CreateMealPlanCommand(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request), ct);
         return CreatedAtAction(nameof(GetMealPlan), new { id = plan.Id }, plan);
     }
 
@@ -105,24 +87,16 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
     public async Task<ActionResult<MealPlanResponse>> UpdateMealPlan(Guid id, [FromBody] UpdateMealPlanRequest request,
         CancellationToken ct)
     {
-        var plan = await mealPlanService.UpdateAsync(CurrentHouseholdId, id, request, ct);
-        if (plan is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
+        var plan = await executor.ExecuteAsync(new UpdateMealPlanCommand(CurrentHouseholdId, id, request), ct);
+        if (plan is null) return NotFoundOrForbidden();
         return Ok(plan);
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteMealPlan(Guid id, CancellationToken ct)
     {
-        var deleted = await mealPlanService.DeleteAsync(CurrentHouseholdId, id, ct);
-        if (!deleted)
-        {
-            return NotFoundOrForbidden();
-        }
-
+        var deleted = await executor.ExecuteAsync(new DeleteMealPlanCommand(CurrentHouseholdId, id), ct);
+        if (!deleted) return NotFoundOrForbidden();
         return NoContent();
     }
 }

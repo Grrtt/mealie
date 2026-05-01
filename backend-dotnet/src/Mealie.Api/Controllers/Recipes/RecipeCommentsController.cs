@@ -1,5 +1,6 @@
 using Mealie.Application.Dtos.Recipes;
-using Mealie.Application.Services.Recipes;
+using Mealie.Application.Queries;
+using Mealie.Application.Queries.Recipes;
 using Mealie.Infrastructure.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,13 +11,13 @@ namespace Mealie.Api.Controllers.Recipes;
 [Route("api/recipes")]
 [Authorize]
 public class RecipeCommentsController(
-    IRecipeCommentService commentService,
+    QueryExecutor executor,
     ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet("{slug}/comments")]
     public async Task<ActionResult<IList<CommentResponse>>> GetComments(string slug, CancellationToken ct)
     {
-        var comments = await commentService.GetCommentsAsync(slug, ct);
+        var comments = await executor.ExecuteAsync(new GetCommentsQuery(slug), ct);
         return Ok(comments);
     }
 
@@ -24,7 +25,7 @@ public class RecipeCommentsController(
     public async Task<ActionResult<CommentResponse>> AddComment(
         string slug, [FromBody] CreateCommentRequest request, CancellationToken ct)
     {
-        var comment = await commentService.AddCommentAsync(slug, tenantContext.UserId, request, ct);
+        var comment = await executor.ExecuteAsync(new AddCommentCommand(slug, tenantContext.UserId, request), ct);
         if (comment is null)
         {
             return NotFound(new { detail = "Recipe not found" });
@@ -37,7 +38,7 @@ public class RecipeCommentsController(
     public async Task<ActionResult<CommentResponse>> UpdateComment(
         string slug, Guid commentId, [FromBody] UpdateCommentRequest request, CancellationToken ct)
     {
-        var comment = await commentService.UpdateCommentAsync(commentId, tenantContext.UserId, request, ct);
+        var comment = await executor.ExecuteAsync(new UpdateCommentCommand(commentId, tenantContext.UserId, request), ct);
         if (comment is null)
         {
             return NotFound(new { detail = "Comment not found or not owned by user" });
@@ -49,7 +50,7 @@ public class RecipeCommentsController(
     [HttpDelete("{slug}/comments/{commentId:guid}")]
     public async Task<IActionResult> DeleteComment(string slug, Guid commentId, CancellationToken ct)
     {
-        var deleted = await commentService.DeleteCommentAsync(commentId, tenantContext.UserId, ct);
+        var deleted = await executor.ExecuteAsync(new DeleteCommentCommand(commentId, tenantContext.UserId), ct);
         if (!deleted)
         {
             return NotFound(new { detail = "Comment not found or not owned by user" });

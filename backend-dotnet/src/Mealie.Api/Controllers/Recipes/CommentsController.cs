@@ -1,5 +1,6 @@
 using Mealie.Application.Dtos.Recipes;
-using Mealie.Application.Services.Recipes;
+using Mealie.Application.Queries;
+using Mealie.Application.Queries.Recipes;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Authorization;
@@ -11,14 +12,14 @@ namespace Mealie.Api.Controllers.Recipes;
 [Route("api/comments")]
 [Authorize]
 public class CommentsController(
-    IRecipeCommentService commentService,
+    QueryExecutor executor,
     ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<CommentResponse>>> GetComments(
         [FromQuery] PaginationParams pagination, CancellationToken ct)
     {
-        var comments = await commentService.GetAllCommentsAsync(tenantContext.GroupId, ct);
+        var comments = await executor.ExecuteAsync(new GetAllCommentsQuery(tenantContext.GroupId), ct);
         var total = comments.Count;
         var items = comments
             .Skip(pagination.Skip)
@@ -37,12 +38,8 @@ public class CommentsController(
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CommentResponse>> GetComment(Guid id, CancellationToken ct)
     {
-        var comment = await commentService.GetCommentByIdAsync(id, ct);
-        if (comment is null)
-        {
-            return NotFound();
-        }
-
+        var comment = await executor.ExecuteAsync(new GetCommentByIdQuery(id), ct);
+        if (comment is null) return NotFound();
         return Ok(comment);
     }
 
@@ -51,17 +48,12 @@ public class CommentsController(
         CancellationToken ct)
     {
         if (request.RecipeId == Guid.Empty)
-        {
             return BadRequest(new { detail = "recipeId is required" });
-        }
 
-        var comment = await commentService.AddCommentByRecipeIdAsync(request.RecipeId, tenantContext.UserId,
-            new CreateCommentRequest { Text = request.Text }, ct);
-        if (comment is null)
-        {
-            return NotFound(new { detail = "Recipe not found" });
-        }
-
+        var comment = await executor.ExecuteAsync(
+            new AddCommentByRecipeIdCommand(request.RecipeId, tenantContext.UserId,
+                new CreateCommentRequest { Text = request.Text }), ct);
+        if (comment is null) return NotFound(new { detail = "Recipe not found" });
         return Ok(comment);
     }
 
@@ -69,31 +61,20 @@ public class CommentsController(
     public async Task<ActionResult<CommentResponse>> UpdateComment(Guid id, [FromBody] UpdateCommentRequest request,
         CancellationToken ct)
     {
-        var comment = await commentService.UpdateCommentAsync(id, tenantContext.UserId, request, ct);
-        if (comment is null)
-        {
-            return NotFound(new { detail = "Comment not found or not owned by user" });
-        }
-
+        var comment = await executor.ExecuteAsync(new UpdateCommentCommand(id, tenantContext.UserId, request), ct);
+        if (comment is null) return NotFound(new { detail = "Comment not found or not owned by user" });
         return Ok(comment);
     }
 
     [HttpPatch("{id:guid}")]
     public async Task<ActionResult<CommentResponse>> PatchComment(Guid id, [FromBody] UpdateCommentRequest request,
-        CancellationToken ct)
-    {
-        return await UpdateComment(id, request, ct);
-    }
+        CancellationToken ct) => await UpdateComment(id, request, ct);
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteComment(Guid id, CancellationToken ct)
     {
-        var deleted = await commentService.DeleteCommentAsync(id, tenantContext.UserId, ct);
-        if (!deleted)
-        {
-            return NotFound(new { detail = "Comment not found or not owned by user" });
-        }
-
+        var deleted = await executor.ExecuteAsync(new DeleteCommentCommand(id, tenantContext.UserId), ct);
+        if (!deleted) return NotFound(new { detail = "Comment not found or not owned by user" });
         return NoContent();
     }
 }
