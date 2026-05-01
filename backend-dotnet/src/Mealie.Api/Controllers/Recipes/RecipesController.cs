@@ -185,17 +185,13 @@ public class RecipesController(
     [HttpPost("bulk-actions/export")]
     public async Task<IActionResult> BulkExport([FromBody] BulkActionRequest request, CancellationToken ct)
     {
-        var results = new List<object>();
-        foreach (var slug in request.Recipes)
+        var export = await exportService.BulkExportAsync(request.Recipes, tenantContext.GroupId, ct);
+        if (export is null)
         {
-            var export = await exportService.ExportRecipeAsync(slug, ct);
-            if (export is not null)
-            {
-                results.Add(new { slug, fileName = export.Value.FileName });
-            }
+            return NotFound(new { detail = "No matching recipes found" });
         }
 
-        return Ok(new { exported = results.Count, files = results });
+        return Ok(new { exported = request.Recipes.Count, file = export });
     }
 
     [HttpPost("bulk-actions/settings")]
@@ -253,50 +249,27 @@ public class RecipesController(
     [HttpDelete("bulk-actions/export/purge")]
     public async Task<IActionResult> PurgePendingExports(CancellationToken ct)
     {
-        var exportDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "exports");
-        if (Directory.Exists(exportDir))
-        {
-            var files = Directory.GetFiles(exportDir);
-            var deleted = 0;
-            foreach (var file in files)
-            {
-                try
-                {
-                    System.IO.File.Delete(file);
-                    deleted++;
-                }
-                catch
-                {
-                    /* ignore errors */
-                }
-            }
-
-            return Ok(new { detail = $"Purged {deleted} export files" });
-        }
-
-        return Ok(new { detail = "No exports to purge" });
+        var deleted = await exportService.PurgeExportsAsync(ct);
+        return Ok(new { detail = $"Purged {deleted} export files" });
     }
 
     [HttpGet("bulk-actions/export")]
     public async Task<IActionResult> GetPendingExports(CancellationToken ct)
     {
-        var exportDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "exports");
-        var files = new List<ExportFileInfo>();
-        if (Directory.Exists(exportDir))
+        var files = await exportService.GetPendingExportsAsync(ct);
+        return Ok(files);
+    }
+
+    [HttpGet("bulk-actions/export/{fileName}")]
+    public async Task<IActionResult> DownloadExport(string fileName, CancellationToken ct)
+    {
+        var result = await exportService.DownloadExportAsync(fileName, ct);
+        if (result is null)
         {
-            foreach (var file in Directory.GetFiles(exportDir))
-            {
-                var info = new FileInfo(file);
-                files.Add(new ExportFileInfo
-                {
-                    FileName = info.Name,
-                    Size = info.Length,
-                    CreatedAt = info.CreationTimeUtc
-                });
-            }
+            return NotFound(new { detail = "Export file not found" });
         }
 
-        return Ok(files);
+        return File(result.Value.Stream, "application/zip", result.Value.FileName);
     }
 
     // ── Recipe Image Endpoints ──────────────────────────────────────────────
