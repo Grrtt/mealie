@@ -1,8 +1,10 @@
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;
+using Mealie.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Mealie.Api.Controllers.Recipes;
 
@@ -11,7 +13,8 @@ namespace Mealie.Api.Controllers.Recipes;
 [Authorize]
 public class RecipeTimelineController(
     IRecipeTimelineService timelineService,
-    ITenantContext tenantContext) : ControllerBase
+    ITenantContext tenantContext,
+    IOptions<AppSettings> appSettings) : ControllerBase
 {
     // GET /api/recipes/timeline/events  (global, group-scoped)
     [HttpGet("timeline/events")]
@@ -125,8 +128,14 @@ public class RecipeTimelineController(
             return BadRequest(new { detail = "No image provided" });
         }
 
-        // This would need additional logic to fetch the event and save the image
-        // For now, return a simple success response
-        return Ok(new { detail = "Image uploaded" });
+        using var ms = new MemoryStream();
+        await image.CopyToAsync(ms, ct);
+        var result = await timelineService.UploadImageAsync(eventId, ms.ToArray(), appSettings.Value.DataDir, ct);
+        if (result is null)
+        {
+            return NotFound(new { detail = "Timeline event not found" });
+        }
+
+        return Ok(result);
     }
 }

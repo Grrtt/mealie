@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Recipes;
+using Mealie.Application.Services.Images;
 using Mealie.Domain.Entities.Recipes;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
                 Subject = e.Subject,
                 EventType = e.EventType,
                 EventMessage = e.EventMessage,
+                Image = e.Image,
                 RecipeId = e.RecipeId,
                 UserId = e.UserId,
                 Timestamp = e.Timestamp,
@@ -55,6 +57,7 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
                 Subject = e.Subject,
                 EventType = e.EventType,
                 EventMessage = e.EventMessage,
+                Image = e.Image,
                 RecipeId = e.RecipeId,
                 UserId = e.UserId,
                 Timestamp = e.Timestamp,
@@ -123,6 +126,25 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
         return true;
     }
 
+    public async Task<TimelineEventResponse?> UploadImageAsync(Guid eventId, byte[] imageBytes, string dataDir,
+        CancellationToken ct = default)
+    {
+        var ev = await db.RecipeTimelineEvents.FindAsync([eventId], ct);
+        if (ev is null)
+        {
+            return null;
+        }
+
+        var dir = Path.Combine(dataDir, "recipes", ev.RecipeId.ToString(), "images", "timeline", ev.Id.ToString());
+        RecipeImageProcessor.SaveVariants(dir, imageBytes);
+
+        ev.Image = "original.webp";
+        ev.UpdateAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+
+        return MapToResponse(ev);
+    }
+
     private static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev)
     {
         return new TimelineEventResponse
@@ -131,6 +153,7 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
             Subject = ev.Subject,
             EventType = ev.EventType,
             EventMessage = ev.EventMessage,
+            Image = ev.Image,
             RecipeId = ev.RecipeId,
             UserId = ev.UserId,
             Timestamp = ev.Timestamp,

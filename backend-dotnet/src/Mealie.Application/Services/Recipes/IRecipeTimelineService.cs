@@ -14,4 +14,7 @@ public interface IRecipeTimelineService
         CancellationToken ct = default);
 
     Task<bool> DeleteEventAsync(Guid eventId, CancellationToken ct = default);
+
+    Task<TimelineEventResponse?> UploadImageAsync(Guid eventId, byte[] imageBytes, string dataDir,
+        CancellationToken ct = default);
 }

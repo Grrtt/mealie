@@ -6,6 +6,7 @@ public class TimelineEventResponse
     public string? Subject { get; set; }
     public string? EventType { get; set; }
     public string? EventMessage { get; set; }
+    public string? Image { get; set; }
     public Guid RecipeId { get; set; }
     public Guid? UserId { get; set; }
     public DateTime Timestamp { get; set; }
