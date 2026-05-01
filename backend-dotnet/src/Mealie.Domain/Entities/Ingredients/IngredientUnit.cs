@@ -18,4 +18,5 @@ public class IngredientUnit
 
     public Group Group { get; set; } = null!;
     public ICollection<IngredientFood> Foods { get; set; } = [];
+    public ICollection<IngredientUnitAlias> Aliases { get; set; } = [];
 }
