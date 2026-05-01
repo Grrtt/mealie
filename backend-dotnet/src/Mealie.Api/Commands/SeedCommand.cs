@@ -1,5 +1,4 @@
 using Mealie.Domain.Entities.Core;
-using Mealie.Domain.Entities.Recipes;
 using Mealie.Domain.Entities.Settings;
 using Mealie.Infrastructure.Data;
 

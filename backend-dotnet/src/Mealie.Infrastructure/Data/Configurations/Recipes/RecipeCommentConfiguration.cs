@@ -12,12 +12,12 @@ public class RecipeCommentConfiguration : IEntityTypeConfiguration<RecipeComment
         builder.HasKey(c => c.Id);
         builder.HasIndex(c => c.RecipeId);
         builder.HasOne(c => c.Recipe)
-               .WithMany(r => r.Comments)
-               .HasForeignKey(c => c.RecipeId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(r => r.Comments)
+            .HasForeignKey(c => c.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(c => c.User)
-               .WithMany(u => u.Comments)
-               .HasForeignKey(c => c.UserId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(u => u.Comments)
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

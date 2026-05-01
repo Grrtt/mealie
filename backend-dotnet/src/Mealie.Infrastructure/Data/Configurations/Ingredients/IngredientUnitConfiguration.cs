@@ -12,8 +12,8 @@ public class IngredientUnitConfiguration : IEntityTypeConfiguration<IngredientUn
         builder.HasKey(u => u.Id);
         builder.HasIndex(u => u.GroupId);
         builder.HasOne(u => u.Group)
-               .WithMany(g => g.Units)
-               .HasForeignKey(u => u.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Units)
+            .HasForeignKey(u => u.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

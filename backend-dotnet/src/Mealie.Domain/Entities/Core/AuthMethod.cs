@@ -4,5 +4,5 @@ public enum AuthMethod
 {
     Mealie = 0,
     LDAP = 1,
-    OIDC = 2,
+    OIDC = 2
 }

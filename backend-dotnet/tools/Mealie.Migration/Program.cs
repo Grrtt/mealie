@@ -1,6 +1,6 @@
+using System.CommandLine;
 using Mealie.Migration;
 using Serilog;
-using System.CommandLine;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -8,9 +8,12 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.File("migration.log", rollingInterval: RollingInterval.Infinite)
     .CreateLogger();
 
-var sourceOption = new Option<string>("--source") { Required = true, Description = "Source connection string (SQLite path or PostgreSQL DSN)" };
-var targetOption = new Option<string>("--target") { Required = true, Description = "Target connection string (PostgreSQL DSN)" };
-var sourceEngineOption = new Option<string>("--source-engine") { Description = "Source database engine: sqlite or postgres" };
+var sourceOption = new Option<string>("--source")
+    { Required = true, Description = "Source connection string (SQLite path or PostgreSQL DSN)" };
+var targetOption = new Option<string>("--target")
+    { Required = true, Description = "Target connection string (PostgreSQL DSN)" };
+var sourceEngineOption = new Option<string>("--source-engine")
+    { Description = "Source database engine: sqlite or postgres" };
 sourceEngineOption.DefaultValueFactory = _ => "sqlite";
 var targetEngineOption = new Option<string>("--target-engine") { Description = "Target database engine: postgres" };
 targetEngineOption.DefaultValueFactory = _ => "postgres";
@@ -24,7 +27,7 @@ rootCommand.Add(sourceEngineOption);
 rootCommand.Add(targetEngineOption);
 rootCommand.Add(dryRunOption);
 
-rootCommand.SetAction(async (ParseResult parseResult, CancellationToken cancellationToken) =>
+rootCommand.SetAction(async (parseResult, cancellationToken) =>
 {
     var source = parseResult.GetValue(sourceOption)!;
     var target = parseResult.GetValue(targetOption)!;
@@ -32,7 +35,8 @@ rootCommand.SetAction(async (ParseResult parseResult, CancellationToken cancella
     var targetEngine = parseResult.GetValue(targetEngineOption) ?? "postgres";
     var dryRun = parseResult.GetValue(dryRunOption);
 
-    Log.Information("Mealie Migration starting. Source={Source}, Target={Target}, DryRun={DryRun}", source, target, dryRun);
+    Log.Information("Mealie Migration starting. Source={Source}, Target={Target}, DryRun={DryRun}", source, target,
+        dryRun);
 
     try
     {

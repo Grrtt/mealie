@@ -13,8 +13,8 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.Name).IsRequired();
         builder.HasIndex(c => c.GroupId);
         builder.HasOne(c => c.Group)
-               .WithMany(g => g.Categories)
-               .HasForeignKey(c => c.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Categories)
+            .HasForeignKey(c => c.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

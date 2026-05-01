@@ -11,12 +11,12 @@ public class RecipeShareTokenConfiguration : IEntityTypeConfiguration<RecipeShar
         builder.ToTable("recipe_share_tokens");
         builder.HasKey(t => t.Id);
         builder.HasOne(t => t.Recipe)
-               .WithMany(r => r.ShareTokens)
-               .HasForeignKey(t => t.RecipeId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(r => r.ShareTokens)
+            .HasForeignKey(t => t.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(t => t.Group)
-               .WithMany()
-               .HasForeignKey(t => t.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany()
+            .HasForeignKey(t => t.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

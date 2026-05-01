@@ -31,7 +31,9 @@ public class SeederService(ApplicationDbContext db) : ISeederService
         foreach (var labelName in foodsJson.Keys)
         {
             if (string.IsNullOrWhiteSpace(labelName) || existingNames.Contains(labelName))
+            {
                 continue;
+            }
 
             db.Labels.Add(new MultiPurposeLabel
             {
@@ -39,7 +41,7 @@ public class SeederService(ApplicationDbContext db) : ISeederService
                 Name = labelName,
                 GroupId = groupId,
                 CreatedAt = now,
-                UpdateAt = now,
+                UpdateAt = now
             });
             existingNames.Add(labelName);
         }
@@ -71,7 +73,9 @@ public class SeederService(ApplicationDbContext db) : ISeederService
             {
                 var foodName = foodData.Name;
                 if (string.IsNullOrWhiteSpace(foodName) || existingFoodNames.Contains(foodName))
+                {
                     continue;
+                }
 
                 db.Foods.Add(new IngredientFood
                 {
@@ -82,7 +86,7 @@ public class SeederService(ApplicationDbContext db) : ISeederService
                     GroupId = groupId,
                     LabelId = labelId == Guid.Empty ? null : labelId,
                     CreatedAt = now,
-                    UpdateAt = now,
+                    UpdateAt = now
                 });
                 existingFoodNames.Add(foodName);
             }
@@ -105,7 +109,9 @@ public class SeederService(ApplicationDbContext db) : ISeederService
         foreach (var (_, unitData) in unitsJson)
         {
             if (string.IsNullOrWhiteSpace(unitData.Name) || existingNames.Contains(unitData.Name))
+            {
                 continue;
+            }
 
             db.Units.Add(new IngredientUnit
             {
@@ -117,7 +123,7 @@ public class SeederService(ApplicationDbContext db) : ISeederService
                 PluralAbbreviation = unitData.PluralAbbreviation,
                 GroupId = groupId,
                 CreatedAt = now,
-                UpdateAt = now,
+                UpdateAt = now
             });
             existingNames.Add(unitData.Name);
         }
@@ -131,14 +137,14 @@ public class SeederService(ApplicationDbContext db) : ISeederService
     {
         var stream = OpenLocaleResource("foods", locale);
         return JsonSerializer.Deserialize<Dictionary<string, FoodCategory>>(stream, JsonOpts)
-            ?? [];
+               ?? [];
     }
 
     private Dictionary<string, UnitEntry> LoadUnitsJson(string locale)
     {
         var stream = OpenLocaleResource("units", locale);
         return JsonSerializer.Deserialize<Dictionary<string, UnitEntry>>(stream, JsonOpts)
-            ?? [];
+               ?? [];
     }
 
     private static Stream OpenLocaleResource(string resourceType, string locale)
@@ -149,7 +155,10 @@ public class SeederService(ApplicationDbContext db) : ISeederService
         var resourceName = $"{prefix}{locale}.json";
 
         var stream = assembly.GetManifestResourceStream(resourceName);
-        if (stream is not null) return stream;
+        if (stream is not null)
+        {
+            return stream;
+        }
 
         // Fall back to en-US if the requested locale isn't bundled
         stream = assembly.GetManifestResourceStream($"{prefix}en-US.json");

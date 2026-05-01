@@ -13,8 +13,8 @@ public class ApiKeyConfiguration : IEntityTypeConfiguration<ApiKey>
         builder.Property(a => a.Name).IsRequired().HasMaxLength(255);
         builder.HasIndex(a => a.Token);
         builder.HasOne(a => a.User)
-               .WithMany(u => u.ApiKeys)
-               .HasForeignKey(a => a.UserId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(u => u.ApiKeys)
+            .HasForeignKey(a => a.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

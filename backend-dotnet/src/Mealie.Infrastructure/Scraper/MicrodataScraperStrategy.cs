@@ -3,7 +3,7 @@ using HtmlAgilityPack;
 namespace Mealie.Infrastructure.Scraper;
 
 /// <summary>
-/// Fallback scraper that parses schema.org/Recipe microdata (itemprop attributes).
+///     Fallback scraper that parses schema.org/Recipe microdata (itemprop attributes).
 /// </summary>
 public class MicrodataScraperStrategy
 {
@@ -15,7 +15,10 @@ public class MicrodataScraperStrategy
         // Find the root Recipe itemscope element
         var recipeRoot = doc.DocumentNode.SelectSingleNode(
             "//*[@itemtype='http://schema.org/Recipe' or @itemtype='https://schema.org/Recipe']");
-        if (recipeRoot is null) return null;
+        if (recipeRoot is null)
+        {
+            return null;
+        }
 
         return new ScrapedRecipeDto
         {
@@ -28,25 +31,41 @@ public class MicrodataScraperStrategy
             CookTime = GetItemprop(recipeRoot, "cookTime"),
             RecipeIngredient = GetAllItemprop(recipeRoot, "recipeIngredient"),
             RecipeInstructions = GetAllItemprop(recipeRoot, "recipeInstructions"),
-            Keywords = GetKeywords(recipeRoot),
+            Keywords = GetKeywords(recipeRoot)
         };
     }
 
     private static string? GetItemprop(HtmlNode root, string prop)
     {
         var node = root.SelectSingleNode($".//*[@itemprop='{prop}']");
-        if (node is null) return null;
+        if (node is null)
+        {
+            return null;
+        }
+
         var content = node.GetAttributeValue("content", string.Empty);
-        if (!string.IsNullOrEmpty(content)) return content;
+        if (!string.IsNullOrEmpty(content))
+        {
+            return content;
+        }
+
         var datetime = node.GetAttributeValue("datetime", string.Empty);
-        if (!string.IsNullOrEmpty(datetime)) return datetime;
+        if (!string.IsNullOrEmpty(datetime))
+        {
+            return datetime;
+        }
+
         return node.InnerText.Trim();
     }
 
     private static string? GetItempropAttr(HtmlNode root, string prop, string attr)
     {
         var node = root.SelectSingleNode($".//*[@itemprop='{prop}']");
-        if (node is null) return null;
+        if (node is null)
+        {
+            return null;
+        }
+
         var val = node.GetAttributeValue(attr, string.Empty);
         return string.IsNullOrEmpty(val) ? null : val;
     }
@@ -54,7 +73,11 @@ public class MicrodataScraperStrategy
     private static IList<string> GetAllItemprop(HtmlNode root, string prop)
     {
         var nodes = root.SelectNodes($".//*[@itemprop='{prop}']");
-        if (nodes is null) return [];
+        if (nodes is null)
+        {
+            return [];
+        }
+
         return nodes
             .Select(n =>
             {
@@ -68,7 +91,11 @@ public class MicrodataScraperStrategy
     private static IList<string> GetKeywords(HtmlNode root)
     {
         var raw = GetItemprop(root, "keywords");
-        if (raw is null) return [];
+        if (raw is null)
+        {
+            return [];
+        }
+
         return raw.Split(',').Select(k => k.Trim()).Where(k => !string.IsNullOrEmpty(k)).ToList();
     }
 }

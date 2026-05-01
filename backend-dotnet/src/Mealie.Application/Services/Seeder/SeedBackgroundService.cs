@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 namespace Mealie.Application.Services.Seeder;
 
 /// <summary>
-/// Long-running background service that reads seed jobs from the channel and
-/// processes them one at a time. Jobs are idempotent — existing entries are skipped.
+///     Long-running background service that reads seed jobs from the channel and
+///     processes them one at a time. Jobs are idempotent — existing entries are skipped.
 /// </summary>
 public class SeedBackgroundService(
     SeedQueue queue,
@@ -25,23 +25,25 @@ public class SeedBackgroundService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Unhandled error processing seed job {Type} for group {GroupId}", job.Type, job.GroupId);
+                logger.LogError(ex, "Unhandled error processing seed job {Type} for group {GroupId}", job.Type,
+                    job.GroupId);
             }
         }
     }
 
     private async Task ProcessJobAsync(SeedJobRequest job, CancellationToken ct)
     {
-        logger.LogInformation("Seeding {Type} (locale: {Locale}) for group {GroupId}", job.Type, job.Locale, job.GroupId);
+        logger.LogInformation("Seeding {Type} (locale: {Locale}) for group {GroupId}", job.Type, job.Locale,
+            job.GroupId);
 
         using var scope = scopeFactory.CreateScope();
         var seeder = scope.ServiceProvider.GetRequiredService<ISeederService>();
 
         await (job.Type switch
         {
-            SeedType.Foods  => seeder.SeedFoodsAsync(job.GroupId, job.Locale, ct),
+            SeedType.Foods => seeder.SeedFoodsAsync(job.GroupId, job.Locale, ct),
             SeedType.Labels => seeder.SeedLabelsAsync(job.GroupId, job.Locale, ct),
-            SeedType.Units  => seeder.SeedUnitsAsync(job.GroupId, job.Locale, ct),
+            SeedType.Units => seeder.SeedUnitsAsync(job.GroupId, job.Locale, ct),
             _ => throw new ArgumentOutOfRangeException(nameof(job.Type), job.Type, null)
         });
 

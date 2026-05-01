@@ -47,7 +47,7 @@ public class MigrationData
     public List<dynamic> CookbookRecipes { get; set; } = [];
 
     public int TotalCount => Groups.Count + Households.Count + Users.Count +
-        Units.Count + Foods.Count + Tags.Count + Categories.Count + Tools.Count + Cookbooks.Count +
-        Recipes.Count + Ingredients.Count + Instructions.Count +
-        MealPlans.Count + ShoppingLists.Count + ShoppingListItems.Count;
+                             Units.Count + Foods.Count + Tags.Count + Categories.Count + Tools.Count + Cookbooks.Count +
+                             Recipes.Count + Ingredients.Count + Instructions.Count +
+                             MealPlans.Count + ShoppingLists.Count + ShoppingListItems.Count;
 }

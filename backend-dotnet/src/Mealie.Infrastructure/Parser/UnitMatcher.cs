@@ -6,17 +6,21 @@ namespace Mealie.Infrastructure.Parser;
 
 public class UnitMatcher(ApplicationDbContext db)
 {
-    public async Task<(IngredientUnit? Unit, string Remainder)> MatchAsync(Guid groupId, string text, CancellationToken ct = default)
+    public async Task<(IngredientUnit? Unit, string Remainder)> MatchAsync(Guid groupId, string text,
+        CancellationToken ct = default)
     {
         var units = await db.Units.IgnoreQueryFilters()
             .Where(u => u.GroupId == groupId)
             .ToListAsync(ct);
 
         var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length == 0) return (null, text);
+        if (words.Length == 0)
+        {
+            return (null, text);
+        }
 
         // Try matching longest-first (e.g., "fluid oz" before "oz")
-        for (int len = Math.Min(words.Length, 3); len >= 1; len--)
+        for (var len = Math.Min(words.Length, 3); len >= 1; len--)
         {
             var candidate = string.Join(' ', words.Take(len)).ToLower();
             var unit = units.FirstOrDefault(u =>
@@ -35,5 +39,8 @@ public class UnitMatcher(ApplicationDbContext db)
         return (null, text);
     }
 
-    private static string Normalize(string? s) => (s ?? "").Trim().ToLower();
+    private static string Normalize(string? s)
+    {
+        return (s ?? "").Trim().ToLower();
+    }
 }

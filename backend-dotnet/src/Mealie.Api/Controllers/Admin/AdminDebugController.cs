@@ -28,7 +28,7 @@ public class AdminDebugController(IOptions<AppSettings> settings) : ControllerBa
         try
         {
             var testMessage = request.TestMessage ?? "Hello, can you respond with a simple greeting?";
-            
+
             // For now, return a stub response indicating OpenAI would be called
             // In a real implementation, this would call the OpenAI API
             return Ok(new DebugOpenAiResponse

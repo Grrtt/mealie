@@ -52,7 +52,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<MealPlanRule> MealPlanRules => Set<MealPlanRule>();
     public DbSet<ShoppingList> ShoppingLists => Set<ShoppingList>();
     public DbSet<ShoppingListItem> ShoppingListItems => Set<ShoppingListItem>();
-    public DbSet<ShoppingListItemRecipeReference> ShoppingListItemRecipeReferences => Set<ShoppingListItemRecipeReference>();
+
+    public DbSet<ShoppingListItemRecipeReference> ShoppingListItemRecipeReferences =>
+        Set<ShoppingListItemRecipeReference>();
+
     public DbSet<ShoppingListRecipeReference> ShoppingListRecipeReferences => Set<ShoppingListRecipeReference>();
 
     // Settings
@@ -78,19 +81,31 @@ public class ApplicationDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
         // Household-scoped query filters — pass Guid.Empty to bypass (admin)
-        modelBuilder.Entity<Recipe>().HasQueryFilter(r => _tenantFilter.HouseholdId == Guid.Empty || r.HouseholdId == _tenantFilter.HouseholdId);
-        modelBuilder.Entity<MealPlan>().HasQueryFilter(m => _tenantFilter.HouseholdId == Guid.Empty || m.HouseholdId == _tenantFilter.HouseholdId);
-        modelBuilder.Entity<ShoppingList>().HasQueryFilter(s => _tenantFilter.HouseholdId == Guid.Empty || s.HouseholdId == _tenantFilter.HouseholdId);
-        modelBuilder.Entity<Cookbook>().HasQueryFilter(c => _tenantFilter.HouseholdId == Guid.Empty || c.HouseholdId == _tenantFilter.HouseholdId);
-        modelBuilder.Entity<Webhook>().HasQueryFilter(w => _tenantFilter.HouseholdId == Guid.Empty || w.HouseholdId == _tenantFilter.HouseholdId);
-        modelBuilder.Entity<EventNotifier>().HasQueryFilter(e => _tenantFilter.HouseholdId == Guid.Empty || e.HouseholdId == _tenantFilter.HouseholdId);
+        modelBuilder.Entity<Recipe>().HasQueryFilter(r =>
+            _tenantFilter.HouseholdId == Guid.Empty || r.HouseholdId == _tenantFilter.HouseholdId);
+        modelBuilder.Entity<MealPlan>().HasQueryFilter(m =>
+            _tenantFilter.HouseholdId == Guid.Empty || m.HouseholdId == _tenantFilter.HouseholdId);
+        modelBuilder.Entity<ShoppingList>().HasQueryFilter(s =>
+            _tenantFilter.HouseholdId == Guid.Empty || s.HouseholdId == _tenantFilter.HouseholdId);
+        modelBuilder.Entity<Cookbook>().HasQueryFilter(c =>
+            _tenantFilter.HouseholdId == Guid.Empty || c.HouseholdId == _tenantFilter.HouseholdId);
+        modelBuilder.Entity<Webhook>().HasQueryFilter(w =>
+            _tenantFilter.HouseholdId == Guid.Empty || w.HouseholdId == _tenantFilter.HouseholdId);
+        modelBuilder.Entity<EventNotifier>().HasQueryFilter(e =>
+            _tenantFilter.HouseholdId == Guid.Empty || e.HouseholdId == _tenantFilter.HouseholdId);
 
         // Group-scoped query filters
-        modelBuilder.Entity<Tag>().HasQueryFilter(t => _tenantFilter.GroupId == Guid.Empty || t.GroupId == _tenantFilter.GroupId);
-        modelBuilder.Entity<Category>().HasQueryFilter(c => _tenantFilter.GroupId == Guid.Empty || c.GroupId == _tenantFilter.GroupId);
-        modelBuilder.Entity<Tool>().HasQueryFilter(t => _tenantFilter.GroupId == Guid.Empty || t.GroupId == _tenantFilter.GroupId);
-        modelBuilder.Entity<IngredientFood>().HasQueryFilter(f => _tenantFilter.GroupId == Guid.Empty || f.GroupId == _tenantFilter.GroupId);
-        modelBuilder.Entity<IngredientUnit>().HasQueryFilter(u => _tenantFilter.GroupId == Guid.Empty || u.GroupId == _tenantFilter.GroupId);
-        modelBuilder.Entity<MultiPurposeLabel>().HasQueryFilter(l => _tenantFilter.GroupId == Guid.Empty || l.GroupId == _tenantFilter.GroupId);
+        modelBuilder.Entity<Tag>()
+            .HasQueryFilter(t => _tenantFilter.GroupId == Guid.Empty || t.GroupId == _tenantFilter.GroupId);
+        modelBuilder.Entity<Category>()
+            .HasQueryFilter(c => _tenantFilter.GroupId == Guid.Empty || c.GroupId == _tenantFilter.GroupId);
+        modelBuilder.Entity<Tool>()
+            .HasQueryFilter(t => _tenantFilter.GroupId == Guid.Empty || t.GroupId == _tenantFilter.GroupId);
+        modelBuilder.Entity<IngredientFood>()
+            .HasQueryFilter(f => _tenantFilter.GroupId == Guid.Empty || f.GroupId == _tenantFilter.GroupId);
+        modelBuilder.Entity<IngredientUnit>()
+            .HasQueryFilter(u => _tenantFilter.GroupId == Guid.Empty || u.GroupId == _tenantFilter.GroupId);
+        modelBuilder.Entity<MultiPurposeLabel>().HasQueryFilter(l =>
+            _tenantFilter.GroupId == Guid.Empty || l.GroupId == _tenantFilter.GroupId);
     }
 }

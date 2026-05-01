@@ -13,8 +13,8 @@ public class ToolConfiguration : IEntityTypeConfiguration<Tool>
         builder.Property(t => t.Name).IsRequired();
         builder.HasIndex(t => t.GroupId);
         builder.HasOne(t => t.Group)
-               .WithMany(g => g.Tools)
-               .HasForeignKey(t => t.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Tools)
+            .HasForeignKey(t => t.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

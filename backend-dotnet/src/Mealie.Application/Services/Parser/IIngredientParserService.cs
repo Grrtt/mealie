@@ -44,5 +44,7 @@ public class ParsedIngredientFoodDto
 public interface IIngredientParserService
 {
     Task<ParsedIngredientDto> ParseAsync(Guid groupId, string ingredientString, CancellationToken ct = default);
-    Task<IList<ParsedIngredientDto>> ParseBatchAsync(Guid groupId, IList<string> ingredients, CancellationToken ct = default);
+
+    Task<IList<ParsedIngredientDto>> ParseBatchAsync(Guid groupId, IList<string> ingredients,
+        CancellationToken ct = default);
 }

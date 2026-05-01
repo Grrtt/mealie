@@ -8,8 +8,14 @@ namespace Mealie.Api.Controllers.Utility;
 public class HealthController : ControllerBase
 {
     [HttpGet("/healthz")]
-    public IActionResult Healthz() => Ok(new { status = "ok", version = "2.0.0" });
+    public IActionResult Healthz()
+    {
+        return Ok(new { status = "ok", version = "2.0.0" });
+    }
 
     [HttpGet("/readyz")]
-    public IActionResult Readyz() => Ok(new { status = "ok", version = "2.0.0", database = "connected" });
+    public IActionResult Readyz()
+    {
+        return Ok(new { status = "ok", version = "2.0.0", database = "connected" });
+    }
 }

@@ -31,7 +31,7 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
                 UserId = e.UserId,
                 Timestamp = e.Timestamp,
                 CreatedAt = e.CreatedAt,
-                UpdateAt = e.UpdateAt,
+                UpdateAt = e.UpdateAt
             })
             .ToListAsync(ct);
 
@@ -41,7 +41,10 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
     public async Task<IList<TimelineEventResponse>> GetEventsAsync(string slug, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return [];
+        if (recipe is null)
+        {
+            return [];
+        }
 
         return await db.RecipeTimelineEvents
             .Where(e => e.RecipeId == recipe.Id)
@@ -56,15 +59,19 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
                 UserId = e.UserId,
                 Timestamp = e.Timestamp,
                 CreatedAt = e.CreatedAt,
-                UpdateAt = e.UpdateAt,
+                UpdateAt = e.UpdateAt
             })
             .ToListAsync(ct);
     }
 
-    public async Task<TimelineEventResponse?> AddEventAsync(string slug, Guid userId, CreateTimelineEventRequest request, CancellationToken ct = default)
+    public async Task<TimelineEventResponse?> AddEventAsync(string slug, Guid userId,
+        CreateTimelineEventRequest request, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
 
         var ev = new RecipeTimelineEvent
         {
@@ -76,7 +83,7 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
             UserId = userId,
             Timestamp = request.Timestamp ?? DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         db.RecipeTimelineEvents.Add(ev);
@@ -85,10 +92,14 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
         return MapToResponse(ev);
     }
 
-    public async Task<TimelineEventResponse?> UpdateEventAsync(Guid eventId, UpdateTimelineEventRequest request, CancellationToken ct = default)
+    public async Task<TimelineEventResponse?> UpdateEventAsync(Guid eventId, UpdateTimelineEventRequest request,
+        CancellationToken ct = default)
     {
         var ev = await db.RecipeTimelineEvents.FindAsync([eventId], ct);
-        if (ev is null) return null;
+        if (ev is null)
+        {
+            return null;
+        }
 
         ev.Subject = request.Subject ?? ev.Subject;
         ev.EventType = request.EventType ?? ev.EventType;
@@ -102,23 +113,29 @@ public class RecipeTimelineService(ApplicationDbContext db) : IRecipeTimelineSer
     public async Task<bool> DeleteEventAsync(Guid eventId, CancellationToken ct = default)
     {
         var ev = await db.RecipeTimelineEvents.FindAsync([eventId], ct);
-        if (ev is null) return false;
+        if (ev is null)
+        {
+            return false;
+        }
 
         db.RecipeTimelineEvents.Remove(ev);
         await db.SaveChangesAsync(ct);
         return true;
     }
 
-    private static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev) => new()
+    private static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev)
     {
-        Id = ev.Id,
-        Subject = ev.Subject,
-        EventType = ev.EventType,
-        EventMessage = ev.EventMessage,
-        RecipeId = ev.RecipeId,
-        UserId = ev.UserId,
-        Timestamp = ev.Timestamp,
-        CreatedAt = ev.CreatedAt,
-        UpdateAt = ev.UpdateAt,
-    };
+        return new TimelineEventResponse
+        {
+            Id = ev.Id,
+            Subject = ev.Subject,
+            EventType = ev.EventType,
+            EventMessage = ev.EventMessage,
+            RecipeId = ev.RecipeId,
+            UserId = ev.UserId,
+            Timestamp = ev.Timestamp,
+            CreatedAt = ev.CreatedAt,
+            UpdateAt = ev.UpdateAt
+        };
+    }
 }

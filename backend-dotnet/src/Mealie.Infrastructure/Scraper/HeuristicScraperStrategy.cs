@@ -4,7 +4,7 @@ using AngleSharp.Html.Parser;
 namespace Mealie.Infrastructure.Scraper;
 
 /// <summary>
-/// Last-resort heuristic scraper using CSS selector patterns to find recipe-like content.
+///     Last-resort heuristic scraper using CSS selector patterns to find recipe-like content.
 /// </summary>
 public class HeuristicScraperStrategy
 {
@@ -14,9 +14,12 @@ public class HeuristicScraperStrategy
         var document = await parser.ParseDocumentAsync(html);
 
         var title = document.QuerySelector("h1")?.TextContent?.Trim()
-            ?? document.Title;
+                    ?? document.Title;
 
-        if (string.IsNullOrWhiteSpace(title)) return null;
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            return null;
+        }
 
         // Try to find ingredients via common class names
         var ingredients = FindListItems(document, new[]
@@ -25,7 +28,7 @@ public class HeuristicScraperStrategy
             ".ingredients li",
             "[class*='ingredient'] li",
             ".wprm-recipe-ingredient",
-            ".tasty-recipes-ingredients li",
+            ".tasty-recipes-ingredients li"
         });
 
         // Try to find instructions via common class names
@@ -35,18 +38,21 @@ public class HeuristicScraperStrategy
             ".instructions li",
             "[class*='instruction'] li",
             ".wprm-recipe-instruction-text",
-            ".tasty-recipes-instructions li",
+            ".tasty-recipes-instructions li"
         });
 
         // Only return a result if we found some structured content
-        if (ingredients.Count == 0 && instructions.Count == 0) return null;
+        if (ingredients.Count == 0 && instructions.Count == 0)
+        {
+            return null;
+        }
 
         return new ScrapedRecipeDto
         {
             Name = title,
             Description = document.QuerySelector("[class*='description'], .recipe-description")?.TextContent?.Trim(),
             RecipeIngredient = ingredients,
-            RecipeInstructions = instructions,
+            RecipeInstructions = instructions
         };
     }
 
@@ -59,8 +65,12 @@ public class HeuristicScraperStrategy
                 .Select(e => e.TextContent.Trim())
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .ToList();
-            if (results.Count > 0) return results;
+            if (results.Count > 0)
+            {
+                return results;
+            }
         }
+
         return [];
     }
 }

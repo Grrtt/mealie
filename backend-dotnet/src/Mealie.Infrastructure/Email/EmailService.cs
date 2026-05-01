@@ -1,7 +1,9 @@
-using Mealie.Infrastructure.Configuration;
 using MailKit.Net.Smtp;
-using MimeKit;
+using MailKit.Security;
+using Mealie.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
+using MimeKit;
+using MimeKit.Text;
 
 namespace Mealie.Infrastructure.Email;
 
@@ -12,14 +14,17 @@ public class EmailService(AppSettings settings, ILogger<EmailService> logger) : 
     public async Task SendPasswordResetEmailAsync(string to, string resetUrl, CancellationToken ct = default)
     {
         var subject = "Mealie - Password Reset";
-        var body = $"<p>You requested a password reset. Click the link below to reset your password:</p><p><a href=\"{resetUrl}\">{resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>";
+        var body =
+            $"<p>You requested a password reset. Click the link below to reset your password:</p><p><a href=\"{resetUrl}\">{resetUrl}</a></p><p>If you did not request this, please ignore this email.</p>";
         await SendEmailAsync(to, subject, body, ct);
     }
 
-    public async Task SendInvitationEmailAsync(string to, string groupName, string inviteUrl, CancellationToken ct = default)
+    public async Task SendInvitationEmailAsync(string to, string groupName, string inviteUrl,
+        CancellationToken ct = default)
     {
         var subject = $"Mealie - Invitation to join {groupName}";
-        var body = $"<p>You have been invited to join the group <strong>{groupName}</strong> on Mealie.</p><p><a href=\"{inviteUrl}\">Click here to accept the invitation</a></p>";
+        var body =
+            $"<p>You have been invited to join the group <strong>{groupName}</strong> on Mealie.</p><p><a href=\"{inviteUrl}\">Click here to accept the invitation</a></p>";
         await SendEmailAsync(to, subject, body, ct);
     }
 
@@ -38,13 +43,15 @@ public class EmailService(AppSettings settings, ILogger<EmailService> logger) : 
             message.From.Add(MailboxAddress.Parse(fromEmail));
             message.To.Add(MailboxAddress.Parse(to));
             message.Subject = subject;
-            message.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = htmlBody };
+            message.Body = new TextPart(TextFormat.Html) { Text = htmlBody };
 
             using var client = new SmtpClient();
-            await client.ConnectAsync(settings.SmtpHost, settings.SmtpPort, MailKit.Security.SecureSocketOptions.Auto, ct);
+            await client.ConnectAsync(settings.SmtpHost, settings.SmtpPort, SecureSocketOptions.Auto, ct);
 
             if (!string.IsNullOrWhiteSpace(settings.SmtpUser) && !string.IsNullOrWhiteSpace(settings.SmtpPassword))
+            {
                 await client.AuthenticateAsync(settings.SmtpUser, settings.SmtpPassword, ct);
+            }
 
             await client.SendAsync(message, ct);
             await client.DisconnectAsync(true, ct);

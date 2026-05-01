@@ -23,7 +23,10 @@ public class AuthController(
     {
         var result = await authService.LoginAsync(request.Username, request.Password);
         if (result is null)
+        {
             return Unauthorized(new { detail = "Incorrect username or password" });
+        }
+
         return Ok(result);
     }
 
@@ -32,7 +35,10 @@ public class AuthController(
     {
         var result = await authService.RefreshAsync(request.Token);
         if (result is null)
+        {
             return Unauthorized(new { detail = "Invalid or expired refresh token" });
+        }
+
         return Ok(result);
     }
 
@@ -56,6 +62,7 @@ public class AuthController(
                 redirectUrl = $"{settings.Value.BaseUrl}/api/auth/oauth"
             });
         }
+
         return Ok(providers);
     }
 
@@ -63,7 +70,9 @@ public class AuthController(
     public IActionResult OAuthRedirect()
     {
         if (!oidcService.IsConfigured)
+        {
             return BadRequest(new { detail = "OIDC not configured" });
+        }
 
         var redirectUri = $"{settings.Value.BaseUrl}/api/auth/oauth/callback";
         var state = Guid.NewGuid().ToString("N");
@@ -71,7 +80,9 @@ public class AuthController(
 
         var authUrl = oidcService.GetAuthorizationUrl(redirectUri, state, nonce);
         if (authUrl is null)
+        {
             return BadRequest(new { detail = "Could not build OIDC authorization URL" });
+        }
 
         return Redirect(authUrl);
     }
@@ -80,16 +91,22 @@ public class AuthController(
     public async Task<ActionResult<TokenResponse>> OAuthCallback([FromQuery] string code, [FromQuery] string? state)
     {
         if (!oidcService.IsConfigured)
+        {
             return BadRequest(new { detail = "OIDC not configured" });
+        }
 
         var redirectUri = $"{settings.Value.BaseUrl}/api/auth/oauth/callback";
         var userInfo = await oidcService.ExchangeCodeAsync(code, redirectUri, HttpContext.RequestAborted);
         if (userInfo is null)
+        {
             return Unauthorized(new { detail = "OIDC code exchange failed" });
+        }
 
         var user = await oidcService.ProvisionUserAsync(userInfo, HttpContext.RequestAborted);
         if (user is null)
+        {
             return Unauthorized(new { detail = "User provisioning failed" });
+        }
 
         var token = jwtTokenService.GenerateAccessToken(
             user.Id, user.GroupId, user.HouseholdId ?? Guid.Empty, user.Admin);

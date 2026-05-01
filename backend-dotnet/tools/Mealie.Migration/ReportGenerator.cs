@@ -4,10 +4,12 @@ public class MigrationReport
 {
     private readonly List<(string Entity, int Migrated, int Skipped, int Errors)> _rows = [];
 
-    public void Add(string entity, int migrated, int skipped, int errors)
-        => _rows.Add((entity, migrated, skipped, errors));
-
     public IReadOnlyList<(string Entity, int Migrated, int Skipped, int Errors)> Rows => _rows;
+
+    public void Add(string entity, int migrated, int skipped, int errors)
+    {
+        _rows.Add((entity, migrated, skipped, errors));
+    }
 }
 
 public static class ReportGenerator
@@ -35,8 +37,12 @@ public static class ReportGenerator
         Console.WriteLine("╚══════════════════════╩══════════╩══════════╩══════════╝");
 
         if (totalErrors > 0)
+        {
             Console.WriteLine($"\n⚠️  {totalErrors} records had errors — check migration.log for details");
+        }
         else
+        {
             Console.WriteLine("\n✅ Migration completed successfully!");
+        }
     }
 }

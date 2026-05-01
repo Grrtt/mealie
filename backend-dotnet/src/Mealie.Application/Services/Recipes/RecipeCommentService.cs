@@ -10,7 +10,10 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
     public async Task<IList<CommentResponse>> GetCommentsAsync(string slug, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return [];
+        if (recipe is null)
+        {
+            return [];
+        }
 
         return await db.RecipeComments
             .Where(c => c.RecipeId == recipe.Id)
@@ -22,15 +25,19 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
                 RecipeId = c.RecipeId,
                 UserId = c.UserId,
                 CreatedAt = c.CreatedAt,
-                UpdateAt = c.UpdateAt,
+                UpdateAt = c.UpdateAt
             })
             .ToListAsync(ct);
     }
 
-    public async Task<CommentResponse?> AddCommentAsync(string slug, Guid userId, CreateCommentRequest request, CancellationToken ct = default)
+    public async Task<CommentResponse?> AddCommentAsync(string slug, Guid userId, CreateCommentRequest request,
+        CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
 
         var comment = new RecipeComment
         {
@@ -39,7 +46,7 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
             RecipeId = recipe.Id,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         db.RecipeComments.Add(comment);
@@ -52,15 +59,19 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
             RecipeId = comment.RecipeId,
             UserId = comment.UserId,
             CreatedAt = comment.CreatedAt,
-            UpdateAt = comment.UpdateAt,
+            UpdateAt = comment.UpdateAt
         };
     }
 
-    public async Task<CommentResponse?> UpdateCommentAsync(Guid commentId, Guid userId, UpdateCommentRequest request, CancellationToken ct = default)
+    public async Task<CommentResponse?> UpdateCommentAsync(Guid commentId, Guid userId, UpdateCommentRequest request,
+        CancellationToken ct = default)
     {
         var comment = await db.RecipeComments
             .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == userId, ct);
-        if (comment is null) return null;
+        if (comment is null)
+        {
+            return null;
+        }
 
         comment.Text = request.Text;
         comment.UpdateAt = DateTime.UtcNow;
@@ -73,7 +84,7 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
             RecipeId = comment.RecipeId,
             UserId = comment.UserId,
             CreatedAt = comment.CreatedAt,
-            UpdateAt = comment.UpdateAt,
+            UpdateAt = comment.UpdateAt
         };
     }
 
@@ -81,7 +92,10 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
     {
         var comment = await db.RecipeComments
             .FirstOrDefaultAsync(c => c.Id == commentId && c.UserId == userId, ct);
-        if (comment is null) return false;
+        if (comment is null)
+        {
+            return false;
+        }
 
         db.RecipeComments.Remove(comment);
         await db.SaveChangesAsync(ct);
@@ -101,7 +115,7 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
                 RecipeId = c.RecipeId,
                 UserId = c.UserId,
                 CreatedAt = c.CreatedAt,
-                UpdateAt = c.UpdateAt,
+                UpdateAt = c.UpdateAt
             })
             .ToListAsync(ct);
     }
@@ -110,7 +124,10 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
     {
         var comment = await db.RecipeComments
             .FirstOrDefaultAsync(c => c.Id == commentId, ct);
-        if (comment is null) return null;
+        if (comment is null)
+        {
+            return null;
+        }
 
         return new CommentResponse
         {
@@ -119,14 +136,18 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
             RecipeId = comment.RecipeId,
             UserId = comment.UserId,
             CreatedAt = comment.CreatedAt,
-            UpdateAt = comment.UpdateAt,
+            UpdateAt = comment.UpdateAt
         };
     }
 
-    public async Task<CommentResponse?> AddCommentByRecipeIdAsync(Guid recipeId, Guid userId, CreateCommentRequest request, CancellationToken ct = default)
+    public async Task<CommentResponse?> AddCommentByRecipeIdAsync(Guid recipeId, Guid userId,
+        CreateCommentRequest request, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Id == recipeId, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
 
         var comment = new RecipeComment
         {
@@ -135,7 +156,7 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
             RecipeId = recipe.Id,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         db.RecipeComments.Add(comment);
@@ -148,7 +169,7 @@ public class RecipeCommentService(ApplicationDbContext db) : IRecipeCommentServi
             RecipeId = comment.RecipeId,
             UserId = comment.UserId,
             CreatedAt = comment.CreatedAt,
-            UpdateAt = comment.UpdateAt,
+            UpdateAt = comment.UpdateAt
         };
     }
 }

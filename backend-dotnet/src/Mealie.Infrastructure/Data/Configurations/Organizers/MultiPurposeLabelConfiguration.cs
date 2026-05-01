@@ -13,8 +13,8 @@ public class MultiPurposeLabelConfiguration : IEntityTypeConfiguration<MultiPurp
         builder.Property(l => l.Name).IsRequired();
         builder.HasIndex(l => l.GroupId);
         builder.HasOne(l => l.Group)
-               .WithMany(g => g.Labels)
-               .HasForeignKey(l => l.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Labels)
+            .HasForeignKey(l => l.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

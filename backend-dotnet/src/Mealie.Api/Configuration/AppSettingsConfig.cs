@@ -1,8 +1,8 @@
 namespace Mealie.Api.Configuration;
 
 /// <summary>
-/// Documents all supported environment variables.
-/// Actual binding happens in Program.cs via IConfiguration.
+///     Documents all supported environment variables.
+///     Actual binding happens in Program.cs via IConfiguration.
 /// </summary>
 public static class AppSettingsConfig
 {

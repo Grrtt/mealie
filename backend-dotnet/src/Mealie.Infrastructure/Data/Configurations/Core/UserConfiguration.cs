@@ -17,16 +17,16 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.HouseholdId);
         builder.Property(u => u.AuthMethod).HasConversion<string>();
         builder.HasOne(u => u.Group)
-               .WithMany(g => g.Users)
-               .HasForeignKey(u => u.GroupId)
-               .OnDelete(DeleteBehavior.Restrict);
+            .WithMany(g => g.Users)
+            .HasForeignKey(u => u.GroupId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(u => u.Household)
-               .WithMany(h => h.Users)
-               .HasForeignKey(u => u.HouseholdId)
-               .OnDelete(DeleteBehavior.SetNull);
+            .WithMany(h => h.Users)
+            .HasForeignKey(u => u.HouseholdId)
+            .OnDelete(DeleteBehavior.SetNull);
         // FavoriteRecipes many-to-many — table name from Python source
         builder.HasMany(u => u.FavoriteRecipes)
-               .WithMany()
-               .UsingEntity(j => j.ToTable("users_to_recipes"));
+            .WithMany()
+            .UsingEntity(j => j.ToTable("users_to_recipes"));
     }
 }

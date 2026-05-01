@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Mealie.Domain.Entities.Core;
@@ -39,7 +40,10 @@ public class OidcService(
 
     public string? GetAuthorizationUrl(string redirectUri, string state, string nonce)
     {
-        if (!IsConfigured || _settings.OidcAuthority is null) return null;
+        if (!IsConfigured || _settings.OidcAuthority is null)
+        {
+            return null;
+        }
 
         // Use the well-known authorization endpoint path pattern (per OIDC spec)
         var authority = _settings.OidcAuthority.TrimEnd('/');
@@ -54,12 +58,18 @@ public class OidcService(
 
     public async Task<OidcUserInfo?> ExchangeCodeAsync(string code, string redirectUri, CancellationToken ct = default)
     {
-        if (!IsConfigured) return null;
+        if (!IsConfigured)
+        {
+            return null;
+        }
 
         try
         {
             var discovery = await GetDiscoveryDocumentAsync(ct);
-            if (discovery is null) return null;
+            if (discovery is null)
+            {
+                return null;
+            }
 
             var client = httpClientFactory.CreateClient("oidc");
 
@@ -70,7 +80,7 @@ public class OidcService(
                 ["code"] = code,
                 ["redirect_uri"] = redirectUri,
                 ["client_id"] = _settings.OidcClientId ?? "",
-                ["client_secret"] = _settings.OidcClientSecret ?? "",
+                ["client_secret"] = _settings.OidcClientSecret ?? ""
             };
 
             var tokenResp = await client.PostAsync(discovery.TokenEndpoint, new FormUrlEncodedContent(tokenReq), ct);
@@ -80,12 +90,15 @@ public class OidcService(
                 return null;
             }
 
-            var tokenData = await tokenResp.Content.ReadFromJsonAsync<OidcTokenResponse>(cancellationToken: ct);
-            if (tokenData?.AccessToken is null) return null;
+            var tokenData = await tokenResp.Content.ReadFromJsonAsync<OidcTokenResponse>(ct);
+            if (tokenData?.AccessToken is null)
+            {
+                return null;
+            }
 
             // Fetch user info
             using var userInfoReq = new HttpRequestMessage(HttpMethod.Get, discovery.UserInfoEndpoint);
-            userInfoReq.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenData.AccessToken);
+            userInfoReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenData.AccessToken);
             var userInfoResp = await client.SendAsync(userInfoReq, ct);
             if (!userInfoResp.IsSuccessStatusCode)
             {
@@ -93,7 +106,7 @@ public class OidcService(
                 return null;
             }
 
-            return await userInfoResp.Content.ReadFromJsonAsync<OidcUserInfo>(cancellationToken: ct);
+            return await userInfoResp.Content.ReadFromJsonAsync<OidcUserInfo>(ct);
         }
         catch (Exception ex)
         {
@@ -109,18 +122,25 @@ public class OidcService(
         {
             var existing = await db.Users.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email == userInfo.Email, ct);
-            if (existing is not null) return existing;
+            if (existing is not null)
+            {
+                return existing;
+            }
         }
 
         // Auto-provision new user into the default group/household
-        var defaultGroup = await db.Groups.FirstOrDefaultAsync(cancellationToken: ct);
-        if (defaultGroup is null) return null;
+        var defaultGroup = await db.Groups.FirstOrDefaultAsync(ct);
+        if (defaultGroup is null)
+        {
+            return null;
+        }
+
         var defaultHousehold = await db.Households
             .FirstOrDefaultAsync(h => h.GroupId == defaultGroup.Id, ct);
 
         var username = userInfo.PreferredUsername
-            ?? userInfo.Email?.Split('@')[0]
-            ?? userInfo.Sub;
+                       ?? userInfo.Email?.Split('@')[0]
+                       ?? userInfo.Sub;
 
         var user = new User
         {
@@ -132,7 +152,7 @@ public class OidcService(
             GroupId = defaultGroup.Id,
             HouseholdId = defaultHousehold?.Id,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
@@ -142,7 +162,10 @@ public class OidcService(
 
     private async Task<OidcDiscoveryDocument?> GetDiscoveryDocumentAsync(CancellationToken ct)
     {
-        if (_discoveryDoc is not null) return _discoveryDoc;
+        if (_discoveryDoc is not null)
+        {
+            return _discoveryDoc;
+        }
 
         try
         {
@@ -160,18 +183,18 @@ public class OidcService(
 
     private class OidcTokenResponse
     {
-        [JsonPropertyName("access_token")]
-        public string? AccessToken { get; set; }
-        [JsonPropertyName("id_token")]
-        public string? IdToken { get; set; }
+        [JsonPropertyName("access_token")] public string? AccessToken { get; set; }
+
+        [JsonPropertyName("id_token")] public string? IdToken { get; set; }
     }
 
     private class OidcDiscoveryDocument
     {
-        [JsonPropertyName("token_endpoint")]
-        public string TokenEndpoint { get; set; } = string.Empty;
+        [JsonPropertyName("token_endpoint")] public string TokenEndpoint { get; set; } = string.Empty;
+
         [JsonPropertyName("userinfo_endpoint")]
         public string UserInfoEndpoint { get; set; } = string.Empty;
+
         [JsonPropertyName("authorization_endpoint")]
         public string AuthorizationEndpoint { get; set; } = string.Empty;
     }

@@ -8,18 +8,25 @@ namespace Mealie.Api.Controllers.Organizers;
 
 [ApiController]
 [Route("api/organizers/tools")]
-public class ToolsController(IOrganizerService organizerService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class ToolsController(IOrganizerService organizerService, ITenantContext tenantContext)
+    : MealieControllerBase(tenantContext)
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<ToolResponse>>> GetTools(
         [FromQuery] PaginationParams pagination, CancellationToken ct)
-        => Ok(await organizerService.GetToolsAsync(CurrentGroupId, pagination, ct));
+    {
+        return Ok(await organizerService.GetToolsAsync(CurrentGroupId, pagination, ct));
+    }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<ToolResponse>> GetTool(string slug, CancellationToken ct)
     {
         var tool = await organizerService.GetToolBySlugAsync(CurrentGroupId, slug, ct);
-        if (tool is null) return NotFoundOrForbidden();
+        if (tool is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(tool);
     }
 
@@ -27,7 +34,11 @@ public class ToolsController(IOrganizerService organizerService, ITenantContext 
     public async Task<ActionResult<ToolResponse>> GetToolBySlug(string slug, CancellationToken ct)
     {
         var tool = await organizerService.GetToolBySlugAsync(CurrentGroupId, slug, ct);
-        if (tool is null) return NotFoundOrForbidden();
+        if (tool is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(tool);
     }
 
@@ -39,22 +50,34 @@ public class ToolsController(IOrganizerService organizerService, ITenantContext 
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ToolResponse>> UpdateTool(Guid id, [FromBody] UpdateToolRequest request, CancellationToken ct)
+    public async Task<ActionResult<ToolResponse>> UpdateTool(Guid id, [FromBody] UpdateToolRequest request,
+        CancellationToken ct)
     {
         var tool = await organizerService.UpdateToolAsync(CurrentGroupId, id, request, ct);
-        if (tool is null) return NotFoundOrForbidden();
+        if (tool is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(tool);
     }
 
     [HttpPatch("{id:guid}")]
-    public async Task<ActionResult<ToolResponse>> PatchTool(Guid id, [FromBody] UpdateToolRequest request, CancellationToken ct)
-        => await UpdateTool(id, request, ct);
+    public async Task<ActionResult<ToolResponse>> PatchTool(Guid id, [FromBody] UpdateToolRequest request,
+        CancellationToken ct)
+    {
+        return await UpdateTool(id, request, ct);
+    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteTool(Guid id, CancellationToken ct)
     {
         var deleted = await organizerService.DeleteToolAsync(CurrentGroupId, id, ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 }

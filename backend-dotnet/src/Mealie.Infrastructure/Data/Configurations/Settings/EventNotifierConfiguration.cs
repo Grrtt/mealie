@@ -15,18 +15,15 @@ public class EventNotifierConfiguration : IEntityTypeConfiguration<EventNotifier
         builder.HasIndex(e => e.GroupId);
         builder.HasIndex(e => e.HouseholdId);
         builder.HasOne(e => e.Group)
-               .WithMany()
-               .HasForeignKey(e => e.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany()
+            .HasForeignKey(e => e.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(e => e.Household)
-               .WithMany(h => h.EventNotifiers)
-               .HasForeignKey(e => e.HouseholdId)
-               .OnDelete(DeleteBehavior.Restrict);
+            .WithMany(h => h.EventNotifiers)
+            .HasForeignKey(e => e.HouseholdId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // Options stored in a separate table to match Python source schema
-        builder.OwnsOne(e => e.Options, o =>
-        {
-            o.ToTable("group_events_notifier_options");
-        });
+        builder.OwnsOne(e => e.Options, o => { o.ToTable("group_events_notifier_options"); });
     }
 }

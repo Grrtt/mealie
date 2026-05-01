@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Users;
+using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,31 +15,61 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
             .Include(u => u.Group)
             .Include(u => u.Household)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null) return null;
+        if (user is null)
+        {
+            return null;
+        }
+
         return MapToResponse(user);
     }
 
-    public async Task<UserResponse?> UpdateProfileAsync(Guid userId, UpdateUserRequest request, CancellationToken ct = default)
+    public async Task<UserResponse?> UpdateProfileAsync(Guid userId, UpdateUserRequest request,
+        CancellationToken ct = default)
     {
         var user = await db.Users
             .IgnoreQueryFilters()
             .Include(u => u.Group)
             .Include(u => u.Household)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null) return null;
-        if (request.FullName is not null) user.FullName = request.FullName;
-        if (request.Email is not null) user.Email = request.Email;
-        if (request.Username is not null) user.Username = request.Username;
+        if (user is null)
+        {
+            return null;
+        }
+
+        if (request.FullName is not null)
+        {
+            user.FullName = request.FullName;
+        }
+
+        if (request.Email is not null)
+        {
+            user.Email = request.Email;
+        }
+
+        if (request.Username is not null)
+        {
+            user.Username = request.Username;
+        }
+
         user.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         return MapToResponse(user);
     }
 
-    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken ct = default)
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword,
+        CancellationToken ct = default)
     {
         var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null || user.Password is null) return false;
-        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.Password)) return false;
+        if (user is null || user.Password is null)
+        {
+            return false;
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.Password))
+        {
+            return false;
+        }
+
         user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
@@ -49,7 +80,7 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
     {
         var rawToken = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         var hash = BCrypt.Net.BCrypt.HashPassword(rawToken);
-        var apiKey = new Domain.Entities.Core.ApiKey
+        var apiKey = new ApiKey
         {
             Name = name,
             Token = hash,
@@ -73,7 +104,11 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
     public async Task<bool> DeleteApiKeyAsync(Guid userId, int keyId, CancellationToken ct = default)
     {
         var key = await db.ApiKeys.FirstOrDefaultAsync(k => k.Id == keyId && k.UserId == userId, ct);
-        if (key is null) return false;
+        if (key is null)
+        {
+            return false;
+        }
+
         db.ApiKeys.Remove(key);
         await db.SaveChangesAsync(ct);
         return true;
@@ -85,7 +120,11 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
             .Include(u => u.FavoriteRecipes)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
         var recipe = await db.Recipes.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (user is null || recipe is null) return;
+        if (user is null || recipe is null)
+        {
+            return;
+        }
+
         if (!user.FavoriteRecipes.Any(r => r.Id == recipe.Id))
         {
             user.FavoriteRecipes.Add(recipe);
@@ -111,7 +150,11 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
         var user = await db.Users.IgnoreQueryFilters()
             .Include(u => u.FavoriteRecipes)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null) return [];
+        if (user is null)
+        {
+            return [];
+        }
+
         return user.FavoriteRecipes.Select(r => r.Slug).ToList();
     }
 
@@ -120,7 +163,10 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
         var user = await db.Users.IgnoreQueryFilters()
             .Include(u => u.FavoriteRecipes)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null) return [];
+        if (user is null)
+        {
+            return [];
+        }
 
         return user.FavoriteRecipes.Select(r => new UserRatingResponse
         {
@@ -132,10 +178,17 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
         }).ToList();
     }
 
-    public async Task SetRatingAsync(Guid userId, string slug, int? rating, bool? isFavorite, CancellationToken ct = default)
+    public async Task SetRatingAsync(Guid userId, string slug, int? rating, bool? isFavorite,
+        CancellationToken ct = default)
     {
-        if (isFavorite == true) await AddFavoriteAsync(userId, slug, ct);
-        else if (isFavorite == false) await RemoveFavoriteAsync(userId, slug, ct);
+        if (isFavorite == true)
+        {
+            await AddFavoriteAsync(userId, slug, ct);
+        }
+        else if (isFavorite == false)
+        {
+            await RemoveFavoriteAsync(userId, slug, ct);
+        }
 
         if (rating.HasValue)
         {
@@ -148,24 +201,27 @@ public class UserService(ApplicationDbContext db, ILogger<UserService> logger) :
         }
     }
 
-    private static UserResponse MapToResponse(Domain.Entities.Core.User user) => new()
+    private static UserResponse MapToResponse(User user)
     {
-        Id = user.Id,
-        FullName = user.FullName,
-        Username = user.Username,
-        Email = user.Email,
-        AuthMethod = user.AuthMethod.ToString(),
-        Admin = user.Admin,
-        Advanced = user.Advanced,
-        GroupId = user.GroupId,
-        Group = user.Group?.Name ?? string.Empty,
-        GroupSlug = user.Group?.Slug ?? string.Empty,
-        HouseholdId = user.HouseholdId,
-        Household = user.Household?.Name ?? string.Empty,
-        HouseholdSlug = user.Household?.Slug ?? string.Empty,
-        CanManageHousehold = user.CanManageHousehold,
-        CanManage = user.CanManage,
-        CanInvite = user.CanInvite,
-        CanOrganize = user.CanOrganize
-    };
+        return new UserResponse
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            Username = user.Username,
+            Email = user.Email,
+            AuthMethod = user.AuthMethod.ToString(),
+            Admin = user.Admin,
+            Advanced = user.Advanced,
+            GroupId = user.GroupId,
+            Group = user.Group?.Name ?? string.Empty,
+            GroupSlug = user.Group?.Slug ?? string.Empty,
+            HouseholdId = user.HouseholdId,
+            Household = user.Household?.Name ?? string.Empty,
+            HouseholdSlug = user.Household?.Slug ?? string.Empty,
+            CanManageHousehold = user.CanManageHousehold,
+            CanManage = user.CanManage,
+            CanInvite = user.CanInvite,
+            CanOrganize = user.CanOrganize
+        };
+    }
 }

@@ -1,6 +1,6 @@
+using System.IO.Compression;
 using Mealie.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
-using System.IO.Compression;
 
 namespace Mealie.Infrastructure.Admin;
 
@@ -23,12 +23,18 @@ public class BackupService(AppSettings settings, ILogger<BackupService> logger) 
             using var archive = ZipFile.Open(filePath, ZipArchiveMode.Create);
 
             var dataDir = settings.DataDir;
-            if (!Directory.Exists(dataDir)) return;
+            if (!Directory.Exists(dataDir))
+            {
+                return;
+            }
 
             foreach (var file in Directory.EnumerateFiles(dataDir, "*", SearchOption.AllDirectories))
             {
                 // Skip backups directory to avoid recursive backups
-                if (file.StartsWith(BackupDir, StringComparison.OrdinalIgnoreCase)) continue;
+                if (file.StartsWith(BackupDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
                 var relativePath = Path.GetRelativePath(dataDir, file);
                 archive.CreateEntryFromFile(file, relativePath, CompressionLevel.Optimal);
@@ -67,9 +73,11 @@ public class BackupService(AppSettings settings, ILogger<BackupService> logger) 
     {
         var filePath = Path.Combine(BackupDir, Path.GetFileName(fileName));
         if (!File.Exists(filePath))
+        {
             throw new FileNotFoundException($"Backup not found: {fileName}");
+        }
 
-        ZipFile.ExtractToDirectory(filePath, settings.DataDir, overwriteFiles: true);
+        ZipFile.ExtractToDirectory(filePath, settings.DataDir, true);
         logger.LogInformation("Backup restored: {FileName}", fileName);
         return Task.CompletedTask;
     }
@@ -82,6 +90,7 @@ public class BackupService(AppSettings settings, ILogger<BackupService> logger) 
             File.Delete(filePath);
             logger.LogInformation("Backup deleted: {FileName}", fileName);
         }
+
         return Task.CompletedTask;
     }
 }

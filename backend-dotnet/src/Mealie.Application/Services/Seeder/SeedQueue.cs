@@ -2,13 +2,18 @@ using System.Threading.Channels;
 
 namespace Mealie.Application.Services.Seeder;
 
-public enum SeedType { Foods, Labels, Units }
+public enum SeedType
+{
+    Foods,
+    Labels,
+    Units
+}
 
 public record SeedJobRequest(Guid GroupId, string Locale, SeedType Type);
 
 /// <summary>
-/// Singleton channel used to queue seed jobs (foods, labels, units).
-/// The background service is the single consumer; controllers are producers.
+///     Singleton channel used to queue seed jobs (foods, labels, units).
+///     The background service is the single consumer; controllers are producers.
 /// </summary>
 public class SeedQueue
 {
@@ -16,7 +21,7 @@ public class SeedQueue
         Channel.CreateUnbounded<SeedJobRequest>(new UnboundedChannelOptions
         {
             SingleReader = true,
-            SingleWriter = false,
+            SingleWriter = false
         });
 
     public ChannelWriter<SeedJobRequest> Writer => _channel.Writer;

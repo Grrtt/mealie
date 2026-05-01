@@ -23,7 +23,8 @@ public class WebhookService(ApplicationDbContext db, IWebhookDeliveryService del
         return webhook is null ? null : MapToResponse(webhook);
     }
 
-    public async Task<WebhookResponse> CreateAsync(Guid groupId, Guid householdId, CreateWebhookRequest request, CancellationToken ct = default)
+    public async Task<WebhookResponse> CreateAsync(Guid groupId, Guid householdId, CreateWebhookRequest request,
+        CancellationToken ct = default)
     {
         var webhook = new Webhook
         {
@@ -35,18 +36,22 @@ public class WebhookService(ApplicationDbContext db, IWebhookDeliveryService del
             GroupId = groupId,
             HouseholdId = householdId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
         db.Webhooks.Add(webhook);
         await db.SaveChangesAsync(ct);
         return MapToResponse(webhook);
     }
 
-    public async Task<WebhookResponse?> UpdateAsync(Guid householdId, Guid id, CreateWebhookRequest request, CancellationToken ct = default)
+    public async Task<WebhookResponse?> UpdateAsync(Guid householdId, Guid id, CreateWebhookRequest request,
+        CancellationToken ct = default)
     {
         var webhook = await db.Webhooks.IgnoreQueryFilters()
             .FirstOrDefaultAsync(w => w.HouseholdId == householdId && w.Id == id, ct);
-        if (webhook is null) return null;
+        if (webhook is null)
+        {
+            return null;
+        }
 
         webhook.Name = request.Name;
         webhook.Url = request.Url;
@@ -61,14 +66,20 @@ public class WebhookService(ApplicationDbContext db, IWebhookDeliveryService del
     {
         var webhook = await db.Webhooks.IgnoreQueryFilters()
             .FirstOrDefaultAsync(w => w.HouseholdId == householdId && w.Id == id, ct);
-        if (webhook is null) return false;
+        if (webhook is null)
+        {
+            return false;
+        }
+
         db.Webhooks.Remove(webhook);
         await db.SaveChangesAsync(ct);
         return true;
     }
 
     public Task TestAsync(string url, CancellationToken ct = default)
-        => deliveryService.DeliverAsync(url, new { event_type = "test", timestamp = DateTime.UtcNow });
+    {
+        return deliveryService.DeliverAsync(url, new { event_type = "test", timestamp = DateTime.UtcNow });
+    }
 
     public async Task RerunForHouseholdAsync(Guid householdId, CancellationToken ct = default)
     {
@@ -83,17 +94,24 @@ public class WebhookService(ApplicationDbContext db, IWebhookDeliveryService del
 
         foreach (var webhook in webhooks)
         {
-            var payload = new { event_type = "meal_plan", date = today.ToString("yyyy-MM-dd"), household_id = householdId, plan_count = plans.Count };
+            var payload = new
+            {
+                event_type = "meal_plan", date = today.ToString("yyyy-MM-dd"), household_id = householdId,
+                plan_count = plans.Count
+            };
             await deliveryService.DeliverAsync(webhook.Url, payload);
         }
     }
 
-    private static WebhookResponse MapToResponse(Webhook w) => new()
+    private static WebhookResponse MapToResponse(Webhook w)
     {
-        Id = w.Id,
-        Name = w.Name,
-        Url = w.Url,
-        Enabled = w.Enabled,
-        ScheduledTime = w.ScheduledTime,
-    };
+        return new WebhookResponse
+        {
+            Id = w.Id,
+            Name = w.Name,
+            Url = w.Url,
+            Enabled = w.Enabled,
+            ScheduledTime = w.ScheduledTime
+        };
+    }
 }

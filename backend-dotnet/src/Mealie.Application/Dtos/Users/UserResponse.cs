@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Mealie.Application.Dtos.Users;
 
 public class UserResponse

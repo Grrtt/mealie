@@ -1,9 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Mealie.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Mealie.Infrastructure.Configuration;
 
 namespace Mealie.Infrastructure.Auth;
 
@@ -29,14 +29,17 @@ public class JwtTokenService(IOptions<AppSettings> settings) : IJwtTokenService
             new("sub", userId.ToString()),
             new("group_id", groupId.ToString()),
             new("household_id", householdId.ToString()),
-            new("admin", isAdmin.ToString().ToLower()),
+            new("admin", isAdmin.ToString().ToLower())
         };
-        if (isAdmin) claims.Add(new Claim(ClaimTypes.Role, "admin"));
+        if (isAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "admin"));
+        }
 
         var token = new JwtSecurityToken(
-            issuer: "mealie",
-            audience: "mealie",
-            claims: claims,
+            "mealie",
+            "mealie",
+            claims,
             expires: DateTime.UtcNow.AddHours(48),
             signingCredentials: creds);
 
@@ -44,7 +47,9 @@ public class JwtTokenService(IOptions<AppSettings> settings) : IJwtTokenService
     }
 
     public string GenerateRefreshToken()
-        => Convert.ToBase64String(Guid.NewGuid().ToByteArray().Concat(Guid.NewGuid().ToByteArray()).ToArray());
+    {
+        return Convert.ToBase64String(Guid.NewGuid().ToByteArray().Concat(Guid.NewGuid().ToByteArray()).ToArray());
+    }
 
     public ClaimsPrincipal? ValidateToken(string token)
     {

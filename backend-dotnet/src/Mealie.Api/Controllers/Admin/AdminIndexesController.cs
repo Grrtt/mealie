@@ -11,7 +11,10 @@ namespace Mealie.Api.Controllers.Admin;
 public class AdminIndexesController(IIndexAdminService indexService) : ControllerBase
 {
     [HttpGet]
-    public IActionResult GetAll() => Ok(indexService.GetAll());
+    public IActionResult GetAll()
+    {
+        return Ok(indexService.GetAll());
+    }
 
     [HttpGet("{name}")]
     public IActionResult Get(string name)

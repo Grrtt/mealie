@@ -1,6 +1,5 @@
 using Mealie.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mealie.Infrastructure.Auth;
@@ -12,7 +11,9 @@ public static class OidcConfiguration
         AppSettings settings)
     {
         if (!settings.OidcEnabled || string.IsNullOrEmpty(settings.OidcAuthority))
+        {
             return builder;
+        }
 
         return builder.AddOpenIdConnect("oidc", options =>
         {

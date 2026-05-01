@@ -9,26 +9,29 @@ namespace Mealie.Api.Controllers.Groups;
 public class GroupSeedersController(SeedQueue seedQueue, ITenantContext tenantContext)
     : MealieControllerBase(tenantContext)
 {
-    public record SeederConfig(string Locale = "en-US");
-
     [HttpPost("foods")]
     public async Task<IActionResult> SeedFoods([FromBody] SeederConfig? config, CancellationToken ct)
     {
-        await seedQueue.Writer.WriteAsync(new SeedJobRequest(CurrentGroupId, config?.Locale ?? "en-US", SeedType.Foods), ct);
+        await seedQueue.Writer.WriteAsync(new SeedJobRequest(CurrentGroupId, config?.Locale ?? "en-US", SeedType.Foods),
+            ct);
         return Ok(new { detail = "Seeding Successful" });
     }
 
     [HttpPost("units")]
     public async Task<IActionResult> SeedUnits([FromBody] SeederConfig? config, CancellationToken ct)
     {
-        await seedQueue.Writer.WriteAsync(new SeedJobRequest(CurrentGroupId, config?.Locale ?? "en-US", SeedType.Units), ct);
+        await seedQueue.Writer.WriteAsync(new SeedJobRequest(CurrentGroupId, config?.Locale ?? "en-US", SeedType.Units),
+            ct);
         return Ok(new { detail = "Seeding Successful" });
     }
 
     [HttpPost("labels")]
     public async Task<IActionResult> SeedLabels([FromBody] SeederConfig? config, CancellationToken ct)
     {
-        await seedQueue.Writer.WriteAsync(new SeedJobRequest(CurrentGroupId, config?.Locale ?? "en-US", SeedType.Labels), ct);
+        await seedQueue.Writer.WriteAsync(
+            new SeedJobRequest(CurrentGroupId, config?.Locale ?? "en-US", SeedType.Labels), ct);
         return Ok(new { detail = "Seeding Successful" });
     }
+
+    public record SeederConfig(string Locale = "en-US");
 }

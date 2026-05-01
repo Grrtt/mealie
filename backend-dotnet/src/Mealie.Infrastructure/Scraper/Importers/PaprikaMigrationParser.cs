@@ -11,19 +11,26 @@ public class PaprikaMigrationParser : MigrationParserBase
         try
         {
             input.Seek(0, SeekOrigin.Begin);
-            using var zip = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
+            using var zip = new ZipArchive(input, ZipArchiveMode.Read, true);
             return zip.Entries.Any(e => e.Name.EndsWith(".paprikarecipe", StringComparison.OrdinalIgnoreCase));
         }
-        catch { return false; }
-        finally { input.Seek(0, SeekOrigin.Begin); }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            input.Seek(0, SeekOrigin.Begin);
+        }
     }
 
     public override IEnumerable<ScrapedRecipeDto> Parse(Stream input)
     {
         input.Seek(0, SeekOrigin.Begin);
-        using var zip = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
+        using var zip = new ZipArchive(input, ZipArchiveMode.Read, true);
 
-        foreach (var entry in zip.Entries.Where(e => e.Name.EndsWith(".paprikarecipe", StringComparison.OrdinalIgnoreCase)))
+        foreach (var entry in zip.Entries.Where(e =>
+                     e.Name.EndsWith(".paprikarecipe", StringComparison.OrdinalIgnoreCase)))
         {
             using var entryStream = entry.Open();
             using var gzip = new GZipStream(entryStream, CompressionMode.Decompress);
@@ -31,7 +38,10 @@ public class PaprikaMigrationParser : MigrationParserBase
             var json = reader.ReadToEnd();
 
             var recipe = ParsePaprikaJson(json);
-            if (recipe is not null) yield return recipe;
+            if (recipe is not null)
+            {
+                yield return recipe;
+            }
         }
     }
 
@@ -48,13 +58,18 @@ public class PaprikaMigrationParser : MigrationParserBase
                 CookTime = doc.TryGetProperty("cook_time", out var ct) ? ct.GetString() : null,
                 RecipeYield = doc.TryGetProperty("servings", out var s) ? s.GetString() : null,
                 RecipeIngredient = doc.TryGetProperty("ingredients", out var ing)
-                    ? ing.GetString()?.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim()).ToList() ?? []
+                    ? ing.GetString()?.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim())
+                        .ToList() ?? []
                     : [],
                 RecipeInstructions = doc.TryGetProperty("directions", out var dir)
-                    ? dir.GetString()?.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim()).ToList() ?? []
-                    : [],
+                    ? dir.GetString()?.Split('\n').Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim())
+                        .ToList() ?? []
+                    : []
             };
         }
-        catch { return null; }
+        catch
+        {
+            return null;
+        }
     }
 }

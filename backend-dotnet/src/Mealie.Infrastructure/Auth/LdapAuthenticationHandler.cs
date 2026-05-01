@@ -23,7 +23,9 @@ public class LdapAuthService(
     public async Task<bool> AuthenticateAsync(string username, string password, CancellationToken ct = default)
     {
         if (!_settings.LdapEnabled || string.IsNullOrEmpty(_settings.LdapServer))
+        {
             return false;
+        }
 
         try
         {
@@ -34,7 +36,10 @@ public class LdapAuthService(
             var bindDn = _settings.LdapBindTemplate?.Replace("{username}", username) ?? username;
             conn.Bind(bindDn, password);
 
-            if (!conn.Bound) return false;
+            if (!conn.Bound)
+            {
+                return false;
+            }
 
             await ProvisionUserIfNeededAsync(username, ct);
             return true;
@@ -55,10 +60,16 @@ public class LdapAuthService(
     {
         var existing = await db.Users.IgnoreQueryFilters()
             .AnyAsync(u => u.Username == username, ct);
-        if (existing) return;
+        if (existing)
+        {
+            return;
+        }
 
-        var defaultGroup = await db.Groups.FirstOrDefaultAsync(cancellationToken: ct);
-        if (defaultGroup is null) return;
+        var defaultGroup = await db.Groups.FirstOrDefaultAsync(ct);
+        if (defaultGroup is null)
+        {
+            return;
+        }
 
         var defaultHousehold = await db.Households.FirstOrDefaultAsync(h => h.GroupId == defaultGroup.Id, ct);
 

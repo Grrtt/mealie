@@ -17,7 +17,11 @@ public class SharedRecipesController(
     public async Task<ActionResult<ShareTokenResponse>> GetSharedRecipe(Guid id, CancellationToken ct)
     {
         var token = await shareService.GetShareTokenAsync(id, ct);
-        if (token is null) return NotFound(new { detail = "Share token not found or expired" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Share token not found or expired" });
+        }
+
         return Ok(token);
     }
 
@@ -26,8 +30,13 @@ public class SharedRecipesController(
     public async Task<ActionResult<ShareTokenResponse>> CreateSharedRecipe(
         [FromBody] CreateSharedRecipeRequest request, CancellationToken ct)
     {
-        var token = await shareService.CreateShareTokenAsync(request.RecipeSlug, tenantContext.GroupId, new CreateShareTokenRequest { ExpiresAt = request.ExpiresAt }, ct);
-        if (token is null) return NotFound(new { detail = "Recipe not found" });
+        var token = await shareService.CreateShareTokenAsync(request.RecipeSlug, tenantContext.GroupId,
+            new CreateShareTokenRequest { ExpiresAt = request.ExpiresAt }, ct);
+        if (token is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(token);
     }
 
@@ -37,8 +46,11 @@ public class SharedRecipesController(
         Guid id, [FromBody] CreateShareTokenRequest request, CancellationToken ct)
     {
         var token = await shareService.GetShareTokenAsync(id, ct);
-        if (token is null) return NotFound(new { detail = "Share token not found" });
-        
+        if (token is null)
+        {
+            return NotFound(new { detail = "Share token not found" });
+        }
+
         return Ok(token);
     }
 
@@ -55,7 +67,11 @@ public class SharedRecipesController(
     public async Task<IActionResult> DeleteSharedRecipe(Guid id, CancellationToken ct)
     {
         var deleted = await shareService.DeleteShareTokenAsync(id, ct);
-        if (!deleted) return NotFound(new { detail = "Share token not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Share token not found" });
+        }
+
         return NoContent();
     }
 }

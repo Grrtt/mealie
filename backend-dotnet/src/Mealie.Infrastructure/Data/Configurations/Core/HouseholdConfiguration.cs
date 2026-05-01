@@ -13,8 +13,8 @@ public class HouseholdConfiguration : IEntityTypeConfiguration<Household>
         builder.Property(h => h.Name).IsRequired().HasMaxLength(255);
         builder.HasIndex(h => h.GroupId);
         builder.HasOne(h => h.Group)
-               .WithMany(g => g.Households)
-               .HasForeignKey(h => h.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Households)
+            .HasForeignKey(h => h.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -10,7 +10,10 @@ public class RecipeShareService(ApplicationDbContext db) : IRecipeShareService
     public async Task<IList<ShareTokenResponse>> GetShareTokensAsync(string slug, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return [];
+        if (recipe is null)
+        {
+            return [];
+        }
 
         return await db.RecipeShareTokens
             .Where(t => t.RecipeId == recipe.Id)
@@ -20,15 +23,19 @@ public class RecipeShareService(ApplicationDbContext db) : IRecipeShareService
                 RecipeId = t.RecipeId,
                 GroupId = t.GroupId,
                 CreatedAt = t.CreatedAt,
-                ExpiresAt = t.ExpiresAt,
+                ExpiresAt = t.ExpiresAt
             })
             .ToListAsync(ct);
     }
 
-    public async Task<ShareTokenResponse?> CreateShareTokenAsync(string slug, Guid groupId, CreateShareTokenRequest request, CancellationToken ct = default)
+    public async Task<ShareTokenResponse?> CreateShareTokenAsync(string slug, Guid groupId,
+        CreateShareTokenRequest request, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
 
         var token = new RecipeShareToken
         {
@@ -36,7 +43,7 @@ public class RecipeShareService(ApplicationDbContext db) : IRecipeShareService
             RecipeId = recipe.Id,
             GroupId = groupId,
             CreatedAt = DateTime.UtcNow,
-            ExpiresAt = request.ExpiresAt,
+            ExpiresAt = request.ExpiresAt
         };
 
         db.RecipeShareTokens.Add(token);
@@ -48,14 +55,17 @@ public class RecipeShareService(ApplicationDbContext db) : IRecipeShareService
             RecipeId = token.RecipeId,
             GroupId = token.GroupId,
             CreatedAt = token.CreatedAt,
-            ExpiresAt = token.ExpiresAt,
+            ExpiresAt = token.ExpiresAt
         };
     }
 
     public async Task<bool> DeleteShareTokenAsync(Guid tokenId, CancellationToken ct = default)
     {
         var token = await db.RecipeShareTokens.FindAsync([tokenId], ct);
-        if (token is null) return false;
+        if (token is null)
+        {
+            return false;
+        }
 
         db.RecipeShareTokens.Remove(token);
         await db.SaveChangesAsync(ct);
@@ -67,7 +77,10 @@ public class RecipeShareService(ApplicationDbContext db) : IRecipeShareService
         var token = await db.RecipeShareTokens
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(t => t.Id == tokenId && (t.ExpiresAt == null || t.ExpiresAt > DateTime.UtcNow), ct);
-        if (token is null) return null;
+        if (token is null)
+        {
+            return null;
+        }
 
         return new ShareTokenResponse
         {
@@ -75,7 +88,7 @@ public class RecipeShareService(ApplicationDbContext db) : IRecipeShareService
             RecipeId = token.RecipeId,
             GroupId = token.GroupId,
             CreatedAt = token.CreatedAt,
-            ExpiresAt = token.ExpiresAt,
+            ExpiresAt = token.ExpiresAt
         };
     }
 }

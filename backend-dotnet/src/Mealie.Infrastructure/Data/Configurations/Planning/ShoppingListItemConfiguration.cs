@@ -12,20 +12,20 @@ public class ShoppingListItemConfiguration : IEntityTypeConfiguration<ShoppingLi
         builder.HasKey(i => i.Id);
         builder.HasIndex(i => i.ShoppingListId);
         builder.HasOne(i => i.ShoppingList)
-               .WithMany(s => s.Items)
-               .HasForeignKey(i => i.ShoppingListId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(s => s.Items)
+            .HasForeignKey(i => i.ShoppingListId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(i => i.Unit)
-               .WithMany()
-               .HasForeignKey(i => i.UnitId)
-               .OnDelete(DeleteBehavior.SetNull);
+            .WithMany()
+            .HasForeignKey(i => i.UnitId)
+            .OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(i => i.Food)
-               .WithMany()
-               .HasForeignKey(i => i.FoodId)
-               .OnDelete(DeleteBehavior.SetNull);
+            .WithMany()
+            .HasForeignKey(i => i.FoodId)
+            .OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(i => i.Label)
-               .WithMany(l => l.ShoppingItems)
-               .HasForeignKey(i => i.LabelId)
-               .OnDelete(DeleteBehavior.SetNull);
+            .WithMany(l => l.ShoppingItems)
+            .HasForeignKey(i => i.LabelId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

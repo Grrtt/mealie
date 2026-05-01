@@ -11,8 +11,8 @@ public class GroupPreferencesConfiguration : IEntityTypeConfiguration<GroupPrefe
         builder.ToTable("group_preferences");
         builder.HasKey(p => p.Id);
         builder.HasOne(p => p.Group)
-               .WithOne(g => g.Preferences)
-               .HasForeignKey<GroupPreferences>(p => p.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithOne(g => g.Preferences)
+            .HasForeignKey<GroupPreferences>(p => p.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -62,6 +62,7 @@ public class CreateRandomMealPlanRequest
 public class FillDayRequest
 {
     public DateOnly Date { get; set; }
+
     // List of entry types to fill - duplicates allowed (e.g. two "side" entries)
     public IList<string> EntryTypes { get; set; } = ["breakfast", "lunch", "side", "dinner", "side"];
 }

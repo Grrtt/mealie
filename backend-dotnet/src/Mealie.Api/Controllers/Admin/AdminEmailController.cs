@@ -35,7 +35,7 @@ public class AdminEmailController(IEmailService emailService) : ControllerBase
         {
             const string testResetUrl = "http://localhost:3000/reset-password?token=test-token";
             await emailService.SendPasswordResetEmailAsync(request.Email, testResetUrl, ct);
-            
+
             return Ok(new EmailTestResponse
             {
                 Success = true,

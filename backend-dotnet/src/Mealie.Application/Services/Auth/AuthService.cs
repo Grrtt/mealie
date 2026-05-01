@@ -51,8 +51,10 @@ public class AuthService(
                 if (user.LoginAttempts >= MaxLoginAttempts)
                 {
                     user.LockedAt = DateTime.UtcNow;
-                    logger.LogWarning("Account locked after {Attempts} failed attempts for {Username}", user.LoginAttempts, username);
+                    logger.LogWarning("Account locked after {Attempts} failed attempts for {Username}",
+                        user.LoginAttempts, username);
                 }
+
                 await db.SaveChangesAsync();
                 return null;
             }
@@ -72,13 +74,22 @@ public class AuthService(
     public async Task<TokenResponse?> RefreshAsync(string refreshToken)
     {
         var principal = jwtService.ValidateToken(refreshToken);
-        if (principal is null) return null;
+        if (principal is null)
+        {
+            return null;
+        }
 
         var userIdStr = principal.FindFirst("sub")?.Value;
-        if (!Guid.TryParse(userIdStr, out var userId)) return null;
+        if (!Guid.TryParse(userIdStr, out var userId))
+        {
+            return null;
+        }
 
         var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return null;
+        if (user is null)
+        {
+            return null;
+        }
 
         var token = jwtService.GenerateAccessToken(
             user.Id, user.GroupId, user.HouseholdId ?? Guid.Empty, user.Admin);
@@ -88,7 +99,11 @@ public class AuthService(
     public async Task LockAccountAsync(Guid userId)
     {
         var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return;
+        if (user is null)
+        {
+            return;
+        }
+
         user.LockedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
     }
@@ -96,7 +111,11 @@ public class AuthService(
     public async Task UnlockAccountAsync(Guid userId)
     {
         var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return;
+        if (user is null)
+        {
+            return;
+        }
+
         user.LockedAt = null;
         user.LoginAttempts = 0;
         await db.SaveChangesAsync();

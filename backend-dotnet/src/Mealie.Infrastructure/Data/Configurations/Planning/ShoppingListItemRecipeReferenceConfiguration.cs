@@ -13,12 +13,12 @@ public class ShoppingListItemRecipeReferenceConfiguration : IEntityTypeConfigura
         builder.HasKey(r => r.Id);
         builder.HasIndex(r => r.ShoppingListItemId);
         builder.HasOne(r => r.ShoppingListItem)
-               .WithMany(i => i.RecipeReferences)
-               .HasForeignKey(r => r.ShoppingListItemId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(i => i.RecipeReferences)
+            .HasForeignKey(r => r.ShoppingListItemId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(r => r.Recipe)
-               .WithMany()
-               .HasForeignKey(r => r.RecipeId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany()
+            .HasForeignKey(r => r.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

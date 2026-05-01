@@ -18,8 +18,8 @@ public class ScrapedRecipeDto
     public bool ScrapingNotSupported { get; set; }
 
     /// <summary>
-    /// Image files extracted from the source archive: filename → raw bytes.
-    /// Written to {DataDir}/recipes/{slug}/images/ after the recipe is created.
+    ///     Image files extracted from the source archive: filename → raw bytes.
+    ///     Written to {DataDir}/recipes/{slug}/images/ after the recipe is created.
     /// </summary>
     public Dictionary<string, byte[]> ImageFiles { get; set; } = [];
 }

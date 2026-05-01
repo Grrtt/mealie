@@ -1,7 +1,6 @@
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Recipes;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mealie.Api.Controllers.Recipes;
@@ -28,7 +27,9 @@ public class RecipeAssetsController(IRecipeAssetService assetService) : Controll
         CancellationToken ct)
     {
         if (file is null || file.Length == 0)
+        {
             return BadRequest(new { detail = "No file provided" });
+        }
 
         var ext = Path.GetExtension(file.FileName).TrimStart('.');
         var assetName = name ?? Path.GetFileNameWithoutExtension(file.FileName);
@@ -36,7 +37,11 @@ public class RecipeAssetsController(IRecipeAssetService assetService) : Controll
 
         await using var stream = file.OpenReadStream();
         var asset = await assetService.UploadAssetAsync(slug, stream, assetName, ext, assetIcon, ct);
-        if (asset is null) return NotFound(new { detail = "Recipe not found" });
+        if (asset is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(asset);
     }
 
@@ -44,7 +49,11 @@ public class RecipeAssetsController(IRecipeAssetService assetService) : Controll
     public async Task<IActionResult> DeleteAsset(string slug, string fileName, CancellationToken ct)
     {
         var deleted = await assetService.DeleteAssetAsync(slug, fileName, ct);
-        if (!deleted) return NotFound(new { detail = "Asset not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Asset not found" });
+        }
+
         return NoContent();
     }
 }

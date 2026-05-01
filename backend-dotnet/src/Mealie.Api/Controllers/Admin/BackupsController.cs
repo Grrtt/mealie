@@ -27,7 +27,11 @@ public class BackupsController(IBackupService backupService) : ControllerBase
     public IActionResult GetBackup(string fileName)
     {
         var path = backupService.GetBackupPath(fileName);
-        if (path is null) return NotFound(new { detail = "Backup not found" });
+        if (path is null)
+        {
+            return NotFound(new { detail = "Backup not found" });
+        }
+
         return PhysicalFile(path, "application/zip", Path.GetFileName(fileName));
     }
 

@@ -3,8 +3,8 @@ using System.Threading.Channels;
 namespace Mealie.Application.Services.ImageScrape;
 
 /// <summary>
-/// Singleton channel used to queue image scrape jobs.
-/// The background service is the single consumer; the migration service is a producer.
+///     Singleton channel used to queue image scrape jobs.
+///     The background service is the single consumer; the migration service is a producer.
 /// </summary>
 public class ImageScrapeQueue
 {
@@ -12,7 +12,7 @@ public class ImageScrapeQueue
         Channel.CreateUnbounded<ImageScrapeJob>(new UnboundedChannelOptions
         {
             SingleReader = true,
-            SingleWriter = false,
+            SingleWriter = false
         });
 
     public ChannelWriter<ImageScrapeJob> Writer => _channel.Writer;

@@ -17,8 +17,7 @@ public class RecipeSummaryResponse
     public DateTime UpdateAt { get; set; }
     public IList<OrganizerSimpleResponse> Tags { get; set; } = [];
 
-    [JsonPropertyName("recipeCategory")]
-    public IList<OrganizerSimpleResponse> Categories { get; set; } = [];
+    [JsonPropertyName("recipeCategory")] public IList<OrganizerSimpleResponse> Categories { get; set; } = [];
 }
 
 public class RecipeDetailResponse
@@ -44,16 +43,14 @@ public class RecipeDetailResponse
     public NutritionDto? Nutrition { get; set; }
     public RecipeSettingsDto? Settings { get; set; }
 
-    [JsonPropertyName("recipeIngredient")]
-    public IList<RecipeIngredientDto> RecipeIngredients { get; set; } = [];
+    [JsonPropertyName("recipeIngredient")] public IList<RecipeIngredientDto> RecipeIngredients { get; set; } = [];
 
     public IList<RecipeInstructionDto> RecipeInstructions { get; set; } = [];
     public IList<RecipeNoteDto> Notes { get; set; } = [];
     public IList<RecipeAssetDto> Assets { get; set; } = [];
     public IList<OrganizerSimpleResponse> Tags { get; set; } = [];
 
-    [JsonPropertyName("recipeCategory")]
-    public IList<OrganizerSimpleResponse> Categories { get; set; } = [];
+    [JsonPropertyName("recipeCategory")] public IList<OrganizerSimpleResponse> Categories { get; set; } = [];
 
     public IList<OrganizerSimpleResponse> Tools { get; set; } = [];
 }
@@ -127,8 +124,8 @@ public class RecipeIngredientUnitDto
 
 public class RecipeIngredientDto
 {
-    [JsonPropertyName("referenceId")]
-    public Guid? Id { get; set; }
+    [JsonPropertyName("referenceId")] public Guid? Id { get; set; }
+
     public int Position { get; set; }
     public string? Title { get; set; }
     public string? Note { get; set; }
@@ -140,10 +137,9 @@ public class RecipeIngredientDto
     public RecipeIngredientFoodDto? Food { get; set; }
 
     // Accepted on write so callers can send just IDs without full objects
-    [JsonIgnore]
-    public Guid? UnitId => Unit?.Id;
-    [JsonIgnore]
-    public Guid? FoodId => Food?.Id;
+    [JsonIgnore] public Guid? UnitId => Unit?.Id;
+
+    [JsonIgnore] public Guid? FoodId => Food?.Id;
 }
 
 public class RecipeInstructionDto

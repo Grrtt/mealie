@@ -14,7 +14,10 @@ public class RecipeAssetService(ApplicationDbContext db, IOptions<AppSettings> s
     public async Task<IList<AssetResponse>> GetAssetsAsync(string slug, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return [];
+        if (recipe is null)
+        {
+            return [];
+        }
 
         return await db.RecipeAssets
             .Where(a => a.RecipeId == recipe.Id)
@@ -24,7 +27,7 @@ public class RecipeAssetService(ApplicationDbContext db, IOptions<AppSettings> s
                 Name = a.Name,
                 Icon = a.Icon,
                 Extension = a.Extension,
-                RecipeId = a.RecipeId,
+                RecipeId = a.RecipeId
             })
             .ToListAsync(ct);
     }
@@ -33,7 +36,10 @@ public class RecipeAssetService(ApplicationDbContext db, IOptions<AppSettings> s
         string slug, Stream fileStream, string name, string extension, string icon, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
 
         var assetDir = Path.Combine(_dataDir, "recipes", recipe.Id.ToString(), "assets");
         Directory.CreateDirectory(assetDir);
@@ -51,7 +57,7 @@ public class RecipeAssetService(ApplicationDbContext db, IOptions<AppSettings> s
             Name = safeName,
             Icon = icon,
             Extension = safeExt,
-            RecipeId = recipe.Id,
+            RecipeId = recipe.Id
         };
 
         db.RecipeAssets.Add(asset);
@@ -63,22 +69,31 @@ public class RecipeAssetService(ApplicationDbContext db, IOptions<AppSettings> s
             Name = asset.Name,
             Icon = asset.Icon,
             Extension = asset.Extension,
-            RecipeId = asset.RecipeId,
+            RecipeId = asset.RecipeId
         };
     }
 
     public async Task<bool> DeleteAssetAsync(string slug, string fileName, CancellationToken ct = default)
     {
         var recipe = await db.Recipes.FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (recipe is null) return false;
+        if (recipe is null)
+        {
+            return false;
+        }
 
         var baseName = Path.GetFileNameWithoutExtension(fileName);
         var asset = await db.RecipeAssets
             .FirstOrDefaultAsync(a => a.RecipeId == recipe.Id && a.Name == baseName, ct);
-        if (asset is null) return false;
+        if (asset is null)
+        {
+            return false;
+        }
 
         var filePath = Path.Combine(_dataDir, "recipes", recipe.Id.ToString(), "assets", fileName);
-        if (File.Exists(filePath)) File.Delete(filePath);
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
 
         db.RecipeAssets.Remove(asset);
         await db.SaveChangesAsync(ct);

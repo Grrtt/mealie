@@ -1,15 +1,28 @@
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Mealie.Api.Caching;
+using Mealie.Api.Commands;
+using Mealie.Api.Filters;
 using Mealie.Api.Middleware;
+using Mealie.Application;
+using Mealie.Application.Contracts.Search;
 using Mealie.Application.Services.Admin;
 using Mealie.Application.Services.Auth;
 using Mealie.Application.Services.Cookbooks;
 using Mealie.Application.Services.Groups;
-using Mealie.Application.Services.Seeder;
 using Mealie.Application.Services.Households;
+using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Services.MealPlans;
+using Mealie.Application.Services.Migrations;
 using Mealie.Application.Services.Organizers;
 using Mealie.Application.Services.Parser;
 using Mealie.Application.Services.Recipes;
+using Mealie.Application.Services.Search;
+using Mealie.Application.Services.Seeder;
 using Mealie.Application.Services.ShoppingLists;
 using Mealie.Application.Services.Users;
 using Mealie.Application.Services.Webhooks;
@@ -25,23 +38,23 @@ using Mealie.Infrastructure.Scraper;
 using Mealie.Infrastructure.Scraper.Importers;
 using Mealie.Infrastructure.Webhooks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
-using System.Text;
-using System.Text.Json;
-using FluentValidation;
-using FluentValidation.AspNetCore;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Configuration ──────────────────────────────────────────────────────────
 builder.Configuration
     .AddEnvironmentVariables()
-    .AddJsonFile("appsettings.json", optional: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
+    .AddJsonFile("appsettings.json", true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true);
 
 var appSettings = new AppSettings();
 builder.Configuration.Bind(appSettings);
@@ -54,7 +67,9 @@ appSettings.OpenAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
 var allowSignupEnv = Environment.GetEnvironmentVariable("ALLOW_SIGNUP");
 if (allowSignupEnv is not null)
+{
     appSettings.AllowSignup = allowSignupEnv.Equals("true", StringComparison.OrdinalIgnoreCase);
+}
 
 builder.Services.AddSingleton(appSettings);
 builder.Services.AddOptions<AppSettings>().Configure(o =>
@@ -84,22 +99,27 @@ builder.Services.AddOptions<AppSettings>().Configure(o =>
 });
 
 // ── Serilog ────────────────────────────────────────────────────────────────
-var logLevelEnum = Enum.TryParse<LogEventLevel>(appSettings.LogLevel, ignoreCase: true, out var lvl)
-    ? lvl : LogEventLevel.Information;
+var logLevelEnum = Enum.TryParse<LogEventLevel>(appSettings.LogLevel, true, out var lvl)
+    ? lvl
+    : LogEventLevel.Information;
 
 builder.Host.UseSerilog((ctx, cfg) =>
 {
     cfg.MinimumLevel.Is(logLevelEnum)
-       .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-       .MinimumLevel.Override("System", LogEventLevel.Warning)
-       .Enrich.FromLogContext()
-       .Enrich.WithMachineName()
-       .Enrich.WithThreadId();
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("System", LogEventLevel.Warning)
+        .Enrich.FromLogContext()
+        .Enrich.WithMachineName()
+        .Enrich.WithThreadId();
 
     if (ctx.HostingEnvironment.IsProduction())
-        cfg.WriteTo.Console(new Serilog.Formatting.Compact.CompactJsonFormatter());
+    {
+        cfg.WriteTo.Console(new CompactJsonFormatter());
+    }
     else
+    {
         cfg.WriteTo.Console();
+    }
 });
 
 // ── Database ───────────────────────────────────────────────────────────────
@@ -107,16 +127,20 @@ builder.Services.AddScoped<TenantFilter>();
 builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 {
     if (appSettings.DbEngine.Equals("postgres", StringComparison.OrdinalIgnoreCase))
+    {
         options.UseNpgsql(appSettings.DatabaseUrl)
-               .UseSnakeCaseNamingConvention();
+            .UseSnakeCaseNamingConvention();
+    }
     else
+    {
         options.UseSqlite(appSettings.DatabaseUrl)
-               .UseSnakeCaseNamingConvention();
+            .UseSnakeCaseNamingConvention();
+    }
 
     // Suppress warning when a hand-written migration's snapshot doesn't exactly
     // match EF's internal representation — migrations themselves are correct.
     options.ConfigureWarnings(w =>
-        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        w.Ignore(RelationalEventId.PendingModelChangesWarning));
 });
 
 // ── Tenant Context ─────────────────────────────────────────────────────────
@@ -125,27 +149,27 @@ builder.Services.AddScoped<ITenantContext, TenantContextAccessor>();
 // ── Auth ───────────────────────────────────────────────────────────────────
 var key = Encoding.UTF8.GetBytes(appSettings.Secret);
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = true,
-        ValidIssuer = "mealie",
-        ValidateAudience = true,
-        ValidAudience = "mealie",
-        ClockSkew = TimeSpan.Zero
-    };
-})
-.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { });
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = "mealie",
+            ValidateAudience = true,
+            ValidAudience = "mealie",
+            ClockSkew = TimeSpan.Zero
+        };
+    })
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { });
 
 builder.Services.AddAuthorizationBuilder()
-    .SetDefaultPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+    .SetDefaultPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build());
 
@@ -205,7 +229,8 @@ builder.Services.AddScoped<IMealPlanRuleService, MealPlanRuleService>();
 builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 
 // Phase 7: Background services
-builder.Services.AddHttpClient<IWebhookDeliveryService, WebhookDeliveryService>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<IWebhookDeliveryService, WebhookDeliveryService>(c =>
+    c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<AppriseNotificationHandler>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddSingleton<IEventBus, EventBus>();
 builder.Services.AddScoped<IWebhookService, WebhookService>();
@@ -218,7 +243,7 @@ builder.Services.AddHostedService<SchedulerHostedService>();
 
 // Phase 8: Ingredient parser
 builder.Services.AddScoped<UnitMatcher>();
-builder.Services.AddScoped<Mealie.Application.Services.Parser.FoodMatcher>();
+builder.Services.AddScoped<FoodMatcher>();
 builder.Services.AddScoped<IIngredientParserService, IngredientParserService>();
 
 // Phase 9: Migration importers
@@ -230,48 +255,45 @@ builder.Services.AddSingleton<IMigrationParser, MealieBackupImportParser>();
 builder.Services.AddScoped<MigrationImportService>();
 
 // Migration queue: singleton channel + hosted background processor
-builder.Services.AddSingleton<Mealie.Application.Services.Migrations.MigrationQueue>();
-builder.Services.AddHostedService<Mealie.Application.Services.Migrations.MigrationBackgroundService>();
+builder.Services.AddSingleton<MigrationQueue>();
+builder.Services.AddHostedService<MigrationBackgroundService>();
 
 // Image scrape queue: singleton channel + hosted background processor
-builder.Services.AddSingleton<Mealie.Application.Services.ImageScrape.ImageScrapeQueue>();
-builder.Services.AddHostedService<Mealie.Application.Services.ImageScrape.ImageScrapeBackgroundService>();
+builder.Services.AddSingleton<ImageScrapeQueue>();
+builder.Services.AddHostedService<ImageScrapeBackgroundService>();
 
 // Seed queue: singleton channel + hosted background processor
-builder.Services.AddSingleton<Mealie.Application.Services.Seeder.SeedQueue>();
-builder.Services.AddHostedService<Mealie.Application.Services.Seeder.SeedBackgroundService>();
+builder.Services.AddSingleton<SeedQueue>();
+builder.Services.AddHostedService<SeedBackgroundService>();
 
 // MediatR — scan Application + Infrastructure + Api assemblies for handlers
 builder.Services.AddMediatR(cfg =>
 {
-    cfg.RegisterServicesFromAssembly(typeof(Mealie.Application.Services.Search.RecipeSearchIndexHandler).Assembly);
-    cfg.RegisterServicesFromAssembly(typeof(Mealie.Infrastructure.Webhooks.AppriseNotificationHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(RecipeSearchIndexHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(AppriseNotificationHandler).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
 });
 
 // Search indexes: singleton Lucene implementations + startup rebuild
-builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IRecipeSearchIndex, Mealie.Application.Services.Search.LuceneRecipeSearchIndex>();
-builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IFoodSearchIndex, Mealie.Application.Services.Search.LuceneFoodSearchIndex>();
-builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IIndexDiagnostics>(sp =>
-    (Mealie.Application.Contracts.Search.IIndexDiagnostics)sp.GetRequiredService<Mealie.Application.Contracts.Search.IRecipeSearchIndex>());
-builder.Services.AddSingleton<Mealie.Application.Contracts.Search.IIndexDiagnostics>(sp =>
-    (Mealie.Application.Contracts.Search.IIndexDiagnostics)sp.GetRequiredService<Mealie.Application.Contracts.Search.IFoodSearchIndex>());
-builder.Services.AddScoped<Mealie.Application.Services.Admin.IIndexAdminService, Mealie.Application.Services.Admin.IndexAdminService>();
-builder.Services.AddHostedService<Mealie.Application.Services.Search.SearchIndexRebuildService>();
+builder.Services.AddSingleton<IRecipeSearchIndex, LuceneRecipeSearchIndex>();
+builder.Services.AddSingleton<IFoodSearchIndex, LuceneFoodSearchIndex>();
+builder.Services.AddSingleton<IIndexDiagnostics>(sp =>
+    (IIndexDiagnostics)sp.GetRequiredService<IRecipeSearchIndex>());
+builder.Services.AddSingleton<IIndexDiagnostics>(sp =>
+    (IIndexDiagnostics)sp.GetRequiredService<IFoodSearchIndex>());
+builder.Services.AddScoped<IIndexAdminService, IndexAdminService>();
+builder.Services.AddHostedService<SearchIndexRebuildService>();
 
 // Ingredient NLP parser: singleton Python subprocess bridge
 builder.Services.AddSingleton<Mealie.Application.Services.IngredientParser.IngredientParserService>();
 
 // ── FluentValidation ───────────────────────────────────────────────────────
-builder.Services.AddValidatorsFromAssembly(typeof(Mealie.Application.PlaceholderMarker).Assembly);
+builder.Services.AddValidatorsFromAssembly(typeof(PlaceholderMarker).Assembly);
 builder.Services.AddFluentValidationAutoValidation();
 
 // ── Controllers & JSON ────────────────────────────────────────────────────
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    });
+    .AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; });
 
 // ── Swagger / OpenAPI ──────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
@@ -288,7 +310,11 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type =>
     {
         var name = type.Name;
-        if (name.EndsWith("Dto")) name = name[..^3];
+        if (name.EndsWith("Dto"))
+        {
+            name = name[..^3];
+        }
+
         return name;
     });
 
@@ -303,22 +329,26 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            new OpenApiSecurityScheme
+                { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
             []
         }
     });
 
-    options.OperationFilter<Mealie.Api.Filters.PydanticValidationOperationFilter>();
+    options.OperationFilter<PydanticValidationOperationFilter>();
 
     // Add XML comments if file exists
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath)) options.IncludeXmlComments(xmlPath);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
 });
 
 // ── Output Cache ───────────────────────────────────────────────────────────
 builder.Services.AddOutputCache(options =>
-    options.AddPolicy(Mealie.Api.Caching.RecipeListCachePolicy.Name, Mealie.Api.Caching.RecipeListCachePolicy.Instance));
+    options.AddPolicy(RecipeListCachePolicy.Name, RecipeListCachePolicy.Instance));
 
 // ── Health Checks ──────────────────────────────────────────────────────────
 builder.Services.AddHealthChecks();
@@ -364,7 +394,7 @@ if (Directory.Exists(dataDir))
 {
     app.UseStaticFiles(new StaticFileOptions
     {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(dataDir),
+        FileProvider = new PhysicalFileProvider(dataDir),
         RequestPath = ""
     });
 }
@@ -379,15 +409,16 @@ if (args.Length > 0)
     switch (args[0].ToLower())
     {
         case "seed":
-            await Mealie.Api.Commands.SeedCommand.RunAsync(app.Services);
+            await SeedCommand.RunAsync(app.Services);
             return;
         case "migrate":
             using (var scope = app.Services.CreateScope())
             {
-                var db = scope.ServiceProvider.GetRequiredService<Mealie.Infrastructure.Data.ApplicationDbContext>();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 await db.Database.MigrateAsync();
                 Console.WriteLine("✅ Migrations applied.");
             }
+
             return;
     }
 }
@@ -395,7 +426,7 @@ if (args.Length > 0)
 // Apply migrations and seed on every startup
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<Mealie.Infrastructure.Data.ApplicationDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
 
     // Ensure report tables exist — applied as raw SQL so it's always idempotent
@@ -425,10 +456,12 @@ using (var scope = app.Services.CreateScope())
         CREATE INDEX IF NOT EXISTS ix_report_entries_report_id ON report_entries (report_id);
     ");
 }
-await Mealie.Api.Commands.SeedCommand.RunAsync(app.Services);
+
+await SeedCommand.RunAsync(app.Services);
 
 
 app.Run();
 
-public partial class Program { }
-
+public partial class Program
+{
+}

@@ -12,22 +12,21 @@ public interface ITenantContext
 
 public class TenantContextAccessor : ITenantContext
 {
-    private Guid _groupId;
-    private Guid _householdId;
-    private Guid _userId;
-    private bool _isAdmin;
+    public Guid GroupId { get; private set; }
 
-    public Guid GroupId => _groupId;
-    public Guid HouseholdId => _householdId;
-    public Guid UserId => _userId;
-    public bool IsAdmin => _isAdmin;
-    public bool IsAuthenticated => _userId != Guid.Empty;
+    public Guid HouseholdId { get; private set; }
+
+    public Guid UserId { get; private set; }
+
+    public bool IsAdmin { get; private set; }
+
+    public bool IsAuthenticated => UserId != Guid.Empty;
 
     public void SetContext(Guid groupId, Guid householdId, Guid userId, bool isAdmin)
     {
-        _groupId = groupId;
-        _householdId = householdId;
-        _userId = userId;
-        _isAdmin = isAdmin;
+        GroupId = groupId;
+        HouseholdId = householdId;
+        UserId = userId;
+        IsAdmin = isAdmin;
     }
 }

@@ -11,8 +11,8 @@ public class HouseholdPreferencesConfiguration : IEntityTypeConfiguration<Househ
         builder.ToTable("household_preferences");
         builder.HasKey(p => p.Id);
         builder.HasOne(p => p.Household)
-               .WithOne(h => h.Preferences)
-               .HasForeignKey<HouseholdPreferences>(p => p.HouseholdId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithOne(h => h.Preferences)
+            .HasForeignKey<HouseholdPreferences>(p => p.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

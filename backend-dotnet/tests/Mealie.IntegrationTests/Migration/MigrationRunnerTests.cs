@@ -1,4 +1,4 @@
-using Xunit;
+using Mealie.Migration;
 
 namespace Mealie.IntegrationTests.Migration;
 
@@ -8,12 +8,12 @@ public class MigrationRunnerTests
     public async Task RunAsync_WithValidSqliteSource_MigratesAllEntities()
     {
         // Arrange
-        var runner = new Mealie.Migration.MigrationRunner(
-            sourceConnectionString: "Data Source=test_fixture.db",
-            targetConnectionString: "Host=localhost;Database=mealie_test;Username=mealie;Password=mealie",
-            sourceEngine: "sqlite",
-            targetEngine: "postgres",
-            dryRun: false);
+        var runner = new MigrationRunner(
+            "Data Source=test_fixture.db",
+            "Host=localhost;Database=mealie_test;Username=mealie;Password=mealie",
+            "sqlite",
+            "postgres",
+            false);
 
         // Act
         var exitCode = await runner.RunAsync();
@@ -25,12 +25,12 @@ public class MigrationRunnerTests
     [Fact(Skip = "Requires database — run manually")]
     public async Task RunAsync_SecondRun_ReturnsExitCode1()
     {
-        var runner = new Mealie.Migration.MigrationRunner(
-            sourceConnectionString: "Data Source=test_fixture.db",
-            targetConnectionString: "Host=localhost;Database=mealie_test;Username=mealie;Password=mealie",
-            sourceEngine: "sqlite",
-            targetEngine: "postgres",
-            dryRun: false);
+        var runner = new MigrationRunner(
+            "Data Source=test_fixture.db",
+            "Host=localhost;Database=mealie_test;Username=mealie;Password=mealie",
+            "sqlite",
+            "postgres",
+            false);
 
         var firstRun = await runner.RunAsync();
         Assert.Equal(0, firstRun);

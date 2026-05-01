@@ -1,5 +1,4 @@
 using Mealie.Domain.Entities.Core;
-using Mealie.Domain.Entities.Ingredients;
 using Mealie.Domain.Entities.Organizers;
 
 namespace Mealie.Domain.Entities.Recipes;

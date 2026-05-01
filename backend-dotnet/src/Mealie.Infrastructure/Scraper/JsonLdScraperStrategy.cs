@@ -1,5 +1,5 @@
-using HtmlAgilityPack;
 using System.Text.Json;
+using HtmlAgilityPack;
 
 namespace Mealie.Infrastructure.Scraper;
 
@@ -11,7 +11,10 @@ public class JsonLdScraperStrategy
         doc.LoadHtml(html);
 
         var scripts = doc.DocumentNode.SelectNodes("//script[@type='application/ld+json']");
-        if (scripts is null) return null;
+        if (scripts is null)
+        {
+            return null;
+        }
 
         foreach (var script in scripts)
         {
@@ -26,14 +29,23 @@ public class JsonLdScraperStrategy
                     foreach (var item in graph.EnumerateArray())
                     {
                         var recipe = TryParseRecipe(item);
-                        if (recipe is not null) return recipe;
+                        if (recipe is not null)
+                        {
+                            return recipe;
+                        }
                     }
                 }
 
                 var directRecipe = TryParseRecipe(element);
-                if (directRecipe is not null) return directRecipe;
+                if (directRecipe is not null)
+                {
+                    return directRecipe;
+                }
             }
-            catch { /* skip malformed JSON-LD */ }
+            catch
+            {
+                /* skip malformed JSON-LD */
+            }
         }
 
         return null;
@@ -41,11 +53,18 @@ public class JsonLdScraperStrategy
 
     private static ScrapedRecipeDto? TryParseRecipe(JsonElement element)
     {
-        if (!element.TryGetProperty("@type", out var typeEl)) return null;
+        if (!element.TryGetProperty("@type", out var typeEl))
+        {
+            return null;
+        }
+
         var type = typeEl.ValueKind == JsonValueKind.Array
             ? typeEl.EnumerateArray().Select(e => e.GetString()).FirstOrDefault()
             : typeEl.GetString();
-        if (!string.Equals(type, "Recipe", StringComparison.OrdinalIgnoreCase)) return null;
+        if (!string.Equals(type, "Recipe", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
 
         return new ScrapedRecipeDto
         {
@@ -58,16 +77,22 @@ public class JsonLdScraperStrategy
             CookTime = GetString(element, "cookTime"),
             RecipeIngredient = GetStringArray(element, "recipeIngredient"),
             RecipeInstructions = GetInstructions(element),
-            Keywords = GetStringArray(element, "keywords"),
+            Keywords = GetStringArray(element, "keywords")
         };
     }
 
     private static string? GetString(JsonElement el, string key)
-        => el.TryGetProperty(key, out var v) ? v.GetString() : null;
+    {
+        return el.TryGetProperty(key, out var v) ? v.GetString() : null;
+    }
 
     private static string? GetImageUrl(JsonElement el)
     {
-        if (!el.TryGetProperty("image", out var img)) return null;
+        if (!el.TryGetProperty("image", out var img))
+        {
+            return null;
+        }
+
         return img.ValueKind switch
         {
             JsonValueKind.String => img.GetString(),
@@ -75,34 +100,55 @@ public class JsonLdScraperStrategy
                 .Select(e => e.TryGetProperty("url", out var u) ? u.GetString() : e.GetString())
                 .FirstOrDefault(),
             JsonValueKind.Object => img.TryGetProperty("url", out var u) ? u.GetString() : null,
-            _ => null,
+            _ => null
         };
     }
 
     private static IList<string> GetStringArray(JsonElement el, string key)
     {
-        if (!el.TryGetProperty(key, out var arr)) return [];
+        if (!el.TryGetProperty(key, out var arr))
+        {
+            return [];
+        }
+
         if (arr.ValueKind == JsonValueKind.String)
+        {
             return arr.GetString()?.Split(',').Select(s => s.Trim()).ToList() ?? [];
+        }
+
         if (arr.ValueKind == JsonValueKind.Array)
+        {
             return arr.EnumerateArray()
                 .Select(e => e.GetString() ?? "")
                 .Where(s => !string.IsNullOrEmpty(s))
                 .ToList();
+        }
+
         return [];
     }
 
     private static IList<string> GetInstructions(JsonElement el)
     {
-        if (!el.TryGetProperty("recipeInstructions", out var arr)) return [];
-        if (arr.ValueKind == JsonValueKind.String) return [arr.GetString() ?? ""];
+        if (!el.TryGetProperty("recipeInstructions", out var arr))
+        {
+            return [];
+        }
+
+        if (arr.ValueKind == JsonValueKind.String)
+        {
+            return [arr.GetString() ?? ""];
+        }
+
         if (arr.ValueKind == JsonValueKind.Array)
+        {
             return arr.EnumerateArray()
                 .Select(e => e.ValueKind == JsonValueKind.Object
                     ? (e.TryGetProperty("text", out var t) ? t.GetString() : e.GetString()) ?? ""
                     : e.GetString() ?? "")
                 .Where(s => !string.IsNullOrEmpty(s))
                 .ToList();
+        }
+
         return [];
     }
 }

@@ -16,7 +16,8 @@ public class EventNotifierService(ApplicationDbContext db, ILogger<EventNotifier
         return notifiers.Select(MapToResponse).ToList();
     }
 
-    public async Task<EventNotifierResponse> CreateAsync(Guid groupId, Guid householdId, CreateEventNotifierRequest request, CancellationToken ct = default)
+    public async Task<EventNotifierResponse> CreateAsync(Guid groupId, Guid householdId,
+        CreateEventNotifierRequest request, CancellationToken ct = default)
     {
         var notifier = new EventNotifier
         {
@@ -27,18 +28,22 @@ public class EventNotifierService(ApplicationDbContext db, ILogger<EventNotifier
             GroupId = groupId,
             HouseholdId = householdId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
         db.EventNotifiers.Add(notifier);
         await db.SaveChangesAsync(ct);
         return MapToResponse(notifier);
     }
 
-    public async Task<EventNotifierResponse?> UpdateAsync(Guid householdId, Guid id, CreateEventNotifierRequest request, CancellationToken ct = default)
+    public async Task<EventNotifierResponse?> UpdateAsync(Guid householdId, Guid id, CreateEventNotifierRequest request,
+        CancellationToken ct = default)
     {
         var notifier = await db.EventNotifiers.IgnoreQueryFilters()
             .FirstOrDefaultAsync(e => e.HouseholdId == householdId && e.Id == id, ct);
-        if (notifier is null) return null;
+        if (notifier is null)
+        {
+            return null;
+        }
 
         notifier.Name = request.Name;
         notifier.ApprisUrl = request.ApprisUrl;
@@ -52,7 +57,11 @@ public class EventNotifierService(ApplicationDbContext db, ILogger<EventNotifier
     {
         var notifier = await db.EventNotifiers.IgnoreQueryFilters()
             .FirstOrDefaultAsync(e => e.HouseholdId == householdId && e.Id == id, ct);
-        if (notifier is null) return false;
+        if (notifier is null)
+        {
+            return false;
+        }
+
         db.EventNotifiers.Remove(notifier);
         await db.SaveChangesAsync(ct);
         return true;
@@ -62,17 +71,23 @@ public class EventNotifierService(ApplicationDbContext db, ILogger<EventNotifier
     {
         var notifier = await db.EventNotifiers.IgnoreQueryFilters()
             .FirstOrDefaultAsync(e => e.HouseholdId == householdId && e.Id == id, ct);
-        if (notifier is null) return;
+        if (notifier is null)
+        {
+            return;
+        }
 
         logger.LogInformation("Test notification sent to {ApprisUrl}", notifier.ApprisUrl);
         // Appris URL notification would be implemented here with HTTP client
     }
 
-    private static EventNotifierResponse MapToResponse(EventNotifier e) => new()
+    private static EventNotifierResponse MapToResponse(EventNotifier e)
     {
-        Id = e.Id,
-        Name = e.Name,
-        ApprisUrl = e.ApprisUrl,
-        Enabled = e.Enabled,
-    };
+        return new EventNotifierResponse
+        {
+            Id = e.Id,
+            Name = e.Name,
+            ApprisUrl = e.ApprisUrl,
+            Enabled = e.Enabled
+        };
+    }
 }

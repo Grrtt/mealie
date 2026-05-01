@@ -8,16 +8,22 @@ namespace Mealie.Application.Services.Groups;
 
 public interface IGroupLabelService
 {
-    Task<PaginatedResponse<GroupLabelResponse>> GetLabelsAsync(Guid groupId, PaginationParams pagination, CancellationToken ct = default);
+    Task<PaginatedResponse<GroupLabelResponse>> GetLabelsAsync(Guid groupId, PaginationParams pagination,
+        CancellationToken ct = default);
+
     Task<GroupLabelResponse?> GetByIdAsync(Guid groupId, Guid id, CancellationToken ct = default);
     Task<GroupLabelResponse> CreateAsync(Guid groupId, CreateGroupLabelRequest request, CancellationToken ct = default);
-    Task<GroupLabelResponse?> UpdateAsync(Guid groupId, Guid id, UpdateGroupLabelRequest request, CancellationToken ct = default);
+
+    Task<GroupLabelResponse?> UpdateAsync(Guid groupId, Guid id, UpdateGroupLabelRequest request,
+        CancellationToken ct = default);
+
     Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default);
 }
 
 public class GroupLabelService(ApplicationDbContext db) : IGroupLabelService
 {
-    public async Task<PaginatedResponse<GroupLabelResponse>> GetLabelsAsync(Guid groupId, PaginationParams pagination, CancellationToken ct = default)
+    public async Task<PaginatedResponse<GroupLabelResponse>> GetLabelsAsync(Guid groupId, PaginationParams pagination,
+        CancellationToken ct = default)
     {
         var query = db.Labels.IgnoreQueryFilters().Where(l => l.GroupId == groupId);
         var total = await query.CountAsync(ct);
@@ -39,11 +45,16 @@ public class GroupLabelService(ApplicationDbContext db) : IGroupLabelService
     {
         var label = await db.Labels.IgnoreQueryFilters()
             .FirstOrDefaultAsync(l => l.GroupId == groupId && l.Id == id, ct);
-        if (label is null) return null;
+        if (label is null)
+        {
+            return null;
+        }
+
         return MapToResponse(label);
     }
 
-    public async Task<GroupLabelResponse> CreateAsync(Guid groupId, CreateGroupLabelRequest request, CancellationToken ct = default)
+    public async Task<GroupLabelResponse> CreateAsync(Guid groupId, CreateGroupLabelRequest request,
+        CancellationToken ct = default)
     {
         var label = new MultiPurposeLabel
         {
@@ -52,21 +63,33 @@ public class GroupLabelService(ApplicationDbContext db) : IGroupLabelService
             Color = request.Color,
             GroupId = groupId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
         db.Labels.Add(label);
         await db.SaveChangesAsync(ct);
         return MapToResponse(label);
     }
 
-    public async Task<GroupLabelResponse?> UpdateAsync(Guid groupId, Guid id, UpdateGroupLabelRequest request, CancellationToken ct = default)
+    public async Task<GroupLabelResponse?> UpdateAsync(Guid groupId, Guid id, UpdateGroupLabelRequest request,
+        CancellationToken ct = default)
     {
         var label = await db.Labels.IgnoreQueryFilters()
             .FirstOrDefaultAsync(l => l.GroupId == groupId && l.Id == id, ct);
-        if (label is null) return null;
+        if (label is null)
+        {
+            return null;
+        }
 
-        if (request.Name is not null) label.Name = request.Name;
-        if (request.Color is not null) label.Color = request.Color;
+        if (request.Name is not null)
+        {
+            label.Name = request.Name;
+        }
+
+        if (request.Color is not null)
+        {
+            label.Color = request.Color;
+        }
+
         label.UpdateAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync(ct);
@@ -77,20 +100,26 @@ public class GroupLabelService(ApplicationDbContext db) : IGroupLabelService
     {
         var label = await db.Labels.IgnoreQueryFilters()
             .FirstOrDefaultAsync(l => l.GroupId == groupId && l.Id == id, ct);
-        if (label is null) return false;
+        if (label is null)
+        {
+            return false;
+        }
 
         db.Labels.Remove(label);
         await db.SaveChangesAsync(ct);
         return true;
     }
 
-    private static GroupLabelResponse MapToResponse(MultiPurposeLabel l) => new()
+    private static GroupLabelResponse MapToResponse(MultiPurposeLabel l)
     {
-        Id = l.Id,
-        Name = l.Name,
-        Color = l.Color,
-        GroupId = l.GroupId,
-        CreatedAt = l.CreatedAt,
-        UpdateAt = l.UpdateAt,
-    };
+        return new GroupLabelResponse
+        {
+            Id = l.Id,
+            Name = l.Name,
+            Color = l.Color,
+            GroupId = l.GroupId,
+            CreatedAt = l.CreatedAt,
+            UpdateAt = l.UpdateAt
+        };
+    }
 }

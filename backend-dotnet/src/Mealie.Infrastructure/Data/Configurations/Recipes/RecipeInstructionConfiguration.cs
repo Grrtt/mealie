@@ -13,14 +13,14 @@ public class RecipeInstructionConfiguration : IEntityTypeConfiguration<RecipeIns
         builder.Property(i => i.Text).IsRequired();
         builder.HasIndex(i => i.RecipeId);
         builder.HasOne(i => i.Recipe)
-               .WithMany(r => r.RecipeInstructions)
-               .HasForeignKey(i => i.RecipeId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(r => r.RecipeInstructions)
+            .HasForeignKey(i => i.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // IngredientReferences stored as JSON in the Python source via a junction table;
         // we ignore the navigation and use a raw JSON column for the C# layer.
         builder.Ignore(i => i.IngredientReferences);
         builder.Property<string?>("IngredientReferencesJson")
-               .HasColumnName("ingredient_references");
+            .HasColumnName("ingredient_references");
     }
 }

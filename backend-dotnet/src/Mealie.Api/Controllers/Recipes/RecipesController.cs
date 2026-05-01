@@ -1,16 +1,16 @@
+using System.Text.Json;
+using Mealie.Api.Caching;
+using Mealie.Application.Common;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Data;
 using Mealie.Infrastructure.Scraper;
 using Mealie.Shared.Pagination;
-using Mealie.Application.Common;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace Mealie.Api.Controllers.Recipes;
 
@@ -28,7 +28,7 @@ public class RecipesController(
     // ── CRUD Endpoints (T057-T061) ──────────────────────────────────────────
 
     [HttpGet]
-    [OutputCache(PolicyName = Mealie.Api.Caching.RecipeListCachePolicy.Name)]
+    [OutputCache(PolicyName = RecipeListCachePolicy.Name)]
     public async Task<ActionResult<PaginatedResponse<RecipeSummaryResponse>>> GetRecipes(
         [FromQuery] PaginationParams pagination,
         [FromQuery] string? search,
@@ -60,7 +60,7 @@ public class RecipesController(
             RequireAllFoods = requireAllFoods,
             OrderBy = orderBy,
             OrderDirection = orderDirection,
-            QueryFilter = queryFilter,
+            QueryFilter = queryFilter
         };
         var result = await recipeService.GetPaginatedAsync(tenantContext.HouseholdId, pagination, filter, ct);
         return Ok(result);
@@ -100,7 +100,11 @@ public class RecipesController(
     public async Task<ActionResult<RecipeDetailResponse>> GetRecipeBySlug(string slug, CancellationToken ct)
     {
         var recipe = await recipeService.GetDetailBySlugAsync(tenantContext.GroupId, slug, ct);
-        if (recipe is null) return NotFound(new { detail = "Recipe not found" });
+        if (recipe is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(recipe);
     }
 
@@ -109,7 +113,11 @@ public class RecipesController(
         string slug, [FromBody] UpdateRecipeRequest request, CancellationToken ct)
     {
         var recipe = await recipeService.UpdateAsync(tenantContext.GroupId, slug, request, ct);
-        if (recipe is null) return NotFound(new { detail = "Recipe not found" });
+        if (recipe is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(recipe);
     }
 
@@ -118,7 +126,11 @@ public class RecipesController(
         string slug, [FromBody] UpdateRecipeRequest request, CancellationToken ct)
     {
         var recipe = await recipeService.UpdateAsync(tenantContext.GroupId, slug, request, ct);
-        if (recipe is null) return NotFound(new { detail = "Recipe not found" });
+        if (recipe is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(recipe);
     }
 
@@ -126,7 +138,11 @@ public class RecipesController(
     public async Task<IActionResult> DeleteRecipe(string slug, CancellationToken ct)
     {
         var deleted = await recipeService.DeleteAsync(tenantContext.GroupId, slug, ct);
-        if (!deleted) return NotFound(new { detail = "Recipe not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(new { slug });
     }
 
@@ -135,7 +151,11 @@ public class RecipesController(
     {
         var recipe = await recipeService.DuplicateAsync(
             tenantContext.GroupId, tenantContext.HouseholdId, tenantContext.UserId, slug, ct);
-        if (recipe is null) return NotFound(new { detail = "Recipe not found" });
+        if (recipe is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(recipe);
     }
 
@@ -170,8 +190,11 @@ public class RecipesController(
         {
             var export = await exportService.ExportRecipeAsync(slug, ct);
             if (export is not null)
+            {
                 results.Add(new { slug, fileName = export.Value.FileName });
+            }
         }
+
         return Ok(new { exported = results.Count, files = results });
     }
 
@@ -184,8 +207,12 @@ public class RecipesController(
         {
             var updateReq = new UpdateRecipeRequest { Settings = request.Settings };
             var result = await recipeService.UpdateAsync(tenantContext.GroupId, slug, updateReq, ct);
-            if (result is not null) count++;
+            if (result is not null)
+            {
+                count++;
+            }
         }
+
         return Ok(new { detail = $"Updated settings for {count} recipes" });
     }
 
@@ -197,8 +224,12 @@ public class RecipesController(
         foreach (var slug in request.Recipes)
         {
             var result = await recipeService.UpdateAsync(tenantContext.GroupId, slug, request.Update, ct);
-            if (result is not null) count++;
+            if (result is not null)
+            {
+                count++;
+            }
         }
+
         return Ok(new { detail = $"Updated {count} recipes" });
     }
 
@@ -210,8 +241,12 @@ public class RecipesController(
         foreach (var slug in request.Recipes)
         {
             var result = await recipeService.UpdateAsync(tenantContext.GroupId, slug, request.Update, ct);
-            if (result is not null) count++;
+            if (result is not null)
+            {
+                count++;
+            }
         }
+
         return Ok(new { detail = $"Updated {count} recipes" });
     }
 
@@ -222,7 +257,7 @@ public class RecipesController(
         if (Directory.Exists(exportDir))
         {
             var files = Directory.GetFiles(exportDir);
-            int deleted = 0;
+            var deleted = 0;
             foreach (var file in files)
             {
                 try
@@ -230,10 +265,15 @@ public class RecipesController(
                     System.IO.File.Delete(file);
                     deleted++;
                 }
-                catch { /* ignore errors */ }
+                catch
+                {
+                    /* ignore errors */
+                }
             }
+
             return Ok(new { detail = $"Purged {deleted} export files" });
         }
+
         return Ok(new { detail = "No exports to purge" });
     }
 
@@ -246,7 +286,7 @@ public class RecipesController(
         {
             foreach (var file in Directory.GetFiles(exportDir))
             {
-                var info = new System.IO.FileInfo(file);
+                var info = new FileInfo(file);
                 files.Add(new ExportFileInfo
                 {
                     FileName = info.Name,
@@ -255,6 +295,7 @@ public class RecipesController(
                 });
             }
         }
+
         return Ok(files);
     }
 
@@ -270,10 +311,14 @@ public class RecipesController(
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
+        {
             return NotFound(new { detail = "Recipe not found" });
+        }
 
         if (image is null || image.Length == 0)
+        {
             return BadRequest(new { detail = "No image provided" });
+        }
 
         var recipeDir = Path.Combine(Directory.GetCurrentDirectory(), "data", "recipes", slug);
         var imageDir = Path.Combine(recipeDir, "images");
@@ -308,9 +353,12 @@ public class RecipesController(
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
+        {
             return NotFound(new { detail = "Recipe not found" });
+        }
 
-        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "data", "recipes", slug, "images", "original.webp");
+        var imagePath = Path.Combine(Directory.GetCurrentDirectory(), "data", "recipes", slug, "images",
+            "original.webp");
         if (System.IO.File.Exists(imagePath))
         {
             System.IO.File.Delete(imagePath);
@@ -331,11 +379,15 @@ public class RecipesController(
         [FromQuery] string url, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(url))
+        {
             return BadRequest(new { detail = "URL is required" });
+        }
 
         var scraped = await scraperService.ScrapeAsync(url, ct);
         if (scraped.ScrapingNotSupported)
+        {
             return BadRequest(new { detail = "Could not scrape recipe from the provided URL" });
+        }
 
         var preview = new
         {
@@ -366,7 +418,10 @@ public class RecipesController(
         var candidate = slug;
         var counter = 1;
         while (await db.Recipes.IgnoreQueryFilters().AnyAsync(r => r.Slug == candidate, ct))
+        {
             candidate = $"{slug}-{counter++}";
+        }
+
         return candidate;
     }
 
@@ -378,7 +433,9 @@ public class RecipesController(
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(category))
+        {
             return BadRequest(new { detail = "Category slug is required" });
+        }
 
         var filter = new RecipeFilter { Categories = [category] };
         var result = await recipeService.GetPaginatedAsync(tenantContext.HouseholdId, pagination, filter, ct);
@@ -395,7 +452,9 @@ public class RecipesController(
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
+        {
             return NotFound(new { detail = "Recipe not found" });
+        }
 
         return Ok(new LastMadeResponse { Timestamp = recipe.LastMade });
     }
@@ -410,7 +469,9 @@ public class RecipesController(
             .FirstOrDefaultAsync(ct);
 
         if (recipe is null)
+        {
             return NotFound(new { detail = "Recipe not found" });
+        }
 
         recipe.LastMade = request.Timestamp;
         recipe.UpdateAt = DateTime.UtcNow;
@@ -428,10 +489,19 @@ public class RecipesController(
             await onProgress("Fetching recipe...");
             var scraped = await scraperService.ScrapeAsync(request.Url, ct);
             if (scraped.ScrapingNotSupported)
+            {
                 throw new InvalidOperationException("Could not scrape recipe from the provided URL");
+            }
 
-            if (!request.IncludeTags) scraped.Keywords.Clear();
-            if (!request.IncludeCategories) scraped.Categories.Clear();
+            if (!request.IncludeTags)
+            {
+                scraped.Keywords.Clear();
+            }
+
+            if (!request.IncludeCategories)
+            {
+                scraped.Categories.Clear();
+            }
 
             await onProgress("Saving recipe...");
             var recipe = await recipeService.CreateFromScrapedAsync(
@@ -449,10 +519,19 @@ public class RecipesController(
             await onProgress("Parsing recipe data...");
             var scraped = await scraperService.ScrapeFromHtmlAsync(request.Data, request.Url, ct);
             if (scraped.ScrapingNotSupported)
+            {
                 throw new InvalidOperationException("Could not parse recipe from the provided data");
+            }
 
-            if (!request.IncludeTags) scraped.Keywords.Clear();
-            if (!request.IncludeCategories) scraped.Categories.Clear();
+            if (!request.IncludeTags)
+            {
+                scraped.Keywords.Clear();
+            }
+
+            if (!request.IncludeCategories)
+            {
+                scraped.Categories.Clear();
+            }
 
             await onProgress("Saving recipe...");
             var recipe = await recipeService.CreateFromScrapedAsync(
@@ -468,11 +547,16 @@ public class RecipesController(
     {
         var scraped = await scraperService.ScrapeAsync(request.Url, ct);
         if (scraped.ScrapingNotSupported)
+        {
             return BadRequest(new { detail = "Could not scrape recipe from the provided URL" });
+        }
 
         var recipe = await recipeService.CreateFromScrapedAsync(
             scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct: ct);
-        if (recipe is null) return BadRequest(new { detail = "Failed to create recipe" });
+        if (recipe is null)
+        {
+            return BadRequest(new { detail = "Failed to create recipe" });
+        }
 
         return Ok(recipe);
     }
@@ -492,8 +576,17 @@ public class RecipesController(
                     results.Add(new { url, success = false, detail = "Scraping not supported" });
                     continue;
                 }
-                if (!request.IncludeTags) scraped.Keywords.Clear();
-                if (!request.IncludeCategories) scraped.Categories.Clear();
+
+                if (!request.IncludeTags)
+                {
+                    scraped.Keywords.Clear();
+                }
+
+                if (!request.IncludeCategories)
+                {
+                    scraped.Categories.Clear();
+                }
+
                 var recipe = await recipeService.CreateFromScrapedAsync(
                     scraped, tenantContext.HouseholdId, tenantContext.GroupId, ct: ct);
                 results.Add(new { url, success = recipe is not null, slug = recipe?.Slug });
@@ -503,6 +596,7 @@ public class RecipesController(
                 results.Add(new { url, success = false, detail = ex.Message });
             }
         }
+
         return Ok(results);
     }
 
@@ -519,7 +613,11 @@ public class RecipesController(
     public async Task<IActionResult> ExportRecipe(string slug, CancellationToken ct)
     {
         var result = await exportService.ExportRecipeAsync(slug, ct);
-        if (result is null) return NotFound(new { detail = "Recipe not found" });
+        if (result is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return File(result.Value.Data, "application/zip", result.Value.FileName);
     }
 
@@ -531,7 +629,9 @@ public class RecipesController(
     public async Task<IActionResult> ImportFromZip(IFormFile file, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
+        {
             return BadRequest(new { detail = "No file provided" });
+        }
 
         await using var stream = file.OpenReadStream();
         var count = await importService.ImportFromZipAsync(
@@ -541,13 +641,15 @@ public class RecipesController(
 
     [HttpPost("create-image-ocr")]
     public IActionResult CreateFromImageOcr()
-        => StatusCode(501, new { detail = "OCR import is not implemented" });
+    {
+        return StatusCode(501, new { detail = "OCR import is not implemented" });
+    }
 
     // ── SSE helper ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Writes an SSE response. <paramref name="work"/> receives an onProgress callback and
-    /// returns the recipe slug on success (or null to emit an error event).
+    ///     Writes an SSE response. <paramref name="work" /> receives an onProgress callback and
+    ///     returns the recipe slug on success (or null to emit an error event).
     /// </summary>
     private async Task StreamSseAsync(Func<Func<string, Task>, Task<string?>> work, CancellationToken ct)
     {
@@ -558,7 +660,8 @@ public class RecipesController(
 
         async Task SendEvent(string eventName, object data)
         {
-            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var json = JsonSerializer.Serialize(data,
+                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
             await Response.WriteAsync($"event: {eventName}\ndata: {json}\n\n", ct);
             await Response.Body.FlushAsync(ct);
         }
@@ -567,15 +670,24 @@ public class RecipesController(
         {
             var slug = await work(msg => SendEvent("progress", new { message = msg }));
             if (slug is null)
+            {
                 await SendEvent("error", new { message = "Failed to create recipe" });
+            }
             else
+            {
                 await SendEvent("done", new { slug });
+            }
         }
         catch (Exception ex)
         {
-            try { await SendEvent("error", new { message = ex.Message }); } catch { /* client disconnected */ }
+            try
+            {
+                await SendEvent("error", new { message = ex.Message });
+            }
+            catch
+            {
+                /* client disconnected */
+            }
         }
     }
 }
-
-

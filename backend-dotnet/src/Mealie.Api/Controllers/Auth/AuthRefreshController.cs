@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Mealie.Api.Controllers.Auth;
 
 /// <summary>
-/// Separated from AuthController so [Authorize] isn't overridden by the parent's [AllowAnonymous].
+///     Separated from AuthController so [Authorize] isn't overridden by the parent's [AllowAnonymous].
 /// </summary>
 [ApiController]
 [Route("api/auth")]

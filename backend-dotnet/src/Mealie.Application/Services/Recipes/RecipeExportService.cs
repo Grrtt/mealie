@@ -1,10 +1,11 @@
+using System.IO.Compression;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using System.IO.Compression;
-using System.Text.Json;
 
 namespace Mealie.Application.Services.Recipes;
 
@@ -16,7 +17,9 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
     {
         var exportsDir = Path.Combine(_dataDir, "backups", "recipes");
         if (!Directory.Exists(exportsDir))
+        {
             return Task.FromResult<IList<ExportFileInfo>>([]);
+        }
 
         var files = Directory.GetFiles(exportsDir, "*.json")
             .Concat(Directory.GetFiles(exportsDir, "*.zip"))
@@ -27,7 +30,7 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
                 {
                     FileName = info.Name,
                     Size = info.Length,
-                    CreatedAt = info.CreationTimeUtc,
+                    CreatedAt = info.CreationTimeUtc
                 };
             })
             .OrderByDescending(f => f.CreatedAt)
@@ -48,16 +51,19 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
             .Include(r => r.Settings)
             .FirstOrDefaultAsync(r => r.Slug == slug, ct);
 
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
 
         var json = JsonSerializer.Serialize(recipe, new JsonSerializerOptions
         {
             WriteIndented = true,
-            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles
         });
 
         using var ms = new MemoryStream();
-        using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+        using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
         {
             var entry = archive.CreateEntry($"{recipe.Slug}.json", CompressionLevel.Fastest);
             await using var entryStream = entry.Open();

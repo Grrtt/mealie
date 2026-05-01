@@ -25,7 +25,11 @@ public class RecipeCommentsController(
         string slug, [FromBody] CreateCommentRequest request, CancellationToken ct)
     {
         var comment = await commentService.AddCommentAsync(slug, tenantContext.UserId, request, ct);
-        if (comment is null) return NotFound(new { detail = "Recipe not found" });
+        if (comment is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(comment);
     }
 
@@ -34,7 +38,11 @@ public class RecipeCommentsController(
         string slug, Guid commentId, [FromBody] UpdateCommentRequest request, CancellationToken ct)
     {
         var comment = await commentService.UpdateCommentAsync(commentId, tenantContext.UserId, request, ct);
-        if (comment is null) return NotFound(new { detail = "Comment not found or not owned by user" });
+        if (comment is null)
+        {
+            return NotFound(new { detail = "Comment not found or not owned by user" });
+        }
+
         return Ok(comment);
     }
 
@@ -42,7 +50,11 @@ public class RecipeCommentsController(
     public async Task<IActionResult> DeleteComment(string slug, Guid commentId, CancellationToken ct)
     {
         var deleted = await commentService.DeleteCommentAsync(commentId, tenantContext.UserId, ct);
-        if (!deleted) return NotFound(new { detail = "Comment not found or not owned by user" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Comment not found or not owned by user" });
+        }
+
         return NoContent();
     }
 }

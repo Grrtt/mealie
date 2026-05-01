@@ -16,12 +16,12 @@ public class WebhookConfiguration : IEntityTypeConfiguration<Webhook>
         builder.HasIndex(w => w.GroupId);
         builder.HasIndex(w => w.HouseholdId);
         builder.HasOne(w => w.Group)
-               .WithMany(g => g.Webhooks)
-               .HasForeignKey(w => w.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Webhooks)
+            .HasForeignKey(w => w.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(w => w.Household)
-               .WithMany(h => h.Webhooks)
-               .HasForeignKey(w => w.HouseholdId)
-               .OnDelete(DeleteBehavior.Restrict);
+            .WithMany(h => h.Webhooks)
+            .HasForeignKey(w => w.HouseholdId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

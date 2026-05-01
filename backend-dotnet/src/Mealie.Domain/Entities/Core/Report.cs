@@ -16,6 +16,7 @@ public class Report
 
     /// <summary>Context needed to re-queue the job on startup after a crash/restart.</summary>
     public Guid? QueuedHouseholdId { get; set; }
+
     public Guid? QueuedUserId { get; set; }
 
     /// <summary>Total recipes discovered in the archive. Null until processing begins.</summary>

@@ -12,8 +12,8 @@ public class RecipeAssetConfiguration : IEntityTypeConfiguration<RecipeAsset>
         builder.HasKey(a => a.Id);
         builder.HasIndex(a => a.RecipeId);
         builder.HasOne(a => a.Recipe)
-               .WithMany(r => r.Assets)
-               .HasForeignKey(a => a.RecipeId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(r => r.Assets)
+            .HasForeignKey(a => a.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

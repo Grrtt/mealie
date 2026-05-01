@@ -12,8 +12,8 @@ public class RecipeTimelineEventConfiguration : IEntityTypeConfiguration<RecipeT
         builder.HasKey(e => e.Id);
         builder.HasIndex(e => e.RecipeId);
         builder.HasOne(e => e.Recipe)
-               .WithMany(r => r.TimelineEvents)
-               .HasForeignKey(e => e.RecipeId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(r => r.TimelineEvents)
+            .HasForeignKey(e => e.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

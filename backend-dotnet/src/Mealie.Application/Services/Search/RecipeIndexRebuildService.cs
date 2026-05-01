@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Mealie.Application.Services.Search;
 
 /// <summary>
-/// Rebuilds both recipe and food search indexes once on startup to ensure they are up-to-date.
+///     Rebuilds both recipe and food search indexes once on startup to ensure they are up-to-date.
 /// </summary>
 public class SearchIndexRebuildService(
     IRecipeSearchIndex recipeIndex,

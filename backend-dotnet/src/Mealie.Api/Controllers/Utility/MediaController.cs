@@ -16,7 +16,9 @@ public class MediaController(IOptions<AppSettings> settings) : ControllerBase
     {
         var path = Path.Combine(DataDir, "users", userId.ToString(), "profile.webp");
         if (!System.IO.File.Exists(path))
+        {
             return NotFound();
+        }
 
         return PhysicalFile(path, "image/webp");
     }
@@ -26,7 +28,9 @@ public class MediaController(IOptions<AppSettings> settings) : ControllerBase
     {
         var path = Path.Combine(DataDir, "recipes", slug, "images", imageName);
         if (!System.IO.File.Exists(path))
+        {
             return NotFound();
+        }
 
         var mimeType = Path.GetExtension(imageName).ToLowerInvariant() switch
         {
@@ -43,7 +47,9 @@ public class MediaController(IOptions<AppSettings> settings) : ControllerBase
     {
         var path = Path.Combine(DataDir, "recipes", slug, "assets", assetName);
         if (!System.IO.File.Exists(path))
+        {
             return NotFound();
+        }
 
         return PhysicalFile(path, "application/octet-stream");
     }

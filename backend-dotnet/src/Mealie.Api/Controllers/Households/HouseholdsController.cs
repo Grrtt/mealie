@@ -23,7 +23,11 @@ public class HouseholdsController(
     public async Task<ActionResult<HouseholdResponse>> GetSelf()
     {
         var h = await householdService.GetHouseholdAsync(CurrentHouseholdId);
-        if (h is null) return NotFoundOrForbidden();
+        if (h is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(h);
     }
 
@@ -31,7 +35,11 @@ public class HouseholdsController(
     public async Task<ActionResult<HouseholdResponse>> UpdateSelf([FromBody] UpdateHouseholdRequest request)
     {
         var h = await householdService.UpdateHouseholdAsync(CurrentHouseholdId, request);
-        if (h is null) return NotFoundOrForbidden();
+        if (h is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(h);
     }
 
@@ -55,7 +63,11 @@ public class HouseholdsController(
     public async Task<ActionResult<RecipeDetailResponse>> GetRecipeBySlug(string slug)
     {
         var recipe = await recipeService.GetDetailBySlugAsync(CurrentGroupId, slug);
-        if (recipe is null) return NotFoundOrForbidden();
+        if (recipe is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(recipe);
     }
 
@@ -63,15 +75,24 @@ public class HouseholdsController(
     public async Task<ActionResult<HouseholdPreferencesResponse>> GetPreferences()
     {
         var prefs = await householdService.GetHouseholdPreferencesAsync(CurrentHouseholdId);
-        if (prefs is null) return NotFoundOrForbidden();
+        if (prefs is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(prefs);
     }
 
     [HttpPut("preferences")]
-    public async Task<ActionResult<HouseholdPreferencesResponse>> UpdatePreferences([FromBody] UpdateHouseholdPreferencesRequest request)
+    public async Task<ActionResult<HouseholdPreferencesResponse>> UpdatePreferences(
+        [FromBody] UpdateHouseholdPreferencesRequest request)
     {
         var prefs = await householdService.UpdateHouseholdPreferencesAsync(CurrentHouseholdId, request);
-        if (prefs is null) return NotFoundOrForbidden();
+        if (prefs is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(prefs);
     }
 
@@ -92,14 +113,20 @@ public class HouseholdsController(
             var household = await householdService.GetHouseholdAsync(CurrentHouseholdId);
             await emailService.SendInvitationEmailAsync(request.Email, household?.Name ?? "Mealie", inviteUrl);
         }
+
         return Ok(new { message = "Invitation email queued" });
     }
 
     [HttpPut("permissions")]
     public async Task<IActionResult> UpdateHouseholdPermissions([FromBody] HouseholdMemberPermissions request)
     {
-        var success = await householdService.UpdateMemberPermissionsAsync(CurrentHouseholdId, request.UserId, request.Admin, request.CanOrganize, request.CanInvite);
-        if (!success) return NotFoundOrForbidden();
+        var success = await householdService.UpdateMemberPermissionsAsync(CurrentHouseholdId, request.UserId,
+            request.Admin, request.CanOrganize, request.CanInvite);
+        if (!success)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok();
     }
 }

@@ -14,6 +14,7 @@ using Mealie.Shared.Pagination;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using NutritionDto = Mealie.Application.Dtos.Recipes.NutritionDto;
 
 namespace Mealie.Application.Services.Recipes;
 
@@ -39,27 +40,27 @@ public class RecipeService(
     {
         // Foods, tools, and households filters require EF (Lucene doesn't index those IDs).
         // Also skip Lucene when tags/categories are provided as GUIDs (Lucene indexes names).
-        bool requiresEf =
-            (filter?.Foods?.Count > 0) ||
-            (filter?.Tools?.Count > 0) ||
-            (filter?.Households?.Count > 0) ||
+        var requiresEf =
+            filter?.Foods?.Count > 0 ||
+            filter?.Tools?.Count > 0 ||
+            filter?.Households?.Count > 0 ||
             (filter?.Tags?.Any(t => Guid.TryParse(t, out _)) ?? false) ||
             (filter?.Categories?.Any(c => Guid.TryParse(c, out _)) ?? false);
 
         if (!requiresEf)
         {
             var searchQuery = new RecipeSearchQuery(
-                HouseholdId: householdId,
-                Text: filter?.Search,
-                Tags: filter?.Tags,
-                Categories: filter?.Categories,
-                Skip: pagination.Skip,
-                Take: pagination.PerPage);
+                householdId,
+                filter?.Search,
+                filter?.Tags,
+                filter?.Categories,
+                pagination.Skip,
+                pagination.PerPage);
 
             var luceneResult = await searchIndex.SearchAsync(searchQuery, ct);
 
             // Fall back to EF if the index is empty and no filter was applied
-            bool noFilterApplied = filter is null || filter.IsEmpty;
+            var noFilterApplied = filter is null || filter.IsEmpty;
 
             if (luceneResult.Total > 0 || !noFilterApplied)
             {
@@ -96,7 +97,10 @@ public class RecipeService(
             .AsQueryable();
 
         if (filter?.Search is { Length: > 0 } search)
-            query = query.Where(r => r.Name.Contains(search) || (r.Description != null && r.Description.Contains(search)));
+        {
+            query = query.Where(r =>
+                r.Name.Contains(search) || (r.Description != null && r.Description.Contains(search)));
+        }
 
         if (filter?.Tags is { Count: > 0 } tagFilters)
         {
@@ -105,10 +109,14 @@ public class RecipeService(
                 .Where(g => g.HasValue).Select(g => g!.Value).ToList();
             var tagSlugs = tagFilters.Where(t => !Guid.TryParse(t, out _)).ToList();
             if (filter.RequireAllTags == true)
+            {
                 query = query.Where(r => tagGuids.All(tid => r.Tags.Any(t => t.Id == tid)) &&
                                          tagSlugs.All(slug => r.Tags.Any(t => t.Slug == slug)));
+            }
             else
+            {
                 query = query.Where(r => r.Tags.Any(t => tagGuids.Contains(t.Id) || tagSlugs.Contains(t.Slug)));
+            }
         }
 
         if (filter?.Categories is { Count: > 0 } catFilters)
@@ -118,10 +126,14 @@ public class RecipeService(
                 .Where(g => g.HasValue).Select(g => g!.Value).ToList();
             var catSlugs = catFilters.Where(c => !Guid.TryParse(c, out _)).ToList();
             if (filter.RequireAllCategories == true)
+            {
                 query = query.Where(r => catGuids.All(cid => r.Categories.Any(c => c.Id == cid)) &&
                                          catSlugs.All(slug => r.Categories.Any(c => c.Slug == slug)));
+            }
             else
+            {
                 query = query.Where(r => r.Categories.Any(c => catGuids.Contains(c.Id) || catSlugs.Contains(c.Slug)));
+            }
         }
 
         if (filter?.Foods is { Count: > 0 } foodFilters)
@@ -130,11 +142,15 @@ public class RecipeService(
                 .Select(f => Guid.TryParse(f, out var g) ? g : (Guid?)null)
                 .Where(g => g.HasValue).Select(g => g!.Value).ToList();
             if (filter.RequireAllFoods == true)
+            {
                 query = query.Where(r => foodGuids.All(fid =>
                     r.RecipeIngredients.Any(i => i.FoodId == fid)));
+            }
             else
+            {
                 query = query.Where(r => r.RecipeIngredients.Any(i =>
                     i.FoodId.HasValue && foodGuids.Contains(i.FoodId.Value)));
+            }
         }
 
         if (filter?.Tools is { Count: > 0 } toolFilters)
@@ -143,13 +159,17 @@ public class RecipeService(
                 .Select(t => Guid.TryParse(t, out var g) ? g : (Guid?)null)
                 .Where(g => g.HasValue).Select(g => g!.Value).ToList();
             if (filter.RequireAllTools == true)
+            {
                 query = query
                     .Include(r => r.Tools)
                     .Where(r => toolGuids.All(tid => r.Tools.Any(t => t.Id == tid)));
+            }
             else
+            {
                 query = query
                     .Include(r => r.Tools)
                     .Where(r => r.Tools.Any(t => toolGuids.Contains(t.Id)));
+            }
         }
 
         if (filter?.Households is { Count: > 0 } householdFilters)
@@ -163,7 +183,7 @@ public class RecipeService(
         var total = await query.CountAsync(ct);
 
         // Apply ordering
-        var ordered = (filter?.OrderBy?.ToLowerInvariant()) switch
+        var ordered = filter?.OrderBy?.ToLowerInvariant() switch
         {
             "name" => filter?.OrderDirection?.ToLowerInvariant() == "asc"
                 ? query.OrderBy(r => r.Name)
@@ -180,7 +200,7 @@ public class RecipeService(
             "rating" => filter?.OrderDirection?.ToLowerInvariant() == "asc"
                 ? query.OrderBy(r => r.Rating)
                 : query.OrderByDescending(r => r.Rating),
-            _ => query.OrderByDescending(r => r.CreatedAt),
+            _ => query.OrderByDescending(r => r.CreatedAt)
         };
 
         var efItems = await ordered
@@ -199,7 +219,8 @@ public class RecipeService(
         };
     }
 
-    public async Task<RecipeDetailResponse?> GetDetailBySlugAsync(Guid groupId, string slug, CancellationToken ct = default)
+    public async Task<RecipeDetailResponse?> GetDetailBySlugAsync(Guid groupId, string slug,
+        CancellationToken ct = default)
     {
         var r = await db.Recipes.IgnoreQueryFilters()
             .Where(r => r.GroupId == groupId && r.Slug == slug)
@@ -213,7 +234,11 @@ public class RecipeService(
             .Include(r => r.Tools)
             .FirstOrDefaultAsync(ct);
 
-        if (r is null) return null;
+        if (r is null)
+        {
+            return null;
+        }
+
         return MapToDetail(r);
     }
 
@@ -223,7 +248,11 @@ public class RecipeService(
             .Include(r => r.Tags)
             .Include(r => r.Categories)
             .FirstOrDefaultAsync(r => r.Slug == slug, ct);
-        if (r is null) return null;
+        if (r is null)
+        {
+            return null;
+        }
+
         return MapToSummary(r);
     }
 
@@ -241,7 +270,7 @@ public class RecipeService(
             GroupId = groupId,
             HouseholdId = householdId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         db.Recipes.Add(recipe);
@@ -266,19 +295,65 @@ public class RecipeService(
             .Include(r => r.Tools)
             .FirstOrDefaultAsync(ct);
 
-        if (recipe is null) return null;
+        if (recipe is null)
+        {
+            return null;
+        }
 
-        if (request.Name is not null) recipe.Name = request.Name;
-        if (request.Description is not null) recipe.Description = request.Description;
-        if (request.RecipeYield is not null) recipe.RecipeYield = request.RecipeYield;
-        if (request.TotalTime is not null) recipe.TotalTime = request.TotalTime;
-        if (request.PrepTime is not null) recipe.PrepTime = request.PrepTime;
-        if (request.CookTime is not null) recipe.CookTime = request.CookTime;
-        if (request.PerformTime is not null) recipe.PerformTime = request.PerformTime;
-        if (request.Rating.HasValue) recipe.Rating = request.Rating;
-        if (request.DisableAmount.HasValue) recipe.DisableAmount = request.DisableAmount.Value;
-        if (request.OrgUrl is not null) recipe.OrgUrl = request.OrgUrl;
-        if (request.LastMade.HasValue) recipe.LastMade = request.LastMade;
+        if (request.Name is not null)
+        {
+            recipe.Name = request.Name;
+        }
+
+        if (request.Description is not null)
+        {
+            recipe.Description = request.Description;
+        }
+
+        if (request.RecipeYield is not null)
+        {
+            recipe.RecipeYield = request.RecipeYield;
+        }
+
+        if (request.TotalTime is not null)
+        {
+            recipe.TotalTime = request.TotalTime;
+        }
+
+        if (request.PrepTime is not null)
+        {
+            recipe.PrepTime = request.PrepTime;
+        }
+
+        if (request.CookTime is not null)
+        {
+            recipe.CookTime = request.CookTime;
+        }
+
+        if (request.PerformTime is not null)
+        {
+            recipe.PerformTime = request.PerformTime;
+        }
+
+        if (request.Rating.HasValue)
+        {
+            recipe.Rating = request.Rating;
+        }
+
+        if (request.DisableAmount.HasValue)
+        {
+            recipe.DisableAmount = request.DisableAmount.Value;
+        }
+
+        if (request.OrgUrl is not null)
+        {
+            recipe.OrgUrl = request.OrgUrl;
+        }
+
+        if (request.LastMade.HasValue)
+        {
+            recipe.LastMade = request.LastMade;
+        }
 
         if (request.Nutrition is not null)
         {
@@ -369,7 +444,10 @@ public class RecipeService(
             {
                 var tag = await db.Tags.IgnoreQueryFilters()
                     .FirstOrDefaultAsync(t => t.Slug == tagSlug && t.GroupId == groupId, ct);
-                if (tag is not null) recipe.Tags.Add(tag);
+                if (tag is not null)
+                {
+                    recipe.Tags.Add(tag);
+                }
             }
         }
 
@@ -380,7 +458,10 @@ public class RecipeService(
             {
                 var cat = await db.Categories.IgnoreQueryFilters()
                     .FirstOrDefaultAsync(c => c.Slug == catSlug && c.GroupId == groupId, ct);
-                if (cat is not null) recipe.Categories.Add(cat);
+                if (cat is not null)
+                {
+                    recipe.Categories.Add(cat);
+                }
             }
         }
 
@@ -391,7 +472,10 @@ public class RecipeService(
             {
                 var tool = await db.Tools.IgnoreQueryFilters()
                     .FirstOrDefaultAsync(t => t.Slug == toolSlug && t.GroupId == groupId, ct);
-                if (tool is not null) recipe.Tools.Add(tool);
+                if (tool is not null)
+                {
+                    recipe.Tools.Add(tool);
+                }
             }
         }
 
@@ -406,9 +490,14 @@ public class RecipeService(
         foreach (var ing in recipe.RecipeIngredients)
         {
             if (ing.UnitId.HasValue && ing.Unit is null)
+            {
                 await db.Entry(ing).Reference(i => i.Unit).LoadAsync(ct);
+            }
+
             if (ing.FoodId.HasValue && ing.Food is null)
+            {
                 await db.Entry(ing).Reference(i => i.Food).LoadAsync(ct);
+            }
         }
 
         return MapToDetail(recipe);
@@ -418,7 +507,11 @@ public class RecipeService(
     {
         var recipe = await db.Recipes.IgnoreQueryFilters()
             .FirstOrDefaultAsync(r => r.GroupId == groupId && r.Slug == slug, ct);
-        if (recipe is null) return false;
+        if (recipe is null)
+        {
+            return false;
+        }
+
         var recipeId = recipe.Id;
         db.Recipes.Remove(recipe);
         await db.SaveChangesAsync(ct);
@@ -441,7 +534,10 @@ public class RecipeService(
             .Include(r => r.Tools)
             .FirstOrDefaultAsync(ct);
 
-        if (original is null) return null;
+        if (original is null)
+        {
+            return null;
+        }
 
         var newName = $"{original.Name} (Copy)";
         var baseSlug = SlugHelper.Generate(newName);
@@ -465,10 +561,11 @@ public class RecipeService(
             GroupId = groupId,
             HouseholdId = householdId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         foreach (var ing in original.RecipeIngredients)
+        {
             copy.RecipeIngredients.Add(new RecipeIngredient
             {
                 Id = Guid.NewGuid(), Position = ing.Position, Title = ing.Title,
@@ -476,21 +573,37 @@ public class RecipeService(
                 FoodId = ing.FoodId, OriginalText = ing.OriginalText,
                 IsFood = ing.IsFood, DisableAmount = ing.DisableAmount, RecipeId = copy.Id
             });
+        }
 
         foreach (var inst in original.RecipeInstructions)
+        {
             copy.RecipeInstructions.Add(new RecipeInstruction
             {
                 Id = Guid.NewGuid(), Position = inst.Position, Text = inst.Text,
                 Title = inst.Title, Summary = inst.Summary, RecipeId = copy.Id
             });
+        }
 
         foreach (var note in original.Notes)
+        {
             copy.Notes.Add(new RecipeNote
-            { Id = Guid.NewGuid(), Title = note.Title, Text = note.Text, RecipeId = copy.Id });
+                { Id = Guid.NewGuid(), Title = note.Title, Text = note.Text, RecipeId = copy.Id });
+        }
 
-        foreach (var tag in original.Tags) copy.Tags.Add(tag);
-        foreach (var cat in original.Categories) copy.Categories.Add(cat);
-        foreach (var tool in original.Tools) copy.Tools.Add(tool);
+        foreach (var tag in original.Tags)
+        {
+            copy.Tags.Add(tag);
+        }
+
+        foreach (var cat in original.Categories)
+        {
+            copy.Categories.Add(cat);
+        }
+
+        foreach (var tool in original.Tools)
+        {
+            copy.Tools.Add(tool);
+        }
 
         db.Recipes.Add(copy);
         await db.SaveChangesAsync(ct);
@@ -513,7 +626,9 @@ public class RecipeService(
         var existingSlug = await db.Recipes.IgnoreQueryFilters()
             .AnyAsync(r => r.HouseholdId == householdId && r.Slug == slug, ct);
         if (existingSlug)
+        {
             return null;
+        }
 
         var uniqueSlug = await EnsureUniqueSlugAsync(slug, ct);
 
@@ -531,12 +646,12 @@ public class RecipeService(
             HouseholdId = householdId,
             OrgUrl = scraped.OrgUrl,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         // Normalize ingredient strings: strip checkbox glyphs and drop any lines
         // that are empty after normalization (e.g. bare "▢" markers).
-        var ingredientStrings = (parsedIngredients is null)
+        var ingredientStrings = parsedIngredients is null
             ? scraped.RecipeIngredient
                 .Select(IngredientNormalizer.Normalize)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -545,20 +660,20 @@ public class RecipeService(
 
         // Use pre-parsed results when provided (batch migration path); otherwise parse now.
         var parsed = parsedIngredients
-            ?? await ingredientParser.ParseBatchAsync(ingredientStrings, ct);
+                     ?? await ingredientParser.ParseBatchAsync(ingredientStrings, ct);
 
         // Use caller-provided mutable lists (migration batch path) or load fresh from DB.
         // Mutable so newly created foods/units are visible to subsequent ingredients in the same batch.
         var foods = cachedFoods
-            ?? await db.Foods.IgnoreQueryFilters()
-                .Where(f => f.GroupId == groupId)
-                .Include(f => f.Aliases)
-                .ToListAsync(ct);
+                    ?? await db.Foods.IgnoreQueryFilters()
+                        .Where(f => f.GroupId == groupId)
+                        .Include(f => f.Aliases)
+                        .ToListAsync(ct);
 
         var units = cachedUnits
-            ?? await db.Units.IgnoreQueryFilters()
-                .Where(u => u.GroupId == groupId)
-                .ToListAsync(ct);
+                    ?? await db.Units.IgnoreQueryFilters()
+                        .Where(u => u.GroupId == groupId)
+                        .ToListAsync(ct);
 
         for (var i = 0; i < parsed.Count; i++)
         {
@@ -581,7 +696,7 @@ public class RecipeService(
                         Name = p.Food,
                         GroupId = groupId,
                         CreatedAt = DateTime.UtcNow,
-                        UpdateAt = DateTime.UtcNow,
+                        UpdateAt = DateTime.UtcNow
                     };
                     db.Foods.Add(matchedFood);
                     foods.Add(matchedFood);
@@ -606,7 +721,7 @@ public class RecipeService(
                         Name = p.Unit,
                         GroupId = groupId,
                         CreatedAt = DateTime.UtcNow,
-                        UpdateAt = DateTime.UtcNow,
+                        UpdateAt = DateTime.UtcNow
                     };
                     db.Units.Add(matchedUnit);
                     units.Add(matchedUnit);
@@ -622,7 +737,7 @@ public class RecipeService(
                 Quantity = p.Quantity.HasValue ? (decimal?)p.Quantity.Value : null,
                 FoodId = matchedFood?.Id,
                 UnitId = matchedUnit?.Id,
-                RecipeId = recipe.Id,
+                RecipeId = recipe.Id
             });
         }
 
@@ -633,7 +748,7 @@ public class RecipeService(
                 Id = Guid.NewGuid(),
                 Position = i,
                 Text = scraped.RecipeInstructions[i],
-                RecipeId = recipe.Id,
+                RecipeId = recipe.Id
             });
         }
 
@@ -644,16 +759,25 @@ public class RecipeService(
         foreach (var keyword in scraped.Keywords)
         {
             var tagName = keyword.Trim();
-            if (string.IsNullOrEmpty(tagName)) continue;
+            if (string.IsNullOrEmpty(tagName))
+            {
+                continue;
+            }
+
             var tagSlug = SlugHelper.Generate(tagName);
             var tag = await db.Tags.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(t => t.Slug == tagSlug && t.GroupId == groupId, ct);
             if (tag is null)
             {
-                tag = new Tag { Id = Guid.NewGuid(), Name = tagName, Slug = tagSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow };
+                tag = new Tag
+                {
+                    Id = Guid.NewGuid(), Name = tagName, Slug = tagSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow,
+                    UpdateAt = DateTime.UtcNow
+                };
                 db.Tags.Add(tag);
                 await db.SaveChangesAsync(ct);
             }
+
             recipe.Tags.Add(tag);
         }
 
@@ -661,34 +785,46 @@ public class RecipeService(
         foreach (var catName in scraped.Categories)
         {
             var name = catName.Trim();
-            if (string.IsNullOrEmpty(name)) continue;
+            if (string.IsNullOrEmpty(name))
+            {
+                continue;
+            }
+
             var catSlug = SlugHelper.Generate(name);
             var cat = await db.Categories.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(c => c.Slug == catSlug && c.GroupId == groupId, ct);
             if (cat is null)
             {
-                cat = new Category { Id = Guid.NewGuid(), Name = name, Slug = catSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow };
+                cat = new Category
+                {
+                    Id = Guid.NewGuid(), Name = name, Slug = catSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow,
+                    UpdateAt = DateTime.UtcNow
+                };
                 db.Categories.Add(cat);
                 await db.SaveChangesAsync(ct);
             }
+
             recipe.Categories.Add(cat);
         }
 
         if (scraped.Keywords.Any() || scraped.Categories.Any())
+        {
             await db.SaveChangesAsync(ct);
+        }
 
         // Queue image download: use the URL from scraper if available, otherwise fall back to scraping OrgUrl.
         var hasDirectImage = !string.IsNullOrEmpty(scraped.Image);
         var hasOrgUrl = !string.IsNullOrEmpty(scraped.OrgUrl);
-        logger.LogInformation("Image queue check for recipe {RecipeId}: hasDirectImage={HasDirectImage} ({DirectImageUrl}), hasOrgUrl={HasOrgUrl} ({OrgUrl})",
+        logger.LogInformation(
+            "Image queue check for recipe {RecipeId}: hasDirectImage={HasDirectImage} ({DirectImageUrl}), hasOrgUrl={HasOrgUrl} ({OrgUrl})",
             recipe.Id, hasDirectImage, scraped.Image, hasOrgUrl, scraped.OrgUrl);
         if (hasDirectImage || hasOrgUrl)
         {
             logger.LogInformation("Queuing image scrape job for recipe {RecipeId}", recipe.Id);
             await imageScrapeQueue.Writer.WriteAsync(new ImageScrapeJob(
                 recipe.Id,
-                OrgUrl: hasOrgUrl ? scraped.OrgUrl : null,
-                DirectImageUrl: hasDirectImage ? scraped.Image : null), CancellationToken.None);
+                hasOrgUrl ? scraped.OrgUrl : null,
+                hasDirectImage ? scraped.Image : null), CancellationToken.None);
         }
         else
         {
@@ -710,10 +846,13 @@ public class RecipeService(
         await db.SaveChangesAsync(ct);
 
         if (recipeIds.Count > 0)
+        {
             await mediator.Publish(new RecipesBulkDeletedEvent(recipeIds), ct);
+        }
     }
 
-    public async Task BulkTagAsync(IList<string> slugs, IList<string> tagNames, Guid groupId, CancellationToken ct = default)
+    public async Task BulkTagAsync(IList<string> slugs, IList<string> tagNames, Guid groupId,
+        CancellationToken ct = default)
     {
         var recipes = await db.Recipes
             .Include(r => r.Tags)
@@ -724,22 +863,31 @@ public class RecipeService(
         {
             var tagSlug = SlugHelper.Generate(tagName);
             var tag = await db.Tags.FirstOrDefaultAsync(t => t.Slug == tagSlug && t.GroupId == groupId, ct)
-                ?? new Tag { Id = Guid.NewGuid(), Name = tagName, Slug = tagSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow };
+                      ?? new Tag
+                      {
+                          Id = Guid.NewGuid(), Name = tagName, Slug = tagSlug, GroupId = groupId,
+                          CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+                      };
 
             if (tag.Id == Guid.Empty || !db.Tags.Local.Contains(tag))
+            {
                 db.Tags.Add(tag);
+            }
 
             foreach (var recipe in recipes)
             {
                 if (!recipe.Tags.Any(t => t.Slug == tagSlug))
+                {
                     recipe.Tags.Add(tag);
+                }
             }
         }
 
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task BulkCategorizeAsync(IList<string> slugs, IList<string> categoryNames, Guid groupId, CancellationToken ct = default)
+    public async Task BulkCategorizeAsync(IList<string> slugs, IList<string> categoryNames, Guid groupId,
+        CancellationToken ct = default)
     {
         var recipes = await db.Recipes
             .Include(r => r.Categories)
@@ -750,15 +898,23 @@ public class RecipeService(
         {
             var catSlug = SlugHelper.Generate(catName);
             var cat = await db.Categories.FirstOrDefaultAsync(c => c.Slug == catSlug && c.GroupId == groupId, ct)
-                ?? new Category { Id = Guid.NewGuid(), Name = catName, Slug = catSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow };
+                      ?? new Category
+                      {
+                          Id = Guid.NewGuid(), Name = catName, Slug = catSlug, GroupId = groupId,
+                          CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+                      };
 
             if (cat.Id == Guid.Empty || !db.Categories.Local.Contains(cat))
+            {
                 db.Categories.Add(cat);
+            }
 
             foreach (var recipe in recipes)
             {
                 if (!recipe.Categories.Any(c => c.Slug == catSlug))
+                {
                     recipe.Categories.Add(cat);
+                }
             }
         }
 
@@ -766,9 +922,9 @@ public class RecipeService(
     }
 
     public async Task<RecipeSuggestionsResponse> GetSuggestionsAsync(
-        Guid householdId, Guid groupId, int limit, string? queryFilter, 
-        int maxMissingFoods, int maxMissingTools, bool includeFoodsOnHand, 
-        bool includeToolsOnHand, IList<Guid> foodIds, IList<Guid> toolIds, 
+        Guid householdId, Guid groupId, int limit, string? queryFilter,
+        int maxMissingFoods, int maxMissingTools, bool includeFoodsOnHand,
+        bool includeToolsOnHand, IList<Guid> foodIds, IList<Guid> toolIds,
         CancellationToken ct = default)
     {
         // Start with user-provided food and tool IDs
@@ -783,7 +939,9 @@ public class RecipeService(
                 .Select(f => f.Id)
                 .ToListAsync(ct);
             foreach (var foodId in onHandFoods)
+            {
                 selectedFoodIds.Add(foodId);
+            }
         }
 
         // If includeToolsOnHand, add tools marked as "on hand" in this group
@@ -794,7 +952,9 @@ public class RecipeService(
                 .Select(t => t.Id)
                 .ToListAsync(ct);
             foreach (var toolId in onHandTools)
+            {
                 selectedToolIds.Add(toolId);
+            }
         }
 
         // Fetch all recipes in the household with their ingredients and tools
@@ -826,32 +986,38 @@ public class RecipeService(
 
             // Count missing foods (foods in recipe but not in selected set)
             var missingFoods = recipeFoodIds.Where(fid => !selectedFoodIds.Contains(fid)).ToList();
-            int missingFoodsCount = missingFoods.Count;
+            var missingFoodsCount = missingFoods.Count;
 
             // Count missing tools (tools in recipe but not in selected set)
             var missingTools = recipeToolIds.Where(tid => !selectedToolIds.Contains(tid)).ToList();
-            int missingToolsCount = missingTools.Count;
+            var missingToolsCount = missingTools.Count;
 
             // Filter by thresholds
             if (missingFoodsCount > maxMissingFoods || missingToolsCount > maxMissingTools)
+            {
                 continue;
+            }
 
             // If user provided foods, filter to recipes that have at least 1 user-provided food
             if (foodIds.Count > 0)
             {
                 var hasUserFood = recipeFoodIds.Any(fid => foodIds.Contains(fid));
                 if (!hasUserFood)
+                {
                     continue;
+                }
             }
 
             // Filter by queryFilter (search in recipe name or description)
             if (!string.IsNullOrWhiteSpace(queryFilter))
             {
                 var q = queryFilter.ToLowerInvariant();
-                bool matchesName = recipe.Name.ToLowerInvariant().Contains(q);
-                bool matchesDesc = recipe.Description?.ToLowerInvariant().Contains(q) ?? false;
+                var matchesName = recipe.Name.ToLowerInvariant().Contains(q);
+                var matchesDesc = recipe.Description?.ToLowerInvariant().Contains(q) ?? false;
                 if (!matchesName && !matchesDesc)
+                {
                     continue;
+                }
             }
 
             // Fetch detailed food and tool info for response
@@ -888,7 +1054,7 @@ public class RecipeService(
         suggestions = suggestions
             .OrderBy(s => s.MissingTools.Count)
             .ThenBy(s => s.MissingFoods.Count)
-            .ThenByDescending(s => 
+            .ThenByDescending(s =>
             {
                 var recipeFoodIds = recipes.First(r => r.Id == s.Recipe.Id)
                     .RecipeIngredients
@@ -908,82 +1074,101 @@ public class RecipeService(
         var candidate = slug;
         var counter = 1;
         while (await db.Recipes.IgnoreQueryFilters().AnyAsync(r => r.Slug == candidate, ct))
+        {
             candidate = $"{slug}-{counter++}";
+        }
+
         return candidate;
     }
 
-    private static RecipeSummaryResponse MapToSummary(Recipe r) => new()
+    private static RecipeSummaryResponse MapToSummary(Recipe r)
     {
-        Id = r.Id,
-        Name = r.Name,
-        Slug = r.Slug,
-        Description = r.Description,
-        Image = r.Image,
-        OrgUrl = r.OrgUrl,
-        Rating = r.Rating,
-        GroupId = r.GroupId,
-        HouseholdId = r.HouseholdId,
-        CreatedAt = r.CreatedAt,
-        UpdateAt = r.UpdateAt,
-        Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
-        Categories = r.Categories.Select(c => new OrganizerSimpleResponse { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
-    };
+        return new RecipeSummaryResponse
+        {
+            Id = r.Id,
+            Name = r.Name,
+            Slug = r.Slug,
+            Description = r.Description,
+            Image = r.Image,
+            OrgUrl = r.OrgUrl,
+            Rating = r.Rating,
+            GroupId = r.GroupId,
+            HouseholdId = r.HouseholdId,
+            CreatedAt = r.CreatedAt,
+            UpdateAt = r.UpdateAt,
+            Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
+            Categories = r.Categories.Select(c => new OrganizerSimpleResponse
+                { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList()
+        };
+    }
 
-    private static RecipeDetailResponse MapToDetail(Recipe r) => new()
+    private static RecipeDetailResponse MapToDetail(Recipe r)
     {
-        Id = r.Id,
-        Name = r.Name,
-        Slug = r.Slug,
-        Description = r.Description,
-        RecipeYield = r.RecipeYield,
-        TotalTime = r.TotalTime,
-        PrepTime = r.PrepTime,
-        CookTime = r.CookTime,
-        PerformTime = r.PerformTime,
-        Rating = r.Rating,
-        DisableAmount = r.DisableAmount,
-        Image = r.Image,
-        OrgUrl = r.OrgUrl,
-        GroupId = r.GroupId,
-        HouseholdId = r.HouseholdId,
-        CreatedAt = r.CreatedAt,
-        UpdateAt = r.UpdateAt,
-        LastMade = r.LastMade,
-        Nutrition = r.Nutrition is null ? null : new Mealie.Application.Dtos.Recipes.NutritionDto
+        return new RecipeDetailResponse
         {
-            Calories = r.Nutrition.Calories,
-            FatContent = r.Nutrition.FatContent,
-            ProteinContent = r.Nutrition.ProteinContent,
-            CarbohydrateContent = r.Nutrition.CarbohydrateContent,
-            FiberContent = r.Nutrition.FiberContent,
-            SodiumContent = r.Nutrition.SodiumContent,
-            SugarContent = r.Nutrition.SugarContent,
-        },
-        Settings = new RecipeSettingsDto
-        {
-            Public = r.Settings?.Public ?? false,
-            ShowNutrition = r.Settings?.ShowNutrition ?? false,
-            ShowAssets = r.Settings?.ShowAssets ?? false,
-            LandscapeView = r.Settings?.LandscapeView ?? false,
-            DisableComments = r.Settings?.DisableComments ?? false,
-            DisableAmount = r.Settings?.DisableAmount ?? false,
-            Locked = r.Settings?.Locked ?? false,
-        },
-        RecipeIngredients = r.RecipeIngredients.Select(i => new RecipeIngredientDto
-        {
-            Id = i.Id, Position = i.Position, Title = i.Title, Note = i.Note,
-            Quantity = i.Quantity, OriginalText = i.OriginalText, IsFood = i.IsFood, DisableAmount = i.DisableAmount,
-            Unit = i.Unit is null ? null : new RecipeIngredientUnitDto { Id = i.Unit.Id, Name = i.Unit.Name, Abbreviation = i.Unit.Abbreviation },
-            Food = i.Food is null ? null : new RecipeIngredientFoodDto { Id = i.Food.Id, Name = i.Food.Name },
-        }).ToList(),
-        RecipeInstructions = r.RecipeInstructions.Select(i => new RecipeInstructionDto
-        {
-            Id = i.Id, Position = i.Position, Text = i.Text, Title = i.Title, Summary = i.Summary,
-        }).ToList(),
-        Notes = r.Notes.Select(n => new RecipeNoteDto { Id = n.Id, Title = n.Title, Text = n.Text }).ToList(),
-        Assets = r.Assets.Select(a => new RecipeAssetDto { Id = a.Id, Name = a.Name, Icon = a.Icon, FileName = $"{a.Name}.{a.Extension}" }).ToList(),
-        Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
-        Categories = r.Categories.Select(c => new OrganizerSimpleResponse { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
-        Tools = r.Tools.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
-    };
+            Id = r.Id,
+            Name = r.Name,
+            Slug = r.Slug,
+            Description = r.Description,
+            RecipeYield = r.RecipeYield,
+            TotalTime = r.TotalTime,
+            PrepTime = r.PrepTime,
+            CookTime = r.CookTime,
+            PerformTime = r.PerformTime,
+            Rating = r.Rating,
+            DisableAmount = r.DisableAmount,
+            Image = r.Image,
+            OrgUrl = r.OrgUrl,
+            GroupId = r.GroupId,
+            HouseholdId = r.HouseholdId,
+            CreatedAt = r.CreatedAt,
+            UpdateAt = r.UpdateAt,
+            LastMade = r.LastMade,
+            Nutrition = r.Nutrition is null
+                ? null
+                : new NutritionDto
+                {
+                    Calories = r.Nutrition.Calories,
+                    FatContent = r.Nutrition.FatContent,
+                    ProteinContent = r.Nutrition.ProteinContent,
+                    CarbohydrateContent = r.Nutrition.CarbohydrateContent,
+                    FiberContent = r.Nutrition.FiberContent,
+                    SodiumContent = r.Nutrition.SodiumContent,
+                    SugarContent = r.Nutrition.SugarContent
+                },
+            Settings = new RecipeSettingsDto
+            {
+                Public = r.Settings?.Public ?? false,
+                ShowNutrition = r.Settings?.ShowNutrition ?? false,
+                ShowAssets = r.Settings?.ShowAssets ?? false,
+                LandscapeView = r.Settings?.LandscapeView ?? false,
+                DisableComments = r.Settings?.DisableComments ?? false,
+                DisableAmount = r.Settings?.DisableAmount ?? false,
+                Locked = r.Settings?.Locked ?? false
+            },
+            RecipeIngredients = r.RecipeIngredients.Select(i => new RecipeIngredientDto
+            {
+                Id = i.Id, Position = i.Position, Title = i.Title, Note = i.Note,
+                Quantity = i.Quantity, OriginalText = i.OriginalText, IsFood = i.IsFood,
+                DisableAmount = i.DisableAmount,
+                Unit = i.Unit is null
+                    ? null
+                    : new RecipeIngredientUnitDto
+                        { Id = i.Unit.Id, Name = i.Unit.Name, Abbreviation = i.Unit.Abbreviation },
+                Food = i.Food is null ? null : new RecipeIngredientFoodDto { Id = i.Food.Id, Name = i.Food.Name }
+            }).ToList(),
+            RecipeInstructions = r.RecipeInstructions.Select(i => new RecipeInstructionDto
+            {
+                Id = i.Id, Position = i.Position, Text = i.Text, Title = i.Title, Summary = i.Summary
+            }).ToList(),
+            Notes = r.Notes.Select(n => new RecipeNoteDto { Id = n.Id, Title = n.Title, Text = n.Text }).ToList(),
+            Assets = r.Assets.Select(a => new RecipeAssetDto
+                { Id = a.Id, Name = a.Name, Icon = a.Icon, FileName = $"{a.Name}.{a.Extension}" }).ToList(),
+            Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
+            Categories = r.Categories.Select(c => new OrganizerSimpleResponse
+                { Id = c.Id, Name = c.Name, Slug = c.Slug }).ToList(),
+            Tools = r.Tools.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug })
+                .ToList()
+        };
+    }
 }

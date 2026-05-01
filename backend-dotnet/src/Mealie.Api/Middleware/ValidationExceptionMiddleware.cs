@@ -1,5 +1,5 @@
-using FluentValidation;
 using System.Text.Json;
+using FluentValidation;
 
 namespace Mealie.Api.Middleware;
 

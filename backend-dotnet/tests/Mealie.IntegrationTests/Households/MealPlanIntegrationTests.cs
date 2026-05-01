@@ -1,24 +1,23 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Mealie.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Xunit;
+using Mealie.Api.Commands;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Mealie.IntegrationTests.Households;
 
 /// <summary>
-/// Isolated factory that uses a per-class in-memory SQLite database.
+///     Isolated factory that uses a per-class in-memory SQLite database.
 /// </summary>
 public class MealPlanTestFactory : WebApplicationFactory<Program>
 {
-    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"mealie-test-{Guid.NewGuid():N}.db");
     private readonly string _dataDir = Path.Combine(Path.GetTempPath(), $"mealie-test-{Guid.NewGuid():N}");
+    private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"mealie-test-{Guid.NewGuid():N}.db");
 
-    protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         // Program.cs reads these directly from Environment.GetEnvironmentVariable
         Environment.SetEnvironmentVariable("DATABASE_URL", $"Data Source={_dbPath}");
@@ -33,24 +32,34 @@ public class MealPlanTestFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
         if (disposing)
         {
-            if (File.Exists(_dbPath)) File.Delete(_dbPath);
-            if (Directory.Exists(_dataDir)) Directory.Delete(_dataDir, recursive: true);
+            if (File.Exists(_dbPath))
+            {
+                File.Delete(_dbPath);
+            }
+
+            if (Directory.Exists(_dataDir))
+            {
+                Directory.Delete(_dataDir, true);
+            }
         }
+
         foreach (var key in new[] { "DATABASE_URL", "DB_ENGINE", "SECRET", "ALLOW_SIGNUP", "DATA_DIR" })
+        {
             Environment.SetEnvironmentVariable(key, null);
+        }
     }
 }
 
 public class MealPlanIntegrationTests(MealPlanTestFactory factory)
     : IClassFixture<MealPlanTestFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
-
     private static readonly JsonSerializerOptions _json = new()
     {
         PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+
+    private readonly HttpClient _client = factory.CreateClient();
 
     // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -58,8 +67,8 @@ public class MealPlanIntegrationTests(MealPlanTestFactory factory)
     {
         var form = new FormUrlEncodedContent(new[]
         {
-            new KeyValuePair<string, string>("username", Mealie.Api.Commands.SeedCommand.DefaultEmail),
-            new KeyValuePair<string, string>("password", Mealie.Api.Commands.SeedCommand.DefaultPassword),
+            new KeyValuePair<string, string>("username", SeedCommand.DefaultEmail),
+            new KeyValuePair<string, string>("password", SeedCommand.DefaultPassword)
         });
         var response = await _client.PostAsync("/api/auth/token", form);
         Assert.True(response.IsSuccessStatusCode,
@@ -74,7 +83,7 @@ public class MealPlanIntegrationTests(MealPlanTestFactory factory)
     {
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            new AuthenticationHeaderValue("Bearer", token);
         return client;
     }
 
@@ -144,6 +153,9 @@ public class MealPlanIntegrationTests(MealPlanTestFactory factory)
 
     // ── DTOs ───────────────────────────────────────────────────────────────────
 
-    private record TokenResponse([property: JsonPropertyName("access_token")] string AccessToken);
+    private record TokenResponse(
+        [property: JsonPropertyName("access_token")]
+        string AccessToken);
+
     private record MealPlanEntry([property: JsonPropertyName("id")] string Id);
 }

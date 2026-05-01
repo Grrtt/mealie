@@ -8,7 +8,8 @@ namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
 [Route("api/households/mealplans")]
-public class MealPlansController(IMealPlanService mealPlanService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class MealPlansController(IMealPlanService mealPlanService, ITenantContext tenantContext)
+    : MealieControllerBase(tenantContext)
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<MealPlanResponse>>> GetMealPlans(
@@ -23,7 +24,7 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
             PerPage = items.Count,
             Total = items.Count,
             TotalPages = 1,
-            Items = [.. items],
+            Items = [.. items]
         });
     }
 
@@ -31,34 +32,47 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
     public async Task<ActionResult<MealPlanResponse>> GetMealPlan(Guid id, CancellationToken ct)
     {
         var plan = await mealPlanService.GetByIdAsync(CurrentHouseholdId, id, ct);
-        if (plan is null) return NotFoundOrForbidden();
+        if (plan is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(plan);
     }
 
     [HttpPost("random")]
-    public async Task<ActionResult<MealPlanResponse>> CreateRandomMealPlan([FromBody] CreateRandomMealPlanRequest request, CancellationToken ct)
+    public async Task<ActionResult<MealPlanResponse>> CreateRandomMealPlan(
+        [FromBody] CreateRandomMealPlanRequest request, CancellationToken ct)
     {
-        var plan = await mealPlanService.CreateRandomAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
-        if (plan is null) return BadRequest("No recipes available to pick from.");
+        var plan = await mealPlanService.CreateRandomAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request,
+            ct);
+        if (plan is null)
+        {
+            return BadRequest("No recipes available to pick from.");
+        }
+
         return Ok(plan);
     }
 
     [HttpPost("fill-day")]
-    public async Task<ActionResult<IList<MealPlanResponse>>> FillDay([FromBody] FillDayRequest request, CancellationToken ct)
+    public async Task<ActionResult<IList<MealPlanResponse>>> FillDay([FromBody] FillDayRequest request,
+        CancellationToken ct)
     {
         var plans = await mealPlanService.FillDayAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
         return Ok(plans);
     }
 
     [HttpPost("fill-week")]
-    public async Task<ActionResult<IList<MealPlanResponse>>> FillWeek([FromBody] FillWeekRequest request, CancellationToken ct)
+    public async Task<ActionResult<IList<MealPlanResponse>>> FillWeek([FromBody] FillWeekRequest request,
+        CancellationToken ct)
     {
         var plans = await mealPlanService.FillWeekAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
         return Ok(plans);
     }
 
     [HttpPost]
-    public async Task<ActionResult<MealPlanResponse>> CreateMealPlan([FromBody] CreateMealPlanRequest request, CancellationToken ct)
+    public async Task<ActionResult<MealPlanResponse>> CreateMealPlan([FromBody] CreateMealPlanRequest request,
+        CancellationToken ct)
     {
         var plan = await mealPlanService.CreateAsync(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request, ct);
         return CreatedAtAction(nameof(GetMealPlan), new { id = plan.Id }, plan);
@@ -66,10 +80,15 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
 
     [HttpPut("{id:guid}")]
     [HttpPatch("{id:guid}")]
-    public async Task<ActionResult<MealPlanResponse>> UpdateMealPlan(Guid id, [FromBody] UpdateMealPlanRequest request, CancellationToken ct)
+    public async Task<ActionResult<MealPlanResponse>> UpdateMealPlan(Guid id, [FromBody] UpdateMealPlanRequest request,
+        CancellationToken ct)
     {
         var plan = await mealPlanService.UpdateAsync(CurrentHouseholdId, id, request, ct);
-        if (plan is null) return NotFoundOrForbidden();
+        if (plan is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(plan);
     }
 
@@ -77,7 +96,11 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
     public async Task<IActionResult> DeleteMealPlan(Guid id, CancellationToken ct)
     {
         var deleted = await mealPlanService.DeleteAsync(CurrentHouseholdId, id, ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 }

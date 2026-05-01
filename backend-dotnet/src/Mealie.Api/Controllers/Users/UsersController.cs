@@ -25,18 +25,24 @@ public class UsersController(
     [HttpGet("registration")]
     [AllowAnonymous]
     public IActionResult GetRegistrationInfo()
-        => Ok(new { allow_registration = settings.Value.AllowSignup });
+    {
+        return Ok(new { allow_registration = settings.Value.AllowSignup });
+    }
 
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!registrationService.AllowSignup)
+        {
             return BadRequest(new { detail = "Registration is disabled" });
+        }
 
         var success = await registrationService.RegisterAsync(request);
         if (!success)
+        {
             return BadRequest(new { detail = "Registration failed — username or email already taken" });
+        }
 
         return Ok(new { detail = "Registration successful" });
     }
@@ -55,7 +61,10 @@ public class UsersController(
     {
         var success = await passwordResetService.ResetPasswordAsync(request.Token, request.NewPassword);
         if (!success)
+        {
             return BadRequest(new { detail = "Invalid or expired reset token" });
+        }
+
         return Ok(new { detail = "Password reset successful" });
     }
 
@@ -67,7 +76,11 @@ public class UsersController(
     {
         var user = await userService.GetProfileAsync(tenantContext.UserId);
         // Return 401 so the frontend re-authenticates rather than looping on 404
-        if (user is null) return Unauthorized(new { detail = "User not found — please log in again" });
+        if (user is null)
+        {
+            return Unauthorized(new { detail = "User not found — please log in again" });
+        }
+
         return Ok(user);
     }
 
@@ -76,7 +89,11 @@ public class UsersController(
     public async Task<ActionResult<UserResponse>> UpdateSelf([FromBody] UpdateUserRequest request)
     {
         var user = await userService.UpdateProfileAsync(tenantContext.UserId, request);
-        if (user is null) return NotFound();
+        if (user is null)
+        {
+            return NotFound();
+        }
+
         return Ok(user);
     }
 
@@ -84,8 +101,13 @@ public class UsersController(
     [Authorize]
     public async Task<IActionResult> ChangePasswordSelf([FromBody] ChangePasswordRequest request)
     {
-        var success = await userService.ChangePasswordAsync(tenantContext.UserId, request.CurrentPassword, request.NewPassword);
-        if (!success) return BadRequest(new { detail = "Current password is incorrect" });
+        var success =
+            await userService.ChangePasswordAsync(tenantContext.UserId, request.CurrentPassword, request.NewPassword);
+        if (!success)
+        {
+            return BadRequest(new { detail = "Current password is incorrect" });
+        }
+
         return Ok(new { detail = "Password updated successfully" });
     }
 
@@ -94,8 +116,13 @@ public class UsersController(
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var success = await userService.ChangePasswordAsync(tenantContext.UserId, request.CurrentPassword, request.NewPassword);
-        if (!success) return BadRequest(new { detail = "Current password is incorrect" });
+        var success =
+            await userService.ChangePasswordAsync(tenantContext.UserId, request.CurrentPassword, request.NewPassword);
+        if (!success)
+        {
+            return BadRequest(new { detail = "Current password is incorrect" });
+        }
+
         return Ok(new { detail = "Password updated successfully" });
     }
 
@@ -128,7 +155,11 @@ public class UsersController(
     public async Task<IActionResult> DeleteApiToken(int tokenId)
     {
         var success = await userService.DeleteApiKeyAsync(tenantContext.UserId, tokenId);
-        if (!success) return NotFound();
+        if (!success)
+        {
+            return NotFound();
+        }
+
         return Ok(new { detail = "API token deleted" });
     }
 
@@ -137,7 +168,11 @@ public class UsersController(
     public async Task<IActionResult> DeleteApiTokenAlias(int tokenId)
     {
         var success = await userService.DeleteApiKeyAsync(tenantContext.UserId, tokenId);
-        if (!success) return NotFound();
+        if (!success)
+        {
+            return NotFound();
+        }
+
         return Ok(new { detail = "API token deleted" });
     }
 
@@ -148,7 +183,11 @@ public class UsersController(
     public async Task<ActionResult<UserResponse>> GetUser(Guid userId)
     {
         var user = await userService.GetProfileAsync(userId);
-        if (user is null) return NotFound();
+        if (user is null)
+        {
+            return NotFound();
+        }
+
         return Ok(user);
     }
 
@@ -157,7 +196,11 @@ public class UsersController(
     public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request)
     {
         var user = await userService.UpdateProfileAsync(userId, request);
-        if (user is null) return NotFound();
+        if (user is null)
+        {
+            return NotFound();
+        }
+
         return Ok(user);
     }
 
@@ -214,17 +257,23 @@ public class UsersController(
     [HttpPost("self/image")]
     [Authorize]
     public Task<IActionResult> UploadSelfImage(IFormFile image)
-        => SaveProfileImageAsync(tenantContext.UserId, image);
+    {
+        return SaveProfileImageAsync(tenantContext.UserId, image);
+    }
 
     [HttpPost("{userId:guid}/image")]
     [Authorize]
     public Task<IActionResult> UploadUserImage(Guid userId, IFormFile image)
-        => SaveProfileImageAsync(userId, image);
+    {
+        return SaveProfileImageAsync(userId, image);
+    }
 
     private async Task<IActionResult> SaveProfileImageAsync(Guid userId, IFormFile image)
     {
         if (image is null || image.Length == 0)
+        {
             return BadRequest(new { detail = "No image provided" });
+        }
 
         var dir = Path.Combine(settings.Value.DataDir, "users", userId.ToString());
         Directory.CreateDirectory(dir);
@@ -233,12 +282,15 @@ public class UsersController(
         using var stream = image.OpenReadStream();
         using var original = SKBitmap.Decode(stream);
         if (original is null)
+        {
             return BadRequest(new { detail = "Invalid image format" });
+        }
 
         // Resize to 200×200 for the profile thumbnail
         var size = Math.Min(original.Width, original.Height);
         var resized = original.Width != 200 || original.Height != 200
-            ? original.Resize(new SKImageInfo(200, 200), new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear))
+            ? original.Resize(new SKImageInfo(200, 200),
+                new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear))
             : original;
 
         using var skImage = SKImage.FromBitmap(resized);
@@ -247,7 +299,9 @@ public class UsersController(
         data.SaveTo(output);
 
         if (!ReferenceEquals(resized, original))
+        {
             resized?.Dispose();
+        }
 
         return Ok(new { detail = "Profile image updated" });
     }

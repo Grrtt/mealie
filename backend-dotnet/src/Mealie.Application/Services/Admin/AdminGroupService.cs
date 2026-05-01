@@ -1,8 +1,9 @@
+using System.Text.RegularExpressions;
 using Mealie.Application.Dtos.Admin;
 using Mealie.Domain.Entities.Core;
-using Mealie.Domain.Entities.Settings;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Group = Mealie.Domain.Entities.Core.Group;
 
 namespace Mealie.Application.Services.Admin;
 
@@ -27,7 +28,7 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
             per_page = -1,
             total = items.Count,
             total_pages = 1,
-            items,
+            items
         };
     }
 
@@ -41,7 +42,8 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         return g is null ? null : MapGroupToResponse(g);
     }
 
-    public async Task<AdminGroupResponse?> CreateGroupAsync(CreateAdminGroupRequest request, CancellationToken ct = default)
+    public async Task<AdminGroupResponse?> CreateGroupAsync(CreateAdminGroupRequest request,
+        CancellationToken ct = default)
     {
         var slug = await GenerateUniqueGroupSlugAsync(request.Name, ct);
         var group = new Group
@@ -50,7 +52,7 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
             Name = request.Name,
             Slug = slug,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         db.Groups.Add(group);
@@ -58,14 +60,18 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         return MapGroupToResponse(group);
     }
 
-    public async Task<AdminGroupResponse?> UpdateGroupAsync(Guid groupId, UpdateAdminGroupRequest request, CancellationToken ct = default)
+    public async Task<AdminGroupResponse?> UpdateGroupAsync(Guid groupId, UpdateAdminGroupRequest request,
+        CancellationToken ct = default)
     {
         var group = await db.Groups.IgnoreQueryFilters()
             .Include(g => g.Users)
             .Include(g => g.Households)
             .Include(g => g.Preferences)
             .FirstOrDefaultAsync(g => g.Id == groupId, ct);
-        if (group is null) return null;
+        if (group is null)
+        {
+            return null;
+        }
 
         if (request.Name is not null)
         {
@@ -76,7 +82,10 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         if (request.Preferences is not null && group.Preferences is not null)
         {
             if (request.Preferences.PrivateGroup.HasValue)
+            {
                 group.Preferences.PrivateGroup = request.Preferences.PrivateGroup.Value;
+            }
+
             group.Preferences.UpdateAt = DateTime.UtcNow;
         }
 
@@ -88,7 +97,10 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
     public async Task<bool> DeleteGroupAsync(Guid groupId, CancellationToken ct = default)
     {
         var group = await db.Groups.IgnoreQueryFilters().FirstOrDefaultAsync(g => g.Id == groupId, ct);
-        if (group is null) return false;
+        if (group is null)
+        {
+            return false;
+        }
 
         db.Groups.Remove(group);
         await db.SaveChangesAsync(ct);
@@ -113,7 +125,7 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
             per_page = -1,
             total = items.Count,
             total_pages = 1,
-            items,
+            items
         };
     }
 
@@ -126,7 +138,8 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         return h is null ? null : MapHouseholdToResponse(h);
     }
 
-    public async Task<AdminHouseholdResponse?> CreateHouseholdAsync(CreateAdminHouseholdRequest request, CancellationToken ct = default)
+    public async Task<AdminHouseholdResponse?> CreateHouseholdAsync(CreateAdminHouseholdRequest request,
+        CancellationToken ct = default)
     {
         var slug = await GenerateUniqueHouseholdSlugAsync(request.Name, ct);
         var household = new Household
@@ -136,7 +149,7 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
             Slug = slug,
             GroupId = request.GroupId,
             CreatedAt = DateTime.UtcNow,
-            UpdateAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
         };
 
         db.Households.Add(household);
@@ -144,13 +157,17 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         return MapHouseholdToResponse(household);
     }
 
-    public async Task<AdminHouseholdResponse?> UpdateHouseholdAsync(Guid householdId, UpdateAdminHouseholdRequest request, CancellationToken ct = default)
+    public async Task<AdminHouseholdResponse?> UpdateHouseholdAsync(Guid householdId,
+        UpdateAdminHouseholdRequest request, CancellationToken ct = default)
     {
         var h = await db.Households.IgnoreQueryFilters()
             .Include(h => h.Users)
             .Include(h => h.Preferences)
             .FirstOrDefaultAsync(h => h.Id == householdId, ct);
-        if (h is null) return null;
+        if (h is null)
+        {
+            return null;
+        }
 
         if (request.Name is not null)
         {
@@ -161,19 +178,41 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         if (request.Preferences is not null && h.Preferences is not null)
         {
             if (request.Preferences.PrivateHousehold.HasValue)
+            {
                 h.Preferences.PrivateHousehold = request.Preferences.PrivateHousehold.Value;
+            }
+
             if (request.Preferences.RecipePublic.HasValue)
+            {
                 h.Preferences.RecipePublic = request.Preferences.RecipePublic.Value.ToString().ToLower();
+            }
+
             if (request.Preferences.RecipeShowNutrition.HasValue)
+            {
                 h.Preferences.RecipeShowNutrition = request.Preferences.RecipeShowNutrition.Value.ToString().ToLower();
+            }
+
             if (request.Preferences.RecipeShowAssets.HasValue)
+            {
                 h.Preferences.RecipeShowAssets = request.Preferences.RecipeShowAssets.Value.ToString().ToLower();
+            }
+
             if (request.Preferences.RecipeLandscapeView.HasValue)
+            {
                 h.Preferences.RecipeLandscapeView = request.Preferences.RecipeLandscapeView.Value.ToString().ToLower();
+            }
+
             if (request.Preferences.RecipeDisableComments.HasValue)
-                h.Preferences.RecipeDisableComments = request.Preferences.RecipeDisableComments.Value.ToString().ToLower();
+            {
+                h.Preferences.RecipeDisableComments =
+                    request.Preferences.RecipeDisableComments.Value.ToString().ToLower();
+            }
+
             if (request.Preferences.RecipeDisableAmount.HasValue)
+            {
                 h.Preferences.RecipeDisableAmount = request.Preferences.RecipeDisableAmount.Value.ToString().ToLower();
+            }
+
             h.Preferences.UpdateAt = DateTime.UtcNow;
         }
 
@@ -185,7 +224,10 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
     public async Task<bool> DeleteHouseholdAsync(Guid householdId, CancellationToken ct = default)
     {
         var h = await db.Households.IgnoreQueryFilters().FirstOrDefaultAsync(h => h.Id == householdId, ct);
-        if (h is null) return false;
+        if (h is null)
+        {
+            return false;
+        }
 
         db.Households.Remove(h);
         await db.SaveChangesAsync(ct);
@@ -193,7 +235,10 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
     }
 
     private static string GenerateSlug(string name)
-        => System.Text.RegularExpressions.Regex.Replace(name.ToLowerInvariant().Trim(), @"[^a-z0-9]+", "-").Trim('-');
+    {
+        return Regex.Replace(name.ToLowerInvariant().Trim(), @"[^a-z0-9]+", "-")
+            .Trim('-');
+    }
 
     private async Task<string> GenerateUniqueGroupSlugAsync(string name, CancellationToken ct)
     {
@@ -201,7 +246,10 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         var slug = baseSlug;
         var i = 1;
         while (await db.Groups.IgnoreQueryFilters().AnyAsync(g => g.Slug == slug, ct))
+        {
             slug = $"{baseSlug}-{i++}";
+        }
+
         return slug;
     }
 
@@ -211,53 +259,66 @@ public class AdminGroupService(ApplicationDbContext db) : IAdminGroupService
         var slug = baseSlug;
         var i = 1;
         while (await db.Households.IgnoreQueryFilters().AnyAsync(h => h.Slug == slug, ct))
+        {
             slug = $"{baseSlug}-{i++}";
+        }
+
         return slug;
     }
 
-    private static AdminGroupResponse MapGroupToResponse(Group g) => new()
+    private static AdminGroupResponse MapGroupToResponse(Group g)
     {
-        Id = g.Id,
-        Name = g.Name,
-        Slug = g.Slug,
-        CreatedAt = g.CreatedAt,
-        UpdateAt = g.UpdateAt,
-        UserCount = g.Users.Count,
-        HouseholdCount = g.Households.Count,
-        Users = g.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
-        Households = g.Households.Select(h => (object)new { h.Id, h.Name, h.Slug }).ToList(),
-        Preferences = g.Preferences is null ? null : new GroupPreferencesDto
+        return new AdminGroupResponse
         {
-            Id = g.Preferences.Id,
-            GroupId = g.Preferences.GroupId,
-            PrivateGroup = g.Preferences.PrivateGroup,
-            ShowAnnouncements = false,
-        },
-    };
+            Id = g.Id,
+            Name = g.Name,
+            Slug = g.Slug,
+            CreatedAt = g.CreatedAt,
+            UpdateAt = g.UpdateAt,
+            UserCount = g.Users.Count,
+            HouseholdCount = g.Households.Count,
+            Users = g.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
+            Households = g.Households.Select(h => (object)new { h.Id, h.Name, h.Slug }).ToList(),
+            Preferences = g.Preferences is null
+                ? null
+                : new GroupPreferencesDto
+                {
+                    Id = g.Preferences.Id,
+                    GroupId = g.Preferences.GroupId,
+                    PrivateGroup = g.Preferences.PrivateGroup,
+                    ShowAnnouncements = false
+                }
+        };
+    }
 
-    private static AdminHouseholdResponse MapHouseholdToResponse(Household h) => new()
+    private static AdminHouseholdResponse MapHouseholdToResponse(Household h)
     {
-        Id = h.Id,
-        Name = h.Name,
-        Slug = h.Slug,
-        GroupId = h.GroupId,
-        CreatedAt = h.CreatedAt,
-        UpdateAt = h.UpdateAt,
-        UserCount = h.Users.Count,
-        Users = h.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
-        Webhooks = [],
-        Preferences = h.Preferences is null ? null : new HouseholdPreferencesDto
+        return new AdminHouseholdResponse
         {
-            Id = h.Preferences.Id,
-            HouseholdId = h.Preferences.HouseholdId,
-            PrivateHousehold = h.Preferences.PrivateHousehold,
-            ShowAnnouncements = false,
-            RecipePublic = bool.TryParse(h.Preferences.RecipePublic, out var rp) && rp,
-            RecipeShowNutrition = bool.TryParse(h.Preferences.RecipeShowNutrition, out var rsn) && rsn,
-            RecipeShowAssets = bool.TryParse(h.Preferences.RecipeShowAssets, out var rsa) && rsa,
-            RecipeLandscapeView = bool.TryParse(h.Preferences.RecipeLandscapeView, out var rlv) && rlv,
-            RecipeDisableComments = bool.TryParse(h.Preferences.RecipeDisableComments, out var rdc) && rdc,
-            RecipeDisableAmount = bool.TryParse(h.Preferences.RecipeDisableAmount, out var rda) && rda,
-        },
-    };
+            Id = h.Id,
+            Name = h.Name,
+            Slug = h.Slug,
+            GroupId = h.GroupId,
+            CreatedAt = h.CreatedAt,
+            UpdateAt = h.UpdateAt,
+            UserCount = h.Users.Count,
+            Users = h.Users.Select(u => (object)new { u.Id, u.FullName, u.Username, u.Email }).ToList(),
+            Webhooks = [],
+            Preferences = h.Preferences is null
+                ? null
+                : new HouseholdPreferencesDto
+                {
+                    Id = h.Preferences.Id,
+                    HouseholdId = h.Preferences.HouseholdId,
+                    PrivateHousehold = h.Preferences.PrivateHousehold,
+                    ShowAnnouncements = false,
+                    RecipePublic = bool.TryParse(h.Preferences.RecipePublic, out var rp) && rp,
+                    RecipeShowNutrition = bool.TryParse(h.Preferences.RecipeShowNutrition, out var rsn) && rsn,
+                    RecipeShowAssets = bool.TryParse(h.Preferences.RecipeShowAssets, out var rsa) && rsa,
+                    RecipeLandscapeView = bool.TryParse(h.Preferences.RecipeLandscapeView, out var rlv) && rlv,
+                    RecipeDisableComments = bool.TryParse(h.Preferences.RecipeDisableComments, out var rdc) && rdc,
+                    RecipeDisableAmount = bool.TryParse(h.Preferences.RecipeDisableAmount, out var rda) && rda
+                }
+        };
+    }
 }

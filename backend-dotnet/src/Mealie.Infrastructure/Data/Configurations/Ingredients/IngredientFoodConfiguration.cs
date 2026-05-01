@@ -12,20 +12,20 @@ public class IngredientFoodConfiguration : IEntityTypeConfiguration<IngredientFo
         builder.HasKey(f => f.Id);
         builder.HasIndex(f => f.GroupId);
         builder.HasOne(f => f.Group)
-               .WithMany(g => g.Foods)
-               .HasForeignKey(f => f.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Foods)
+            .HasForeignKey(f => f.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(f => f.Unit)
-               .WithMany(u => u.Foods)
-               .HasForeignKey(f => f.UnitId)
-               .OnDelete(DeleteBehavior.SetNull);
+            .WithMany(u => u.Foods)
+            .HasForeignKey(f => f.UnitId)
+            .OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(f => f.Aliases)
-               .WithOne(a => a.Food)
-               .HasForeignKey(a => a.FoodId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithOne(a => a.Food)
+            .HasForeignKey(a => a.FoodId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(f => f.Label)
-               .WithMany(l => l.Foods)
-               .HasForeignKey(f => f.LabelId)
-               .OnDelete(DeleteBehavior.SetNull);
+            .WithMany(l => l.Foods)
+            .HasForeignKey(f => f.LabelId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

@@ -1,4 +1,3 @@
-using Mealie.Infrastructure.Scraper;
 using Mealie.Infrastructure.Scraper.Importers;
 using Microsoft.Extensions.Logging;
 
@@ -9,12 +8,17 @@ public class MigrationImportService(
     IRecipeService recipeService,
     ILogger<MigrationImportService> logger)
 {
-    public async Task<MigrationImportReport> ImportAsync(Guid groupId, Guid householdId, Guid userId, Stream inputStream, CancellationToken ct = default)
+    public async Task<MigrationImportReport> ImportAsync(Guid groupId, Guid householdId, Guid userId,
+        Stream inputStream, CancellationToken ct = default)
     {
         var parser = parsers.FirstOrDefault(p => p.CanParse(inputStream));
         if (parser is null)
         {
-            return new MigrationImportReport { Error = "Unsupported import format. Supported: Mealie JSON, Chowdown, Paprika, Nextcloud Cookbook, Tandoor" };
+            return new MigrationImportReport
+            {
+                Error =
+                    "Unsupported import format. Supported: Mealie JSON, Chowdown, Paprika, Nextcloud Cookbook, Tandoor"
+            };
         }
 
         var report = new MigrationImportReport();

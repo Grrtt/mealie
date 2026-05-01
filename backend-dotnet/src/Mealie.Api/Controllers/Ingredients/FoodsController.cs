@@ -8,18 +8,25 @@ namespace Mealie.Api.Controllers.Ingredients;
 
 [ApiController]
 [Route("api/foods")]
-public class FoodsController(IFoodService foodService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class FoodsController(IFoodService foodService, ITenantContext tenantContext)
+    : MealieControllerBase(tenantContext)
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<FoodResponse>>> GetFoods(
         [FromQuery] PaginationParams pagination, CancellationToken ct)
-        => Ok(await foodService.GetFoodsAsync(CurrentGroupId, pagination, ct));
+    {
+        return Ok(await foodService.GetFoodsAsync(CurrentGroupId, pagination, ct));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<FoodResponse>> GetFood(Guid id, CancellationToken ct)
     {
         var food = await foodService.GetByIdAsync(CurrentGroupId, id, ct);
-        if (food is null) return NotFoundOrForbidden();
+        if (food is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(food);
     }
 
@@ -31,22 +38,34 @@ public class FoodsController(IFoodService foodService, ITenantContext tenantCont
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<FoodResponse>> UpdateFood(Guid id, [FromBody] UpdateFoodRequest request, CancellationToken ct)
+    public async Task<ActionResult<FoodResponse>> UpdateFood(Guid id, [FromBody] UpdateFoodRequest request,
+        CancellationToken ct)
     {
         var food = await foodService.UpdateAsync(CurrentGroupId, id, request, ct);
-        if (food is null) return NotFoundOrForbidden();
+        if (food is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(food);
     }
 
     [HttpPatch("{id:guid}")]
-    public async Task<ActionResult<FoodResponse>> PatchFood(Guid id, [FromBody] UpdateFoodRequest request, CancellationToken ct)
-        => await UpdateFood(id, request, ct);
+    public async Task<ActionResult<FoodResponse>> PatchFood(Guid id, [FromBody] UpdateFoodRequest request,
+        CancellationToken ct)
+    {
+        return await UpdateFood(id, request, ct);
+    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteFood(Guid id, CancellationToken ct)
     {
         var deleted = await foodService.DeleteAsync(CurrentGroupId, id, ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
@@ -54,7 +73,11 @@ public class FoodsController(IFoodService foodService, ITenantContext tenantCont
     public async Task<IActionResult> MergeFoods([FromBody] MergeFoodRequest request, CancellationToken ct)
     {
         var success = await foodService.MergeAsync(CurrentGroupId, request.FromFood, request.ToFood, ct);
-        if (!success) return NotFoundOrForbidden();
+        if (!success)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(new { detail = "Foods merged successfully" });
     }
 }

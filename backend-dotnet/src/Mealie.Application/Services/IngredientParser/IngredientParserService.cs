@@ -6,29 +6,34 @@ using Microsoft.Extensions.Logging;
 namespace Mealie.Application.Services.IngredientParser;
 
 /// <summary>
-/// Singleton service that keeps a Python ingredient-parser-nlp subprocess alive
-/// and communicates with it via newline-delimited JSON on stdin/stdout.
+///     Singleton service that keeps a Python ingredient-parser-nlp subprocess alive
+///     and communicates with it via newline-delimited JSON on stdin/stdout.
 /// </summary>
 public sealed class IngredientParserService(ILogger<IngredientParserService> logger) : IDisposable
 {
-    private Process? _process;
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private bool _available = true;
-
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private sealed class BridgeResult
+    private readonly SemaphoreSlim _lock = new(1, 1);
+    private bool _available = true;
+    private Process? _process;
+
+    public void Dispose()
     {
-        public string? Input { get; set; }
-        public string? Food { get; set; }
-        public double? Quantity { get; set; }
-        public string? Unit { get; set; }
-        public string? Note { get; set; }
-        public string? Error { get; set; }
+        try
+        {
+            _process?.Kill();
+        }
+        catch
+        {
+            /* ignore */
+        }
+
+        _process?.Dispose();
+        _lock.Dispose();
     }
 
     public async Task<IReadOnlyList<ParsedIngredientResult>> ParseBatchAsync(
@@ -36,7 +41,9 @@ public sealed class IngredientParserService(ILogger<IngredientParserService> log
     {
         var list = ingredients as IReadOnlyList<string> ?? ingredients.ToList();
         if (!_available || list.Count == 0)
+        {
             return list.Select(i => new ParsedIngredientResult(i, null, null, null, null)).ToList();
+        }
 
         await _lock.WaitAsync(ct);
         try
@@ -84,7 +91,10 @@ public sealed class IngredientParserService(ILogger<IngredientParserService> log
 
     private void EnsureProcess()
     {
-        if (_process is not null && !_process.HasExited) return;
+        if (_process is not null && !_process.HasExited)
+        {
+            return;
+        }
 
         var scriptPath = Path.Combine(AppContext.BaseDirectory, "scripts", "ingredient_parser_bridge.py");
         if (!File.Exists(scriptPath))
@@ -106,7 +116,7 @@ public sealed class IngredientParserService(ILogger<IngredientParserService> log
                     RedirectStandardOutput = true,
                     RedirectStandardError = false,
                     UseShellExecute = false,
-                    CreateNoWindow = true,
+                    CreateNoWindow = true
                 }
             };
             _process.Start();
@@ -133,10 +143,13 @@ public sealed class IngredientParserService(ILogger<IngredientParserService> log
         }
     }
 
-    public void Dispose()
+    private sealed class BridgeResult
     {
-        try { _process?.Kill(); } catch { /* ignore */ }
-        _process?.Dispose();
-        _lock.Dispose();
+        public string? Input { get; set; }
+        public string? Food { get; set; }
+        public double? Quantity { get; set; }
+        public string? Unit { get; set; }
+        public string? Note { get; set; }
+        public string? Error { get; set; }
     }
 }

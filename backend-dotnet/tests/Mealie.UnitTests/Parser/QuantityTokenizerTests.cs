@@ -18,9 +18,14 @@ public class QuantityTokenizerTests
     {
         var (qty, remainder) = QuantityTokenizer.Tokenize(input);
         if (expectedQty is null)
+        {
             Assert.Null(qty);
+        }
         else
+        {
             Assert.Equal((decimal)expectedQty, qty!.Value, 5);
+        }
+
         Assert.Equal(expectedRemainder, remainder);
     }
 }

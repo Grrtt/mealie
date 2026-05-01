@@ -1,11 +1,12 @@
+using Mealie.Infrastructure.Scheduler.Jobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Mealie.Infrastructure.Scheduler.Jobs;
 
 namespace Mealie.Infrastructure.Scheduler;
 
-public class SchedulerHostedService(IServiceProvider services, ILogger<SchedulerHostedService> logger) : BackgroundService
+public class SchedulerHostedService(IServiceProvider services, ILogger<SchedulerHostedService> logger)
+    : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

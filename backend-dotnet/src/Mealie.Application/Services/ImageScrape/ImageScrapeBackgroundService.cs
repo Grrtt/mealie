@@ -11,8 +11,8 @@ using Microsoft.Extensions.Options;
 namespace Mealie.Application.Services.ImageScrape;
 
 /// <summary>
-/// Long-running background service that downloads og:image (or first img) for recipes
-/// that were imported without images. Rate-limited to one scrape per second.
+///     Long-running background service that downloads og:image (or first img) for recipes
+///     that were imported without images. Rate-limited to one scrape per second.
 /// </summary>
 public class ImageScrapeBackgroundService(
     ImageScrapeQueue queue,
@@ -41,7 +41,8 @@ public class ImageScrapeBackgroundService(
     {
         try
         {
-            logger.LogInformation("Processing image scrape job for recipe {RecipeId} (DirectImageUrl={DirectImageUrl}, OrgUrl={OrgUrl})",
+            logger.LogInformation(
+                "Processing image scrape job for recipe {RecipeId} (DirectImageUrl={DirectImageUrl}, OrgUrl={OrgUrl})",
                 job.RecipeId, job.DirectImageUrl, job.OrgUrl);
             using var http = new HttpClient();
             http.Timeout = TimeSpan.FromSeconds(15);
@@ -50,12 +51,13 @@ public class ImageScrapeBackgroundService(
 
             // If caller already knows the image URL, download it directly.
             // Otherwise, scrape the recipe page to find an og:image.
-            string? imageUrl = job.DirectImageUrl;
+            var imageUrl = job.DirectImageUrl;
             if (imageUrl is null)
             {
                 if (job.OrgUrl is null)
                 {
-                    logger.LogWarning("ImageScrapeJob for recipe {RecipeId} has neither DirectImageUrl nor OrgUrl", job.RecipeId);
+                    logger.LogWarning("ImageScrapeJob for recipe {RecipeId} has neither DirectImageUrl nor OrgUrl",
+                        job.RecipeId);
                     return;
                 }
 
@@ -66,7 +68,8 @@ public class ImageScrapeBackgroundService(
                 }
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "Failed to fetch page for recipe {RecipeId} from {OrgUrl}", job.RecipeId, job.OrgUrl);
+                    logger.LogWarning(ex, "Failed to fetch page for recipe {RecipeId} from {OrgUrl}", job.RecipeId,
+                        job.OrgUrl);
                     return;
                 }
 
@@ -86,7 +89,8 @@ public class ImageScrapeBackgroundService(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to download image {ImageUrl} for recipe {RecipeId}", imageUrl, job.RecipeId);
+                logger.LogWarning(ex, "Failed to download image {ImageUrl} for recipe {RecipeId}", imageUrl,
+                    job.RecipeId);
                 return;
             }
 
@@ -118,8 +122,14 @@ public class ImageScrapeBackgroundService(
         }
         finally
         {
-            try { await Task.Delay(1000, ct); }
-            catch (OperationCanceledException) { /* shutting down */ }
+            try
+            {
+                await Task.Delay(1000, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                /* shutting down */
+            }
         }
     }
 
@@ -135,7 +145,10 @@ public class ImageScrapeBackgroundService(
         if (ogImage is not null)
         {
             var content = ogImage.GetAttributeValue("content", "");
-            if (!string.IsNullOrWhiteSpace(content)) return content;
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                return content;
+            }
         }
 
         // Fall back to first <img src="..."> that starts with http
@@ -146,7 +159,9 @@ public class ImageScrapeBackgroundService(
             {
                 var src = img.GetAttributeValue("src", "");
                 if (src.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
                     return src;
+                }
             }
         }
 

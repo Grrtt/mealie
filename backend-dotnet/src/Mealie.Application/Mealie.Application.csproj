@@ -1,33 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\Mealie.Domain\Mealie.Domain.csproj" />
-    <ProjectReference Include="..\Mealie.Infrastructure\Mealie.Infrastructure.csproj" />
-    <ProjectReference Include="..\Mealie.Shared\Mealie.Shared.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Mealie.Domain\Mealie.Domain.csproj"/>
+        <ProjectReference Include="..\Mealie.Infrastructure\Mealie.Infrastructure.csproj"/>
+        <ProjectReference Include="..\Mealie.Shared\Mealie.Shared.csproj"/>
+    </ItemGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Seed\foods\locales\*.json" />
-    <EmbeddedResource Include="Resources\Seed\units\locales\*.json" />
-  </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Resources\Seed\foods\locales\*.json"/>
+        <EmbeddedResource Include="Resources\Seed\units\locales\*.json"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" />
-    <PackageReference Include="FluentValidation" />
-    <PackageReference Include="HtmlAgilityPack" />
-    <PackageReference Include="Lucene.Net" />
-    <PackageReference Include="Lucene.Net.Analysis.Common" />
-    <PackageReference Include="Lucene.Net.QueryParser" />
-    <PackageReference Include="MediatR" />
-    <PackageReference Include="Riok.Mapperly" />
-    <PackageReference Include="SkiaSharp" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="BCrypt.Net-Next"/>
+        <PackageReference Include="FluentValidation"/>
+        <PackageReference Include="HtmlAgilityPack"/>
+        <PackageReference Include="Lucene.Net"/>
+        <PackageReference Include="Lucene.Net.Analysis.Common"/>
+        <PackageReference Include="Lucene.Net.QueryParser"/>
+        <PackageReference Include="MediatR"/>
+        <PackageReference Include="Riok.Mapperly"/>
+        <PackageReference Include="SkiaSharp"/>
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies"/>
+    </ItemGroup>
 
 </Project>

@@ -25,12 +25,15 @@ public class AdminController(
     // ── About & Statistics ──────────────────────────────────────────────────
 
     [HttpGet("about")]
-    public IActionResult About() => Ok(new
+    public IActionResult About()
     {
-        production = true,
-        version = "2.0.0",
-        apiPort = settings.Value.ApiPort,
-    });
+        return Ok(new
+        {
+            production = true,
+            version = "2.0.0",
+            apiPort = settings.Value.ApiPort
+        });
+    }
 
     [HttpGet("statistics")]
     public async Task<IActionResult> Statistics(CancellationToken ct)
@@ -45,7 +48,7 @@ public class AdminController(
             totalUsers = userCount,
             totalGroups = groupCount,
             totalHouseholds = householdCount,
-            totalRecipes = recipeCount,
+            totalRecipes = recipeCount
         });
     }
 
@@ -56,18 +59,24 @@ public class AdminController(
     }
 
     [HttpGet("about/check")]
-    public IActionResult Check() => Ok(new
+    public IActionResult Check()
     {
-        emailReady = emailService.IsConfigured,
-        ldapReady = settings.Value.LdapEnabled && !string.IsNullOrEmpty(settings.Value.LdapServer),
-        oidcReady = settings.Value.OidcEnabled && !string.IsNullOrEmpty(settings.Value.OidcAuthority),
-        enableOpenai = !string.IsNullOrEmpty(settings.Value.OpenAiApiKey),
-        baseUrlSet = !string.IsNullOrEmpty(settings.Value.BaseUrl),
-        isUpToDate = true,
-    });
+        return Ok(new
+        {
+            emailReady = emailService.IsConfigured,
+            ldapReady = settings.Value.LdapEnabled && !string.IsNullOrEmpty(settings.Value.LdapServer),
+            oidcReady = settings.Value.OidcEnabled && !string.IsNullOrEmpty(settings.Value.OidcAuthority),
+            enableOpenai = !string.IsNullOrEmpty(settings.Value.OpenAiApiKey),
+            baseUrlSet = !string.IsNullOrEmpty(settings.Value.BaseUrl),
+            isUpToDate = true
+        });
+    }
 
     [HttpGet("about/docker/validate")]
-    public IActionResult ValidateDocker() => Ok(new { message = "ok" });
+    public IActionResult ValidateDocker()
+    {
+        return Ok(new { message = "ok" });
+    }
 
     [HttpGet("analytics")]
     public async Task<IActionResult> Analytics(CancellationToken ct)
@@ -82,7 +91,7 @@ public class AdminController(
             TotalUsers = userCount,
             TotalGroups = groupCount,
             TotalHouseholds = householdCount,
-            TotalRecipes = recipeCount,
+            TotalRecipes = recipeCount
         });
     }
 
@@ -90,13 +99,19 @@ public class AdminController(
 
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers(CancellationToken ct)
-        => Ok(await userService.GetAllUsersAsync(ct));
+    {
+        return Ok(await userService.GetAllUsersAsync(ct));
+    }
 
     [HttpGet("users/{userId:guid}")]
     public async Task<ActionResult<AdminUserResponse>> GetUser(Guid userId, CancellationToken ct)
     {
         var user = await userService.GetUserAsync(userId, ct);
-        if (user is null) return NotFound(new { detail = "User not found" });
+        if (user is null)
+        {
+            return NotFound(new { detail = "User not found" });
+        }
+
         return Ok(user);
     }
 
@@ -113,7 +128,11 @@ public class AdminController(
         Guid userId, [FromBody] UpdateAdminUserRequest request, CancellationToken ct)
     {
         var user = await userService.UpdateUserAsync(userId, request, ct);
-        if (user is null) return NotFound(new { detail = "User not found" });
+        if (user is null)
+        {
+            return NotFound(new { detail = "User not found" });
+        }
+
         return Ok(user);
     }
 
@@ -128,7 +147,11 @@ public class AdminController(
     public async Task<IActionResult> DeleteUser(Guid userId, CancellationToken ct)
     {
         var deleted = await userService.DeleteUserAsync(userId, ct);
-        if (!deleted) return NotFound(new { detail = "User not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "User not found" });
+        }
+
         return NoContent();
     }
 
@@ -136,7 +159,11 @@ public class AdminController(
     public async Task<IActionResult> UnlockUser(Guid userId, CancellationToken ct)
     {
         var unlocked = await userService.UnlockUserAsync(userId, ct);
-        if (!unlocked) return NotFound(new { detail = "User not found" });
+        if (!unlocked)
+        {
+            return NotFound(new { detail = "User not found" });
+        }
+
         return Ok(new { detail = "User unlocked" });
     }
 
@@ -144,21 +171,30 @@ public class AdminController(
     public async Task<IActionResult> GeneratePasswordResetToken(
         [FromBody] PasswordResetTokenRequest request, CancellationToken ct)
     {
-        string? email = request.Email;
+        var email = request.Email;
 
         if (request.UserId.HasValue && request.UserId != Guid.Empty)
         {
             var user = await db.Users.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
-            if (user is null) return NotFound(new { detail = "User not found" });
+            if (user is null)
+            {
+                return NotFound(new { detail = "User not found" });
+            }
+
             email = user.Email;
         }
 
         if (string.IsNullOrEmpty(email))
+        {
             return BadRequest(new { detail = "Either userId or email must be provided" });
+        }
 
         var token = await passwordResetService.GenerateResetTokenAsync(email);
-        if (token is null) return NotFound(new { detail = "User with that email not found" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "User with that email not found" });
+        }
 
         return Ok(new PasswordResetTokenResponse { Token = token });
     }
@@ -167,27 +203,39 @@ public class AdminController(
 
     [HttpGet("groups")]
     public async Task<IActionResult> GetGroups(CancellationToken ct)
-        => Ok(await groupService.GetAllGroupsAsync(ct));
+    {
+        return Ok(await groupService.GetAllGroupsAsync(ct));
+    }
 
     [HttpGet("groups/{groupId:guid}")]
     public async Task<ActionResult<AdminGroupResponse>> GetGroup(Guid groupId, CancellationToken ct)
     {
         var group = await groupService.GetGroupAsync(groupId, ct);
-        if (group is null) return NotFound(new { detail = "Group not found" });
+        if (group is null)
+        {
+            return NotFound(new { detail = "Group not found" });
+        }
+
         return Ok(group);
     }
 
     [HttpPost("groups")]
     public async Task<ActionResult<AdminGroupResponse>> CreateGroup(
         [FromBody] CreateAdminGroupRequest request, CancellationToken ct)
-        => Ok(await groupService.CreateGroupAsync(request, ct));
+    {
+        return Ok(await groupService.CreateGroupAsync(request, ct));
+    }
 
     [HttpPut("groups/{groupId:guid}")]
     public async Task<ActionResult<AdminGroupResponse>> UpdateGroup(
         Guid groupId, [FromBody] UpdateAdminGroupRequest request, CancellationToken ct)
     {
         var group = await groupService.UpdateGroupAsync(groupId, request, ct);
-        if (group is null) return NotFound(new { detail = "Group not found" });
+        if (group is null)
+        {
+            return NotFound(new { detail = "Group not found" });
+        }
+
         return Ok(group);
     }
 
@@ -202,7 +250,11 @@ public class AdminController(
     public async Task<IActionResult> DeleteGroup(Guid groupId, CancellationToken ct)
     {
         var deleted = await groupService.DeleteGroupAsync(groupId, ct);
-        if (!deleted) return NotFound(new { detail = "Group not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Group not found" });
+        }
+
         return NoContent();
     }
 
@@ -210,27 +262,39 @@ public class AdminController(
 
     [HttpGet("households")]
     public async Task<IActionResult> GetHouseholds(CancellationToken ct)
-        => Ok(await groupService.GetAllHouseholdsAsync(ct));
+    {
+        return Ok(await groupService.GetAllHouseholdsAsync(ct));
+    }
 
     [HttpGet("households/{householdId:guid}")]
     public async Task<ActionResult<AdminHouseholdResponse>> GetHousehold(Guid householdId, CancellationToken ct)
     {
         var household = await groupService.GetHouseholdAsync(householdId, ct);
-        if (household is null) return NotFound(new { detail = "Household not found" });
+        if (household is null)
+        {
+            return NotFound(new { detail = "Household not found" });
+        }
+
         return Ok(household);
     }
 
     [HttpPost("households")]
     public async Task<ActionResult<AdminHouseholdResponse>> CreateHousehold(
         [FromBody] CreateAdminHouseholdRequest request, CancellationToken ct)
-        => Ok(await groupService.CreateHouseholdAsync(request, ct));
+    {
+        return Ok(await groupService.CreateHouseholdAsync(request, ct));
+    }
 
     [HttpPut("households/{householdId:guid}")]
     public async Task<ActionResult<AdminHouseholdResponse>> UpdateHousehold(
         Guid householdId, [FromBody] UpdateAdminHouseholdRequest request, CancellationToken ct)
     {
         var household = await groupService.UpdateHouseholdAsync(householdId, request, ct);
-        if (household is null) return NotFound(new { detail = "Household not found" });
+        if (household is null)
+        {
+            return NotFound(new { detail = "Household not found" });
+        }
+
         return Ok(household);
     }
 
@@ -245,7 +309,11 @@ public class AdminController(
     public async Task<IActionResult> DeleteHousehold(Guid householdId, CancellationToken ct)
     {
         var deleted = await groupService.DeleteHouseholdAsync(householdId, ct);
-        if (!deleted) return NotFound(new { detail = "Household not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Household not found" });
+        }
+
         return NoContent();
     }
 }

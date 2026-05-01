@@ -12,7 +12,10 @@ public class OpenAiController(IOptions<AppSettings> settings) : ControllerBase
     public IActionResult ParseIngredient([FromBody] object request)
     {
         if (string.IsNullOrEmpty(settings.Value.OpenAiApiKey))
+        {
             return StatusCode(424, new { detail = "OpenAI is not configured" });
+        }
+
         return Ok(new { detail = "Not implemented" });
     }
 
@@ -20,7 +23,10 @@ public class OpenAiController(IOptions<AppSettings> settings) : ControllerBase
     public IActionResult ParseRecipe([FromBody] object request)
     {
         if (string.IsNullOrEmpty(settings.Value.OpenAiApiKey))
+        {
             return StatusCode(424, new { detail = "OpenAI is not configured" });
+        }
+
         return Ok(new { detail = "Not implemented" });
     }
 }

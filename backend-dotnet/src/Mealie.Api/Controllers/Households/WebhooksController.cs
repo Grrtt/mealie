@@ -7,7 +7,8 @@ namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
 [Route("api/households/webhooks")]
-public class WebhooksController(IWebhookService webhookService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class WebhooksController(IWebhookService webhookService, ITenantContext tenantContext)
+    : MealieControllerBase(tenantContext)
 {
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -20,7 +21,11 @@ public class WebhooksController(IWebhookService webhookService, ITenantContext t
     public async Task<IActionResult> GetOne(Guid id)
     {
         var item = await webhookService.GetByIdAsync(CurrentHouseholdId, id);
-        if (item is null) return NotFoundOrForbidden();
+        if (item is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(item);
     }
 
@@ -42,7 +47,11 @@ public class WebhooksController(IWebhookService webhookService, ITenantContext t
     public async Task<IActionResult> Update(Guid itemId, [FromBody] CreateWebhookRequest request)
     {
         var item = await webhookService.UpdateAsync(CurrentHouseholdId, itemId, request);
-        if (item is null) return NotFoundOrForbidden();
+        if (item is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(item);
     }
 
@@ -50,7 +59,11 @@ public class WebhooksController(IWebhookService webhookService, ITenantContext t
     public async Task<IActionResult> Delete(Guid itemId)
     {
         var success = await webhookService.DeleteAsync(CurrentHouseholdId, itemId);
-        if (!success) return NotFoundOrForbidden();
+        if (!success)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok();
     }
 

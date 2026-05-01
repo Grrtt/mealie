@@ -42,34 +42,34 @@ public class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
 
         // Many-to-many with junction tables — column names must match the Python SQLAlchemy source
         builder.HasMany(r => r.Tags)
-               .WithMany(t => t.Recipes)
-               .UsingEntity<Dictionary<string, object>>(
-                   "recipes_to_tags",
-                   j => j.HasOne<Tag>().WithMany().HasForeignKey("tag_id"),
-                   j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
-                   j => j.HasKey("recipe_id", "tag_id"));
+            .WithMany(t => t.Recipes)
+            .UsingEntity<Dictionary<string, object>>(
+                "recipes_to_tags",
+                j => j.HasOne<Tag>().WithMany().HasForeignKey("tag_id"),
+                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                j => j.HasKey("recipe_id", "tag_id"));
         builder.HasMany(r => r.Categories)
-               .WithMany(c => c.Recipes)
-               .UsingEntity<Dictionary<string, object>>(
-                   "recipes_to_categories",
-                   j => j.HasOne<Category>().WithMany().HasForeignKey("category_id"),
-                   j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
-                   j => j.HasKey("category_id", "recipe_id"));
+            .WithMany(c => c.Recipes)
+            .UsingEntity<Dictionary<string, object>>(
+                "recipes_to_categories",
+                j => j.HasOne<Category>().WithMany().HasForeignKey("category_id"),
+                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                j => j.HasKey("category_id", "recipe_id"));
         builder.HasMany(r => r.Tools)
-               .WithMany(t => t.Recipes)
-               .UsingEntity<Dictionary<string, object>>(
-                   "recipes_to_tools",
-                   j => j.HasOne<Tool>().WithMany().HasForeignKey("tool_id"),
-                   j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
-                   j => j.HasKey("recipe_id", "tool_id"));
+            .WithMany(t => t.Recipes)
+            .UsingEntity<Dictionary<string, object>>(
+                "recipes_to_tools",
+                j => j.HasOne<Tool>().WithMany().HasForeignKey("tool_id"),
+                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                j => j.HasKey("recipe_id", "tool_id"));
 
         builder.HasOne(r => r.Group)
-               .WithMany(g => g.Recipes)
-               .HasForeignKey(r => r.GroupId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(g => g.Recipes)
+            .HasForeignKey(r => r.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(r => r.Household)
-               .WithMany()
-               .HasForeignKey(r => r.HouseholdId)
-               .OnDelete(DeleteBehavior.Restrict);
+            .WithMany()
+            .HasForeignKey(r => r.HouseholdId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

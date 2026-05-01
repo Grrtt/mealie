@@ -10,8 +10,8 @@ public record MigrationJobRequest(
     string TempFilePath);
 
 /// <summary>
-/// Singleton channel used to queue migration import jobs.
-/// The background service is the single consumer; the controller is a producer.
+///     Singleton channel used to queue migration import jobs.
+///     The background service is the single consumer; the controller is a producer.
 /// </summary>
 public class MigrationQueue
 {
@@ -19,12 +19,14 @@ public class MigrationQueue
         Channel.CreateUnbounded<MigrationJobRequest>(new UnboundedChannelOptions
         {
             SingleReader = true,
-            SingleWriter = false,
+            SingleWriter = false
         });
 
     public ChannelWriter<MigrationJobRequest> Writer => _channel.Writer;
     public ChannelReader<MigrationJobRequest> Reader => _channel.Reader;
 
     public async ValueTask EnqueueAsync(MigrationJobRequest job, CancellationToken ct = default)
-        => await _channel.Writer.WriteAsync(job, ct);
+    {
+        await _channel.Writer.WriteAsync(job, ct);
+    }
 }

@@ -11,8 +11,8 @@ public class RecipeNoteConfiguration : IEntityTypeConfiguration<RecipeNote>
         builder.ToTable("notes");
         builder.HasKey(n => n.Id);
         builder.HasOne(n => n.Recipe)
-               .WithMany(r => r.Notes)
-               .HasForeignKey(n => n.RecipeId)
-               .OnDelete(DeleteBehavior.Cascade);
+            .WithMany(r => r.Notes)
+            .HasForeignKey(n => n.RecipeId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

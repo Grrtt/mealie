@@ -7,7 +7,7 @@ public static partial class QuantityTokenizer
     // Unicode vulgar fractions
     private static readonly Dictionary<char, decimal> VulgarFractions = new()
     {
-        ['½'] = 0.5m, ['⅓'] = 1m/3, ['⅔'] = 2m/3, ['¼'] = 0.25m,
+        ['½'] = 0.5m, ['⅓'] = 1m / 3, ['⅔'] = 2m / 3, ['¼'] = 0.25m,
         ['¾'] = 0.75m, ['⅛'] = 0.125m, ['⅜'] = 0.375m, ['⅝'] = 0.625m, ['⅞'] = 0.875m
     };
 
@@ -71,6 +71,7 @@ public static partial class QuantityTokenizer
             {
                 return (baseQty + fracPart, remainder[1..].Trim());
             }
+
             return (baseQty, remainder);
         }
 

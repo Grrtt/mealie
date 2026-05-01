@@ -2,9 +2,9 @@ namespace Mealie.Infrastructure.Scraper;
 
 public class RecipeScraperService(HttpClient httpClient) : IRecipeScraperService
 {
+    private readonly HeuristicScraperStrategy _heuristic = new();
     private readonly JsonLdScraperStrategy _jsonLd = new();
     private readonly MicrodataScraperStrategy _microdata = new();
-    private readonly HeuristicScraperStrategy _heuristic = new();
 
     public async Task<ScrapedRecipeDto> ScrapeAsync(string url, CancellationToken ct = default)
     {
@@ -22,33 +22,60 @@ public class RecipeScraperService(HttpClient httpClient) : IRecipeScraperService
 
         // Strategy 1: JSON-LD (most reliable)
         var result = _jsonLd.Scrape(html);
-        if (result is not null) { result.OrgUrl ??= url; return result; }
+        if (result is not null)
+        {
+            result.OrgUrl ??= url;
+            return result;
+        }
 
         // Strategy 2: Microdata
         result = _microdata.Scrape(html);
-        if (result is not null) { result.OrgUrl ??= url; return result; }
+        if (result is not null)
+        {
+            result.OrgUrl ??= url;
+            return result;
+        }
 
         // Strategy 3: Heuristic CSS selectors
         result = await _heuristic.ScrapeAsync(html);
-        if (result is not null) { result.OrgUrl ??= url; return result; }
+        if (result is not null)
+        {
+            result.OrgUrl ??= url;
+            return result;
+        }
 
         return new ScrapedRecipeDto { ScrapingNotSupported = true, OrgUrl = url };
     }
 
-    public async Task<ScrapedRecipeDto> ScrapeFromHtmlAsync(string html, string? sourceUrl = null, CancellationToken ct = default)
+    public async Task<ScrapedRecipeDto> ScrapeFromHtmlAsync(string html, string? sourceUrl = null,
+        CancellationToken ct = default)
     {
         // If the data looks like a JSON-LD object, wrap it in a minimal HTML document
         if (html.TrimStart().StartsWith('{'))
+        {
             html = $"<html><head><script type=\"application/ld+json\">{html}</script></head><body></body></html>";
+        }
 
         var result = _jsonLd.Scrape(html);
-        if (result is not null) { result.OrgUrl ??= sourceUrl; return result; }
+        if (result is not null)
+        {
+            result.OrgUrl ??= sourceUrl;
+            return result;
+        }
 
         result = _microdata.Scrape(html);
-        if (result is not null) { result.OrgUrl ??= sourceUrl; return result; }
+        if (result is not null)
+        {
+            result.OrgUrl ??= sourceUrl;
+            return result;
+        }
 
         result = await _heuristic.ScrapeAsync(html);
-        if (result is not null) { result.OrgUrl ??= sourceUrl; return result; }
+        if (result is not null)
+        {
+            result.OrgUrl ??= sourceUrl;
+            return result;
+        }
 
         return new ScrapedRecipeDto { ScrapingNotSupported = true };
     }

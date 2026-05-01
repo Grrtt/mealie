@@ -27,7 +27,7 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
             {
                 DataDirSize = dataDirSize,
                 CleanableImages = cleanableImages,
-                CleanableDirs = cleanableDirs,
+                CleanableDirs = cleanableDirs
             });
         }
         catch (Exception ex)
@@ -54,7 +54,7 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
                 BackupsDirSize = GetDirectorySizeFormatted(backupsDir),
                 GroupsDirSize = GetDirectorySizeFormatted(groupsDir),
                 RecipesDirSize = GetDirectorySizeFormatted(recipesDir),
-                UserDirSize = GetDirectorySizeFormatted(userDir),
+                UserDirSize = GetDirectorySizeFormatted(userDir)
             });
         }
         catch (Exception ex)
@@ -69,8 +69,8 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
         try
         {
             var logDir = Path.Combine(_settings.DataDir, "logs");
-            var logFiles = System.IO.Directory.Exists(logDir) 
-                ? System.IO.Directory.GetFiles(logDir, "*.log", SearchOption.TopDirectoryOnly)
+            var logFiles = Directory.Exists(logDir)
+                ? Directory.GetFiles(logDir, "*.log", SearchOption.TopDirectoryOnly)
                 : [];
 
             var allLines = new List<string>();
@@ -81,7 +81,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
                     var fileLines = System.IO.File.ReadAllLines(logFile);
                     allLines.AddRange(fileLines);
                 }
-                catch { }
+                catch
+                {
+                }
             }
 
             var result = allLines.TakeLast(lines).ToList();
@@ -101,9 +103,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
             var tempDir = Path.Combine(_settings.DataDir, "temp");
             var deletedCount = 0;
 
-            if (System.IO.Directory.Exists(tempDir))
+            if (Directory.Exists(tempDir))
             {
-                var files = System.IO.Directory.GetFiles(tempDir);
+                var files = Directory.GetFiles(tempDir);
                 foreach (var file in files)
                 {
                     try
@@ -111,7 +113,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
                         System.IO.File.Delete(file);
                         deletedCount++;
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
             }
 
@@ -131,9 +135,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
             var recipesDir = Path.Combine(_settings.DataDir, "recipes");
             var deletedCount = 0;
 
-            if (System.IO.Directory.Exists(recipesDir))
+            if (Directory.Exists(recipesDir))
             {
-                var imageFiles = System.IO.Directory.GetFiles(recipesDir, "*.*", SearchOption.AllDirectories)
+                var imageFiles = Directory.GetFiles(recipesDir, "*.*", SearchOption.AllDirectories)
                     .Where(f => !f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase))
                     .Where(f => IsImageFile(f));
 
@@ -144,7 +148,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
                         System.IO.File.Delete(file);
                         deletedCount++;
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
             }
 
@@ -164,9 +170,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
             var recipesDir = Path.Combine(_settings.DataDir, "recipes");
             var deletedCount = 0;
 
-            if (System.IO.Directory.Exists(recipesDir))
+            if (Directory.Exists(recipesDir))
             {
-                var folders = System.IO.Directory.GetDirectories(recipesDir);
+                var folders = Directory.GetDirectories(recipesDir);
                 foreach (var folder in folders)
                 {
                     var folderName = Path.GetFileName(folder);
@@ -174,10 +180,12 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
                     {
                         try
                         {
-                            System.IO.Directory.Delete(folder, true);
+                            Directory.Delete(folder, true);
                             deletedCount++;
                         }
-                        catch { }
+                        catch
+                        {
+                        }
                     }
                 }
             }
@@ -198,9 +206,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
             var logDir = Path.Combine(_settings.DataDir, "logs");
             var deletedCount = 0;
 
-            if (System.IO.Directory.Exists(logDir))
+            if (Directory.Exists(logDir))
             {
-                var logFiles = System.IO.Directory.GetFiles(logDir, "*.log");
+                var logFiles = Directory.GetFiles(logDir, "*.log");
                 foreach (var logFile in logFiles)
                 {
                     try
@@ -208,7 +216,9 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
                         System.IO.File.Delete(logFile);
                         deletedCount++;
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
             }
 
@@ -222,8 +232,10 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
 
     private static string GetDirectorySizeFormatted(string path)
     {
-        if (!System.IO.Directory.Exists(path))
+        if (!Directory.Exists(path))
+        {
             return "0 B";
+        }
 
         var size = GetDirectorySize(path);
         return FormatBytes(size);
@@ -246,7 +258,7 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
     {
         string[] sizes = { "B", "KB", "MB", "GB", "TB" };
         double len = bytes;
-        int order = 0;
+        var order = 0;
         while (len >= 1024 && order < sizes.Length - 1)
         {
             order++;
@@ -261,10 +273,12 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
         try
         {
             var recipesDir = Path.Combine(dataDir, "recipes");
-            if (!System.IO.Directory.Exists(recipesDir))
+            if (!Directory.Exists(recipesDir))
+            {
                 return 0;
+            }
 
-            return System.IO.Directory.GetFiles(recipesDir, "*.*", SearchOption.AllDirectories)
+            return Directory.GetFiles(recipesDir, "*.*", SearchOption.AllDirectories)
                 .Count(f => !f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) && IsImageFile(f));
         }
         catch
@@ -278,10 +292,12 @@ public class AdminMaintenanceController(IOptions<AppSettings> settings) : Contro
         try
         {
             var recipesDir = Path.Combine(dataDir, "recipes");
-            if (!System.IO.Directory.Exists(recipesDir))
+            if (!Directory.Exists(recipesDir))
+            {
                 return 0;
+            }
 
-            return System.IO.Directory.GetDirectories(recipesDir)
+            return Directory.GetDirectories(recipesDir)
                 .Count(d => !Guid.TryParse(Path.GetFileName(d), out _));
         }
         catch

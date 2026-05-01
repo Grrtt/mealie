@@ -8,7 +8,8 @@ public class IngredientParserService(
     FoodMatcher foodMatcher,
     ILogger<IngredientParserService> logger) : IIngredientParserService
 {
-    public async Task<ParsedIngredientDto> ParseAsync(Guid groupId, string ingredientString, CancellationToken ct = default)
+    public async Task<ParsedIngredientDto> ParseAsync(Guid groupId, string ingredientString,
+        CancellationToken ct = default)
     {
         var normalized = IngredientNormalizer.Normalize(ingredientString);
         var (quantity, afterQuantity) = QuantityTokenizer.Tokenize(normalized);
@@ -28,7 +29,7 @@ public class IngredientParserService(
                 Average = average,
                 Quantity = quantityConf,
                 Unit = unitConf,
-                Food = foodConf,
+                Food = foodConf
             },
             Ingredient = new ParsedIngredientIngredientDto
             {
@@ -37,18 +38,20 @@ public class IngredientParserService(
                 Food = food is not null ? new ParsedIngredientFoodDto { Id = food.Id, Name = food.Name } : null,
                 Note = string.IsNullOrEmpty(note) ? null : note,
                 Display = normalized,
-                OriginalText = ingredientString,
+                OriginalText = ingredientString
             }
         };
     }
 
-    public async Task<IList<ParsedIngredientDto>> ParseBatchAsync(Guid groupId, IList<string> ingredients, CancellationToken ct = default)
+    public async Task<IList<ParsedIngredientDto>> ParseBatchAsync(Guid groupId, IList<string> ingredients,
+        CancellationToken ct = default)
     {
         var results = new List<ParsedIngredientDto>();
         foreach (var ingredient in ingredients)
         {
             results.Add(await ParseAsync(groupId, ingredient, ct));
         }
+
         return results;
     }
 }

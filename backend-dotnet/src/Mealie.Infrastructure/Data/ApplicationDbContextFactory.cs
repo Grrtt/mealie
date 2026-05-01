@@ -9,7 +9,7 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     {
         // Read DATABASE_URL from env for design-time use (migrations)
         var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-            ?? "Data Source=./data/mealie.db";
+                          ?? "Data Source=./data/mealie.db";
         var dbEngine = Environment.GetEnvironmentVariable("DB_ENGINE") ?? "sqlite";
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>();

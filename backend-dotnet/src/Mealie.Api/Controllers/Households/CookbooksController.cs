@@ -8,23 +8,31 @@ namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
 [Route("api/households/cookbooks")]
-public class CookbooksController(ICookbookService cookbookService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class CookbooksController(ICookbookService cookbookService, ITenantContext tenantContext)
+    : MealieControllerBase(tenantContext)
 {
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<CookbookResponse>>> GetCookbooks(
         [FromQuery] PaginationParams pagination, CancellationToken ct)
-        => Ok(await cookbookService.GetCookbooksAsync(CurrentHouseholdId, pagination, ct));
+    {
+        return Ok(await cookbookService.GetCookbooksAsync(CurrentHouseholdId, pagination, ct));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CookbookResponse>> GetCookbook(Guid id, CancellationToken ct)
     {
         var cookbook = await cookbookService.GetByIdAsync(CurrentHouseholdId, id, ct);
-        if (cookbook is null) return NotFoundOrForbidden();
+        if (cookbook is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(cookbook);
     }
 
     [HttpPost]
-    public async Task<ActionResult<CookbookResponse>> CreateCookbook([FromBody] CreateCookbookRequest request, CancellationToken ct)
+    public async Task<ActionResult<CookbookResponse>> CreateCookbook([FromBody] CreateCookbookRequest request,
+        CancellationToken ct)
     {
         var cookbook = await cookbookService.CreateAsync(CurrentGroupId, CurrentHouseholdId, request, ct);
         return CreatedAtAction(nameof(GetCookbook), new { id = cookbook.Id }, cookbook);
@@ -32,10 +40,15 @@ public class CookbooksController(ICookbookService cookbookService, ITenantContex
 
     [HttpPut("{id:guid}")]
     [HttpPatch("{id:guid}")]
-    public async Task<ActionResult<CookbookResponse>> UpdateCookbook(Guid id, [FromBody] UpdateCookbookRequest request, CancellationToken ct)
+    public async Task<ActionResult<CookbookResponse>> UpdateCookbook(Guid id, [FromBody] UpdateCookbookRequest request,
+        CancellationToken ct)
     {
         var cookbook = await cookbookService.UpdateAsync(CurrentHouseholdId, id, request, ct);
-        if (cookbook is null) return NotFoundOrForbidden();
+        if (cookbook is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(cookbook);
     }
 
@@ -43,15 +56,24 @@ public class CookbooksController(ICookbookService cookbookService, ITenantContex
     public async Task<IActionResult> DeleteCookbook(Guid id, CancellationToken ct)
     {
         var deleted = await cookbookService.DeleteAsync(CurrentHouseholdId, id, ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 
     [HttpPut]
-    public async Task<IActionResult> ReorderCookbooks([FromBody] IEnumerable<CookbookReorderRequest> reorderRequests, CancellationToken ct)
+    public async Task<IActionResult> ReorderCookbooks([FromBody] IEnumerable<CookbookReorderRequest> reorderRequests,
+        CancellationToken ct)
     {
         var success = await cookbookService.ReorderAsync(CurrentHouseholdId, reorderRequests, ct);
-        if (!success) return BadRequest();
+        if (!success)
+        {
+            return BadRequest();
+        }
+
         return Ok();
     }
 }

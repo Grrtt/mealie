@@ -1,5 +1,5 @@
-using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.Images;
+using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.IngredientParser;
 using Mealie.Application.Services.Recipes;
 using Mealie.Domain.Entities.Core;
@@ -15,9 +15,9 @@ using Microsoft.Extensions.Options;
 namespace Mealie.Application.Services.Migrations;
 
 /// <summary>
-/// Long-running background service that reads migration jobs from the channel
-/// and processes them asynchronously, writing results to the DB.
-/// Multiple uploads queue up and are processed one at a time in order.
+///     Long-running background service that reads migration jobs from the channel
+///     and processes them asynchronously, writing results to the DB.
+///     Multiple uploads queue up and are processed one at a time in order.
 /// </summary>
 public class MigrationBackgroundService(
     MigrationQueue queue,
@@ -26,6 +26,8 @@ public class MigrationBackgroundService(
     IOptions<AppSettings> appSettings,
     ILogger<MigrationBackgroundService> logger) : BackgroundService
 {
+    private const int BatchSize = 50;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Migration background service started");
@@ -53,9 +55,9 @@ public class MigrationBackgroundService(
 
         var interrupted = await db.Reports.IgnoreQueryFilters()
             .Where(r => r.Category == "migration"
-                     && (r.Status == "in-progress" || r.Status == "queued")
-                     && r.QueuedFilePath != null
-                     && r.QueuedHouseholdId != null)
+                        && (r.Status == "in-progress" || r.Status == "queued")
+                        && r.QueuedFilePath != null
+                        && r.QueuedHouseholdId != null)
             .ToListAsync(ct);
 
         foreach (var report in interrupted)
@@ -80,8 +82,6 @@ public class MigrationBackgroundService(
 
         await db.SaveChangesAsync(ct);
     }
-
-    private const int BatchSize = 50;
 
     private async Task ProcessJobAsync(MigrationJobRequest job, CancellationToken ct)
     {
@@ -155,7 +155,7 @@ public class MigrationBackgroundService(
                     ? await ingredientParser.ParseBatchAsync(allIngredients, ct)
                     : (IReadOnlyList<ParsedIngredientResult>)[];
 
-                int offset = 0;
+                var offset = 0;
                 for (var i = 0; i < batch.Length; i++)
                 {
                     var scraped = batch[i];
@@ -180,7 +180,8 @@ public class MigrationBackgroundService(
                             {
                                 // Already exists — skip on resume.
                                 skipped++;
-                                pendingEntries.Add(Entry(job.ReportId, true, $"Skipped (already exists): {scraped.Name}"));
+                                pendingEntries.Add(Entry(job.ReportId, true,
+                                    $"Skipped (already exists): {scraped.Name}"));
                             }
                             else
                             {
@@ -188,10 +189,15 @@ public class MigrationBackgroundService(
                                 pendingEntries.Add(Entry(job.ReportId, true, $"Imported: {scraped.Name}"));
 
                                 if (scraped.ImageFiles.Count > 0)
+                                {
                                     SaveRecipeImages(result.Id.ToString(), scraped.ImageFiles);
+                                }
 
                                 if (result.OrgUrl is not null && scraped.ImageFiles.Count == 0)
-                                    await imageScrapeQueue.Writer.WriteAsync(new ImageScrapeJob(result.Id, result.OrgUrl), ct);
+                                {
+                                    await imageScrapeQueue.Writer.WriteAsync(
+                                        new ImageScrapeJob(result.Id, result.OrgUrl), ct);
+                                }
                             }
                         }
                     }
@@ -222,7 +228,7 @@ public class MigrationBackgroundService(
                 }
             }
 
-            report.Status = errors == 0 ? "success" : (created > 0 ? "partial" : "failure");
+            report.Status = errors == 0 ? "success" : created > 0 ? "partial" : "failure";
             report.QueuedFilePath = null;
             report.QueuedHouseholdId = null;
             report.QueuedUserId = null;
@@ -258,8 +264,14 @@ public class MigrationBackgroundService(
         await db.SaveChangesAsync(ct);
     }
 
-    private static ReportEntry Entry(Guid reportId, bool success, string message, string? exception = null) =>
-        new() { Id = Guid.NewGuid(), ReportId = reportId, Timestamp = DateTime.UtcNow, Success = success, Message = message, Exception = exception };
+    private static ReportEntry Entry(Guid reportId, bool success, string message, string? exception = null)
+    {
+        return new ReportEntry
+        {
+            Id = Guid.NewGuid(), ReportId = reportId, Timestamp = DateTime.UtcNow, Success = success, Message = message,
+            Exception = exception
+        };
+    }
 
     private void SaveRecipeImages(string recipeId, Dictionary<string, byte[]> imageFiles)
     {
@@ -279,7 +291,13 @@ public class MigrationBackgroundService(
 
     private void TryDeleteTempFile(string path)
     {
-        try { File.Delete(path); }
-        catch (Exception ex) { logger.LogWarning(ex, "Could not delete temp file {Path}", path); }
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Could not delete temp file {Path}", path);
+        }
     }
 }

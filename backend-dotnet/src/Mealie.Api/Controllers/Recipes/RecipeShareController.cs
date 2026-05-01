@@ -26,7 +26,11 @@ public class RecipeShareController(
         string slug, [FromBody] CreateShareTokenRequest request, CancellationToken ct)
     {
         var token = await shareService.CreateShareTokenAsync(slug, tenantContext.GroupId, request, ct);
-        if (token is null) return NotFound(new { detail = "Recipe not found" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Recipe not found" });
+        }
+
         return Ok(token);
     }
 
@@ -35,7 +39,11 @@ public class RecipeShareController(
     public async Task<IActionResult> DeleteShareToken(string slug, Guid tokenId, CancellationToken ct)
     {
         var deleted = await shareService.DeleteShareTokenAsync(tokenId, ct);
-        if (!deleted) return NotFound(new { detail = "Share token not found" });
+        if (!deleted)
+        {
+            return NotFound(new { detail = "Share token not found" });
+        }
+
         return NoContent();
     }
 
@@ -44,7 +52,11 @@ public class RecipeShareController(
     public async Task<ActionResult<ShareTokenResponse>> GetSharedRecipe(Guid tokenId, CancellationToken ct)
     {
         var token = await shareService.GetShareTokenAsync(tokenId, ct);
-        if (token is null) return NotFound(new { detail = "Share token not found or expired" });
+        if (token is null)
+        {
+            return NotFound(new { detail = "Share token not found or expired" });
+        }
+
         return Ok(token);
     }
 }

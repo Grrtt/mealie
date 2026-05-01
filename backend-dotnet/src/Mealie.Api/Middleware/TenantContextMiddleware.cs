@@ -1,6 +1,6 @@
+using System.Security.Claims;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Data;
-using System.Security.Claims;
 
 namespace Mealie.Api.Middleware;
 

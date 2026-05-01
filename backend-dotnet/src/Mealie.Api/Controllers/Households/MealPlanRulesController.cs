@@ -8,10 +8,12 @@ namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
 [Route("api/households/mealplans/rules")]
-public class MealPlanRulesController(IMealPlanRuleService mealPlanRuleService, ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class MealPlanRulesController(IMealPlanRuleService mealPlanRuleService, ITenantContext tenantContext)
+    : MealieControllerBase(tenantContext)
 {
     [HttpGet]
-    public async Task<ActionResult<PaginatedResponse<MealPlanRuleResponse>>> GetMealPlanRules([FromQuery] PaginationParams pagination, CancellationToken ct)
+    public async Task<ActionResult<PaginatedResponse<MealPlanRuleResponse>>> GetMealPlanRules(
+        [FromQuery] PaginationParams pagination, CancellationToken ct)
     {
         var items = await mealPlanRuleService.GetAllAsync(CurrentGroupId, CurrentHouseholdId, ct);
         var paged = items.Skip((pagination.Page - 1) * pagination.PerPage).Take(pagination.PerPage).ToList();
@@ -21,7 +23,7 @@ public class MealPlanRulesController(IMealPlanRuleService mealPlanRuleService, I
             PerPage = pagination.PerPage,
             Total = items.Count,
             TotalPages = (int)Math.Ceiling(items.Count / (double)pagination.PerPage),
-            Items = paged,
+            Items = paged
         });
     }
 
@@ -29,12 +31,17 @@ public class MealPlanRulesController(IMealPlanRuleService mealPlanRuleService, I
     public async Task<ActionResult<MealPlanRuleResponse>> GetMealPlanRule(Guid id, CancellationToken ct)
     {
         var rule = await mealPlanRuleService.GetByIdAsync(CurrentGroupId, id, ct);
-        if (rule is null) return NotFoundOrForbidden();
+        if (rule is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(rule);
     }
 
     [HttpPost]
-    public async Task<ActionResult<MealPlanRuleResponse>> CreateMealPlanRule([FromBody] CreateMealPlanRuleRequest request, CancellationToken ct)
+    public async Task<ActionResult<MealPlanRuleResponse>> CreateMealPlanRule(
+        [FromBody] CreateMealPlanRuleRequest request, CancellationToken ct)
     {
         var rule = await mealPlanRuleService.CreateAsync(CurrentGroupId, CurrentHouseholdId, request, ct);
         return CreatedAtAction(nameof(GetMealPlanRule), new { id = rule.Id }, rule);
@@ -42,10 +49,15 @@ public class MealPlanRulesController(IMealPlanRuleService mealPlanRuleService, I
 
     [HttpPut("{id:guid}")]
     [HttpPatch("{id:guid}")]
-    public async Task<ActionResult<MealPlanRuleResponse>> UpdateMealPlanRule(Guid id, [FromBody] UpdateMealPlanRuleRequest request, CancellationToken ct)
+    public async Task<ActionResult<MealPlanRuleResponse>> UpdateMealPlanRule(Guid id,
+        [FromBody] UpdateMealPlanRuleRequest request, CancellationToken ct)
     {
         var rule = await mealPlanRuleService.UpdateAsync(CurrentGroupId, id, request, ct);
-        if (rule is null) return NotFoundOrForbidden();
+        if (rule is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return Ok(rule);
     }
 
@@ -53,8 +65,11 @@ public class MealPlanRulesController(IMealPlanRuleService mealPlanRuleService, I
     public async Task<IActionResult> DeleteMealPlanRule(Guid id, CancellationToken ct)
     {
         var deleted = await mealPlanRuleService.DeleteAsync(CurrentGroupId, id, ct);
-        if (!deleted) return NotFoundOrForbidden();
+        if (!deleted)
+        {
+            return NotFoundOrForbidden();
+        }
+
         return NoContent();
     }
 }
-

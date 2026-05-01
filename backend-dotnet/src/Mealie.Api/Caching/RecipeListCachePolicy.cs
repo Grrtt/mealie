@@ -4,16 +4,14 @@ using Microsoft.AspNetCore.OutputCaching;
 namespace Mealie.Api.Caching;
 
 /// <summary>
-/// Output cache policy for GET /api/recipes.
-/// Caches per-household (vary by householdId + full query string), tags each entry
-/// so it can be evicted when any recipe in that household changes.
+///     Output cache policy for GET /api/recipes.
+///     Caches per-household (vary by householdId + full query string), tags each entry
+///     so it can be evicted when any recipe in that household changes.
 /// </summary>
 public sealed class RecipeListCachePolicy : IOutputCachePolicy
 {
     public const string Name = "RecipeList";
     public static readonly RecipeListCachePolicy Instance = new();
-
-    public static string TagFor(Guid householdId) => $"recipes-{householdId}";
 
     public ValueTask CacheRequestAsync(OutputCacheContext context, CancellationToken ct)
     {
@@ -31,7 +29,7 @@ public sealed class RecipeListCachePolicy : IOutputCachePolicy
             "page", "perPage", "search",
             "tags", "categories", "foods", "tools", "households",
             "requireAllCategories", "requireAllTags", "requireAllTools", "requireAllFoods",
-            "orderBy", "orderDirection",
+            "orderBy", "orderDirection"
         };
         // Vary by household so different households never share a cache entry.
         context.CacheVaryByRules.VaryByValues.Add("householdId", tenant.HouseholdId.ToString());
@@ -40,12 +38,19 @@ public sealed class RecipeListCachePolicy : IOutputCachePolicy
     }
 
     public ValueTask ServeFromCacheAsync(OutputCacheContext context, CancellationToken ct)
-        => ValueTask.CompletedTask;
+    {
+        return ValueTask.CompletedTask;
+    }
 
     public ValueTask ServeResponseAsync(OutputCacheContext context, CancellationToken ct)
     {
         var tenant = context.HttpContext.RequestServices.GetRequiredService<ITenantContext>();
         context.Tags.Add(TagFor(tenant.HouseholdId));
         return ValueTask.CompletedTask;
+    }
+
+    public static string TagFor(Guid householdId)
+    {
+        return $"recipes-{householdId}";
     }
 }

@@ -28,7 +28,9 @@ public class AdminIngredientAliasController(
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
+        {
             query = query.Where(i => i.OriginalText!.Contains(search));
+        }
 
         var grouped = query
             .GroupBy(i => i.OriginalText!)
@@ -92,12 +94,16 @@ public class AdminIngredientAliasController(
         var foodExists = await db.Foods.IgnoreQueryFilters()
             .AnyAsync(f => f.Id == request.FoodId, ct);
         if (!foodExists)
+        {
             return NotFound("Food not found");
+        }
 
         var duplicate = await db.FoodAliases.IgnoreQueryFilters()
             .AnyAsync(a => a.Name == request.RawText, ct);
         if (duplicate)
+        {
             return Conflict("Alias already exists");
+        }
 
         var alias = new IngredientFoodAlias
         {
@@ -136,7 +142,9 @@ public class AdminIngredientAliasController(
         var alias = await db.FoodAliases.IgnoreQueryFilters()
             .FirstOrDefaultAsync(a => a.Id == id, ct);
         if (alias is null)
+        {
             return NotFound();
+        }
 
         db.FoodAliases.Remove(alias);
         await db.SaveChangesAsync(ct);

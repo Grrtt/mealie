@@ -14,8 +14,11 @@ public abstract class MealieControllerBase(ITenantContext tenantContext) : Contr
     protected bool CurrentUserIsAdmin => tenantContext.IsAdmin;
 
     /// <summary>
-    /// Returns 404 regardless of whether the resource exists or belongs to a different household.
-    /// This prevents data leakage about other tenants' resources.
+    ///     Returns 404 regardless of whether the resource exists or belongs to a different household.
+    ///     This prevents data leakage about other tenants' resources.
     /// </summary>
-    protected ActionResult NotFoundOrForbidden() => NotFound(new { detail = "Not found" });
+    protected ActionResult NotFoundOrForbidden()
+    {
+        return NotFound(new { detail = "Not found" });
+    }
 }

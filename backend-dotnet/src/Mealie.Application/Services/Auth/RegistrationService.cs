@@ -25,7 +25,10 @@ public class RegistrationService(
 
         var exists = await db.Users.IgnoreQueryFilters()
             .AnyAsync(u => u.Username == request.Username || u.Email == request.Email, ct);
-        if (exists) return false;
+        if (exists)
+        {
+            return false;
+        }
 
         Guid groupId;
         Guid? householdId = null;
@@ -34,14 +37,22 @@ public class RegistrationService(
         {
             var token = await db.InviteTokens
                 .FirstOrDefaultAsync(t => t.Token == request.GroupToken, ct);
-            if (token is null) return false;
+            if (token is null)
+            {
+                return false;
+            }
+
             groupId = token.GroupId;
             householdId = token.HouseholdId;
         }
         else
         {
-            var defaultGroup = await db.Groups.FirstOrDefaultAsync(cancellationToken: ct);
-            if (defaultGroup is null) return false;
+            var defaultGroup = await db.Groups.FirstOrDefaultAsync(ct);
+            if (defaultGroup is null)
+            {
+                return false;
+            }
+
             groupId = defaultGroup.Id;
             householdId = await db.Households
                 .Where(h => h.GroupId == groupId)
