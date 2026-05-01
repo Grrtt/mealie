@@ -30,18 +30,6 @@ public record GetShoppingListItemsQuery(Guid HouseholdId, PaginationParams Pagin
     }
 }
 
-public record GetShoppingListItemByIdQuery(Guid HouseholdId, Guid ItemId) : IQuery<ShoppingListItemResponse?>
-{
-    public async Task<ShoppingListItemResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var item = await services.Db.ShoppingListItems
-            .Include(i => i.Unit).Include(i => i.Food).Include(i => i.ShoppingList)
-            .Where(i => i.ShoppingList.HouseholdId == HouseholdId && i.Id == ItemId)
-            .FirstOrDefaultAsync(ct);
-        return item is null ? null : ShoppingListItemMappings.MapItemToResponse(item);
-    }
-}
-
 file static class ShoppingListItemMappings
 {
     public static ShoppingListItemResponse MapItemToResponse(ShoppingListItem i) =>
