@@ -1,80 +1,12 @@
 using Mealie.Application.Dtos.MealPlans;
+using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Planning;
 using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Mealie.Application.Queries;
 namespace Mealie.Application.Commands.MealPlans;
-
-public record CreateMealPlanCommand(Guid GroupId, Guid HouseholdId, Guid UserId, CreateMealPlanRequest Request)
-    : IQuery<MealPlanResponse>
-{
-    public async Task<MealPlanResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var plan = new MealPlan
-        {
-            Id = Guid.NewGuid(), Title = Request.Title, Text = Request.Text,
-            EntryType = Request.EntryType, Date = Request.Date, RecipeId = Request.RecipeId,
-            GroupId = GroupId, HouseholdId = HouseholdId, UserId = UserId,
-            CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-        };
-        db.MealPlans.Add(plan);
-        await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, GroupId, HouseholdId), ct);
-        await MealPlanHelpers.LoadRecipeNav(db, plan, ct);
-        return MealPlanHelpers.MapToResponse(plan);
-    }
-}
-
-public record UpdateMealPlanCommand(Guid HouseholdId, Guid Id, UpdateMealPlanRequest Request) : IQuery<MealPlanResponse?>
-{
-    public async Task<MealPlanResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var plan = await MealPlanHelpers.WithRecipe(db.MealPlans.IgnoreQueryFilters())
-            .FirstOrDefaultAsync(m => m.HouseholdId == HouseholdId && m.Id == Id, ct);
-        if (plan is null) return null;
-
-        if (Request.Title is not null) plan.Title = Request.Title;
-        if (Request.Text is not null) plan.Text = Request.Text;
-        if (Request.EntryType is not null) plan.EntryType = Request.EntryType;
-        if (Request.Date.HasValue) plan.Date = Request.Date.Value;
-        if (Request.RecipeId.HasValue) plan.RecipeId = Request.RecipeId;
-
-        plan.UpdateAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new MealPlanEntryUpdatedEvent(plan.Id, plan.GroupId, HouseholdId), ct);
-        await MealPlanHelpers.LoadRecipeNav(db, plan, ct);
-        return MealPlanHelpers.MapToResponse(plan);
-    }
-}
-
-public record CreateRandomMealPlanCommand(Guid GroupId, Guid HouseholdId, Guid UserId, CreateRandomMealPlanRequest Request)
-    : IQuery<MealPlanResponse?>
-{
-    public async Task<MealPlanResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var logger = services.LoggerFactory.CreateLogger("MealPlanCommands");
-        var recipeId = await MealPlanHelpers.GetRandomRecipeIdInternalAsync(db, logger, GroupId, Request.Date, Request.EntryType, ct);
-        if (recipeId is null) return null;
-
-        var plan = new MealPlan
-        {
-            Id = Guid.NewGuid(), Title = string.Empty, EntryType = Request.EntryType, Date = Request.Date,
-            RecipeId = recipeId, GroupId = GroupId, HouseholdId = HouseholdId, UserId = UserId,
-            CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-        };
-        db.MealPlans.Add(plan);
-        await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, GroupId, HouseholdId), ct);
-        await MealPlanHelpers.LoadRecipeNav(db, plan, ct);
-        return MealPlanHelpers.MapToResponse(plan);
-    }
-}
 
 public record FillDayCommand(Guid GroupId, Guid HouseholdId, Guid UserId, FillDayRequest Request)
     : IQuery<IList<MealPlanResponse>>
@@ -105,83 +37,6 @@ public record FillDayCommand(Guid GroupId, Guid HouseholdId, Guid UserId, FillDa
             await services.Mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, plan.GroupId, plan.HouseholdId), ct);
         }
         return plans.Select(MealPlanHelpers.MapToResponse).ToList();
-    }
-}
-
-public record FillWeekCommand(Guid GroupId, Guid HouseholdId, Guid UserId, FillWeekRequest Request)
-    : IQuery<IList<MealPlanResponse>>
-{
-    private static readonly IList<string> DefaultFillEntryTypes = ["breakfast", "lunch", "side", "dinner", "side"];
-
-    public async Task<IList<MealPlanResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var logger = services.LoggerFactory.CreateLogger("MealPlanCommands");
-
-        var allRules = await db.MealPlanRules.IgnoreQueryFilters()
-            .Include(r => r.Tags).Include(r => r.Categories)
-            .Where(r => r.GroupId == GroupId && r.EntryType != "unset")
-            .ToListAsync(ct);
-
-        var hasRules = allRules.Count > 0;
-        logger.LogDebug("FillWeek: {Rules} rules found for group {Group}", allRules.Count, GroupId);
-
-        var plans = new List<MealPlan>();
-        for (var date = Request.StartDate; date <= Request.EndDate; date = date.AddDays(1))
-        {
-            var dayName = MealPlanHelpers.DayOfWeekToRuleDay(date.DayOfWeek);
-            IEnumerable<(string entryType, MealPlanRule? rule)> slots;
-
-            if (hasRules)
-            {
-                var dayRules = allRules.Where(r => r.Day == dayName || r.Day == "unset").ToList();
-                slots = dayRules.Select(r => (r.EntryType, (MealPlanRule?)r));
-            }
-            else
-            {
-                slots = DefaultFillEntryTypes.Select(t => (t, (MealPlanRule?)null));
-            }
-
-            foreach (var (entryType, rule) in slots)
-            {
-                Guid? recipeId = rule is { Tags.Count: > 0 } or { Categories.Count: > 0 }
-                    ? await MealPlanHelpers.GetRandomRecipeIdForRuleAsync(db, logger, GroupId, rule, ct)
-                    : await MealPlanHelpers.GetRandomRecipeIdInternalAsync(db, logger, GroupId, date, entryType, ct);
-
-                if (recipeId is null) continue;
-
-                var plan = new MealPlan
-                {
-                    Id = Guid.NewGuid(), Title = string.Empty, EntryType = entryType, Date = date,
-                    RecipeId = recipeId, GroupId = GroupId, HouseholdId = HouseholdId, UserId = UserId,
-                    CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-                };
-                db.MealPlans.Add(plan);
-                plans.Add(plan);
-            }
-        }
-
-        await db.SaveChangesAsync(ct);
-        foreach (var plan in plans)
-        {
-            await MealPlanHelpers.LoadRecipeNav(db, plan, ct);
-            await services.Mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, plan.GroupId, plan.HouseholdId), ct);
-        }
-        return plans.Select(MealPlanHelpers.MapToResponse).ToList();
-    }
-}
-
-public record DeleteMealPlanCommand(Guid HouseholdId, Guid Id) : IQuery<bool>
-{
-    public async Task<bool> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var plan = await db.MealPlans.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.HouseholdId == HouseholdId && m.Id == Id, ct);
-        if (plan is null) return false;
-        db.MealPlans.Remove(plan);
-        await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new MealPlanEntryDeletedEvent(Id, HouseholdId), ct);
-        return true;
     }
 }
 
