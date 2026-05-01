@@ -15,17 +15,6 @@ public record GetAllUsersQuery : IQuery<object>
     }
 }
 
-public record GetAdminUserQuery(Guid UserId) : IQuery<AdminUserResponse?>
-{
-    public async Task<AdminUserResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var u = await services.Db.Users.IgnoreQueryFilters()
-            .Include(u => u.Group).Include(u => u.Household)
-            .FirstOrDefaultAsync(u => u.Id == UserId, ct);
-        return u is null ? null : AdminUserMappings.MapToResponse(u);
-    }
-}
-
 file static class AdminUserMappings
 {
     public static AdminUserResponse MapToResponse(User u) =>
