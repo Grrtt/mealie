@@ -5,38 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Queries.Ingredients;
 
-public record GetUnitsQuery(Guid GroupId, PaginationParams Pagination, string? Search = null)
-    : IQuery<PaginatedResponse<UnitResponse>>
-{
-    public async Task<PaginatedResponse<UnitResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var query = db.Units.IgnoreQueryFilters().Include(u => u.Aliases).Where(u => u.GroupId == GroupId);
-        if (!string.IsNullOrWhiteSpace(Search))
-            query = query.Where(u => u.Name.Contains(Search));
-
-        var total = await query.CountAsync(ct);
-        var items = await query.OrderBy(u => u.Name).Skip(Pagination.Skip).Take(Pagination.PerPage).ToListAsync(ct);
-        return new PaginatedResponse<UnitResponse>
-        {
-            Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / Pagination.PerPage),
-            Items = items.Select(UnitMappings.MapToResponse).ToList()
-        };
-    }
-}
-
-public record GetUnitByIdQuery(Guid GroupId, Guid Id) : IQuery<UnitResponse?>
-{
-    public async Task<UnitResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var u = await services.Db.Units.IgnoreQueryFilters()
-            .Include(u => u.Aliases)
-            .FirstOrDefaultAsync(u => u.GroupId == GroupId && u.Id == Id, ct);
-        return u is null ? null : UnitMappings.MapToResponse(u);
-    }
-}
-
 public record CreateUnitCommand(Guid GroupId, CreateUnitRequest Request) : IQuery<UnitResponse>
 {
     public async Task<UnitResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)

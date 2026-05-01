@@ -4,28 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Queries.Admin;
 
-public record GetAllUsersQuery : IQuery<object>
-{
-    public async Task<object> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var users = await services.Db.Users.IgnoreQueryFilters()
-            .Include(u => u.Group).Include(u => u.Household).ToListAsync(ct);
-        var items = users.Select(AdminUserMappings.MapToResponse).ToList();
-        return new { page = 1, per_page = -1, total = items.Count, total_pages = 1, items };
-    }
-}
-
-public record GetAdminUserQuery(Guid UserId) : IQuery<AdminUserResponse?>
-{
-    public async Task<AdminUserResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var u = await services.Db.Users.IgnoreQueryFilters()
-            .Include(u => u.Group).Include(u => u.Household)
-            .FirstOrDefaultAsync(u => u.Id == UserId, ct);
-        return u is null ? null : AdminUserMappings.MapToResponse(u);
-    }
-}
-
 public record CreateAdminUserCommand(CreateAdminUserRequest Request) : IQuery<AdminUserResponse>
 {
     public async Task<AdminUserResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)

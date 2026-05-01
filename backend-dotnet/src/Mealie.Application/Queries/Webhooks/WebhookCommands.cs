@@ -4,26 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Queries.Webhooks;
 
-public record GetWebhooksQuery(Guid HouseholdId) : IQuery<IList<WebhookResponse>>
-{
-    public async Task<IList<WebhookResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var webhooks = await services.Db.Webhooks.IgnoreQueryFilters()
-            .Where(w => w.HouseholdId == HouseholdId).ToListAsync(ct);
-        return webhooks.Select(WebhookMappings.MapToResponse).ToList();
-    }
-}
-
-public record GetWebhookByIdQuery(Guid HouseholdId, Guid Id) : IQuery<WebhookResponse?>
-{
-    public async Task<WebhookResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var webhook = await services.Db.Webhooks.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(w => w.HouseholdId == HouseholdId && w.Id == Id, ct);
-        return webhook is null ? null : WebhookMappings.MapToResponse(webhook);
-    }
-}
-
 public record CreateWebhookCommand(Guid GroupId, Guid HouseholdId, CreateWebhookRequest Request) : IQuery<WebhookResponse>
 {
     public async Task<WebhookResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)

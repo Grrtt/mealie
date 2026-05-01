@@ -7,51 +7,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Queries.MealPlans;
 
-public record GetMealPlansQuery(Guid HouseholdId, DateOnly? StartDate = null, DateOnly? EndDate = null)
-    : IQuery<IList<MealPlanResponse>>
-{
-    public async Task<IList<MealPlanResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var query = MealPlanHelpers.WithRecipe(db.MealPlans.IgnoreQueryFilters().Where(m => m.HouseholdId == HouseholdId));
-        if (StartDate.HasValue) query = query.Where(m => m.Date >= StartDate.Value);
-        if (EndDate.HasValue) query = query.Where(m => m.Date <= EndDate.Value);
-        var plans = await query.OrderBy(m => m.Date).ToListAsync(ct);
-        return plans.Select(MealPlanHelpers.MapToResponse).ToList();
-    }
-}
-
-public record GetTodayMealPlansQuery(Guid HouseholdId) : IQuery<IList<MealPlanResponse>>
-{
-    public async Task<IList<MealPlanResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var plans = await MealPlanHelpers.WithRecipe(services.Db.MealPlans.IgnoreQueryFilters()
-            .Where(m => m.HouseholdId == HouseholdId && m.Date == today))
-            .ToListAsync(ct);
-        return plans.Select(MealPlanHelpers.MapToResponse).ToList();
-    }
-}
-
-public record GetMealPlanByIdQuery(Guid HouseholdId, Guid Id) : IQuery<MealPlanResponse?>
-{
-    public async Task<MealPlanResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var m = await MealPlanHelpers.WithRecipe(services.Db.MealPlans.IgnoreQueryFilters())
-            .FirstOrDefaultAsync(m => m.HouseholdId == HouseholdId && m.Id == Id, ct);
-        return m is null ? null : MealPlanHelpers.MapToResponse(m);
-    }
-}
-
-public record GetRandomRecipeIdQuery(Guid GroupId, DateOnly Date, string EntryType) : IQuery<Guid?>
-{
-    public async Task<Guid?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var logger = services.LoggerFactory.CreateLogger("MealPlanCommands");
-        return await MealPlanHelpers.GetRandomRecipeIdInternalAsync(services.Db, logger, GroupId, Date, EntryType, ct);
-    }
-}
-
 public record CreateMealPlanCommand(Guid GroupId, Guid HouseholdId, Guid UserId, CreateMealPlanRequest Request)
     : IQuery<MealPlanResponse>
 {

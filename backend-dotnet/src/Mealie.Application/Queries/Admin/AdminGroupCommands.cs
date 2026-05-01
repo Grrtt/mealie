@@ -7,29 +7,6 @@ using Group = Mealie.Domain.Entities.Core.Group;
 
 namespace Mealie.Application.Queries.Admin;
 
-public record GetAllGroupsQuery : IQuery<object>
-{
-    public async Task<object> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var groups = await services.Db.Groups.IgnoreQueryFilters()
-            .Include(g => g.Users).Include(g => g.Households).Include(g => g.Preferences)
-            .OrderBy(g => g.Name).ToListAsync(ct);
-        var items = groups.Select(AdminGroupMappings.MapGroupToResponse).ToList();
-        return new { page = 1, per_page = -1, total = items.Count, total_pages = 1, items };
-    }
-}
-
-public record GetAdminGroupQuery(Guid GroupId) : IQuery<AdminGroupResponse?>
-{
-    public async Task<AdminGroupResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var g = await services.Db.Groups.IgnoreQueryFilters()
-            .Include(g => g.Users).Include(g => g.Households).Include(g => g.Preferences)
-            .FirstOrDefaultAsync(g => g.Id == GroupId, ct);
-        return g is null ? null : AdminGroupMappings.MapGroupToResponse(g);
-    }
-}
-
 public record CreateAdminGroupCommand(CreateAdminGroupRequest Request) : IQuery<AdminGroupResponse>
 {
     public async Task<AdminGroupResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
@@ -86,29 +63,6 @@ public record DeleteAdminGroupCommand(Guid GroupId) : IQuery<bool>
         db.Groups.Remove(group);
         await db.SaveChangesAsync(ct);
         return true;
-    }
-}
-
-public record GetAllHouseholdsQuery : IQuery<object>
-{
-    public async Task<object> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var households = await services.Db.Households.IgnoreQueryFilters()
-            .Include(h => h.Users).Include(h => h.Preferences)
-            .OrderBy(h => h.Name).ToListAsync(ct);
-        var items = households.Select(AdminGroupMappings.MapHouseholdToResponse).ToList();
-        return new { page = 1, per_page = -1, total = items.Count, total_pages = 1, items };
-    }
-}
-
-public record GetAdminHouseholdQuery(Guid HouseholdId) : IQuery<AdminHouseholdResponse?>
-{
-    public async Task<AdminHouseholdResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var h = await services.Db.Households.IgnoreQueryFilters()
-            .Include(h => h.Users).Include(h => h.Preferences)
-            .FirstOrDefaultAsync(h => h.Id == HouseholdId, ct);
-        return h is null ? null : AdminGroupMappings.MapHouseholdToResponse(h);
     }
 }
 

@@ -5,16 +5,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Queries.Webhooks;
 
-public record GetEventNotifiersQuery(Guid HouseholdId) : IQuery<IList<EventNotifierResponse>>
-{
-    public async Task<IList<EventNotifierResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var notifiers = await services.Db.EventNotifiers.IgnoreQueryFilters()
-            .Where(e => e.HouseholdId == HouseholdId).ToListAsync(ct);
-        return notifiers.Select(NotifierMappings.MapToResponse).ToList();
-    }
-}
-
 public record CreateEventNotifierCommand(Guid GroupId, Guid HouseholdId, CreateEventNotifierRequest Request)
     : IQuery<EventNotifierResponse>
 {

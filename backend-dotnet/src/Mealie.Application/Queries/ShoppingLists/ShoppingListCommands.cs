@@ -7,43 +7,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Queries.ShoppingLists;
 
-public record GetShoppingListsQuery(Guid HouseholdId, PaginationParams Pagination)
-    : IQuery<PaginatedResponse<ShoppingListSummaryResponse>>
-{
-    public async Task<PaginatedResponse<ShoppingListSummaryResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var query = db.ShoppingLists.IgnoreQueryFilters().Where(s => s.HouseholdId == HouseholdId);
-        var total = await query.CountAsync(ct);
-        var items = await query.OrderBy(s => s.Name)
-            .Skip(Pagination.Skip).Take(Pagination.PerPage)
-            .Select(s => new ShoppingListSummaryResponse
-            {
-                Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
-                CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt
-            })
-            .ToListAsync(ct);
-        return new PaginatedResponse<ShoppingListSummaryResponse>
-        {
-            Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / Pagination.PerPage), Items = items
-        };
-    }
-}
-
-public record GetShoppingListByIdQuery(Guid HouseholdId, Guid Id) : IQuery<ShoppingListResponse?>
-{
-    public async Task<ShoppingListResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var list = await services.Db.ShoppingLists.IgnoreQueryFilters()
-            .Where(s => s.HouseholdId == HouseholdId && s.Id == Id)
-            .Include(s => s.Items).ThenInclude(i => i.Unit)
-            .Include(s => s.Items).ThenInclude(i => i.Food)
-            .FirstOrDefaultAsync(ct);
-        return list is null ? null : ShoppingListMappings.MapToResponse(list);
-    }
-}
-
 public record CreateShoppingListCommand(Guid GroupId, Guid HouseholdId, CreateShoppingListRequest Request)
     : IQuery<ShoppingListResponse>
 {
@@ -158,43 +121,6 @@ public record DeleteShoppingListItemCommand(Guid HouseholdId, Guid ListId, Guid 
         db.ShoppingListItems.Remove(item);
         await db.SaveChangesAsync(ct);
         return true;
-    }
-}
-
-public record GetShoppingListItemsQuery(Guid HouseholdId, PaginationParams Pagination, bool? Checked = null)
-    : IQuery<PaginatedResponse<ShoppingListItemResponse>>
-{
-    public async Task<PaginatedResponse<ShoppingListItemResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var db = services.Db;
-        var query = db.ShoppingListItems
-            .Include(i => i.Unit).Include(i => i.Food)
-            .Where(i => i.ShoppingList.HouseholdId == HouseholdId)
-            .AsQueryable();
-        if (Checked.HasValue) query = query.Where(i => i.Checked == Checked.Value);
-
-        var total = await query.CountAsync(ct);
-        var items = await query.OrderByDescending(i => i.UpdateAt).ThenBy(i => i.Position)
-            .Skip(Pagination.Skip).Take(Pagination.PerPage)
-            .Select(i => ShoppingListMappings.MapItemToResponse(i))
-            .ToListAsync(ct);
-        return new PaginatedResponse<ShoppingListItemResponse>
-        {
-            Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / Pagination.PerPage), Items = items
-        };
-    }
-}
-
-public record GetShoppingListItemByIdQuery(Guid HouseholdId, Guid ItemId) : IQuery<ShoppingListItemResponse?>
-{
-    public async Task<ShoppingListItemResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var item = await services.Db.ShoppingListItems
-            .Include(i => i.Unit).Include(i => i.Food).Include(i => i.ShoppingList)
-            .Where(i => i.ShoppingList.HouseholdId == HouseholdId && i.Id == ItemId)
-            .FirstOrDefaultAsync(ct);
-        return item is null ? null : ShoppingListMappings.MapItemToResponse(item);
     }
 }
 
