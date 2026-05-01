@@ -240,19 +240,7 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
                 .FirstOrDefaultAsync(s => s.HouseholdId == householdId && s.Id == listId, ct)
             ?? throw new KeyNotFoundException("Shopping list not found");
 
-        var position = await db.ShoppingListItems.Where(i => i.ShoppingListId == listId)
-            .MaxAsync(i => (int?)i.Position, ct) ?? -1;
-        var item = new ShoppingListItem
-        {
-            Id = Guid.NewGuid(), Note = request.Note, IsFood = request.IsFood,
-            DisableAmount = request.DisableAmount, Quantity = request.Quantity,
-            UnitId = request.UnitId, FoodId = request.FoodId, LabelId = request.LabelId,
-            Position = position + 1, ShoppingListId = listId, Checked = false,
-            CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-        };
-        db.ShoppingListItems.Add(item);
-        await db.SaveChangesAsync(ct);
-        return MapItemToResponse(item);
+        return await CreateItemWithMergeAsync(listId, request, ct);
     }
 
     public async Task<ShoppingListItemResponse?> UpdateStandaloneItemAsync(Guid householdId, Guid itemId,
@@ -338,29 +326,18 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
             throw new KeyNotFoundException("One or more shopping lists not found");
         }
 
-        var items = new List<ShoppingListItem>();
         var responses = new List<ShoppingListItemResponse>();
 
         foreach (var req in request.Items)
         {
-            var position = await db.ShoppingListItems
-                .Where(i => i.ShoppingListId == req.ListId)
-                .MaxAsync(i => (int?)i.Position, ct) ?? -1;
-
-            var item = new ShoppingListItem
+            var itemRequest = new CreateShoppingListItemRequest
             {
-                Id = Guid.NewGuid(), Note = req.Note, IsFood = req.IsFood,
-                DisableAmount = req.DisableAmount, Quantity = req.Quantity,
-                UnitId = req.UnitId, FoodId = req.FoodId, LabelId = req.LabelId,
-                Position = position + 1, ShoppingListId = req.ListId, Checked = false,
-                CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+                Note = req.Note, IsFood = req.IsFood, DisableAmount = req.DisableAmount,
+                Quantity = req.Quantity, UnitId = req.UnitId, FoodId = req.FoodId, LabelId = req.LabelId
             };
-            items.Add(item);
-            responses.Add(MapItemToResponse(item));
+            responses.Add(await CreateItemWithMergeAsync(req.ListId, itemRequest, ct));
         }
 
-        db.ShoppingListItems.AddRange(items);
-        await db.SaveChangesAsync(ct);
         return responses;
     }
 
@@ -642,5 +619,58 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
             Position = i.Position, UnitName = i.Unit?.Name, FoodName = i.Food?.Name,
             CreatedAt = i.CreatedAt, UpdateAt = i.UpdateAt
         };
+    }
+
+    /// <summary>
+    /// Creates an item, merging into an existing item if one is eligible (same food+unit, or same note when no food).
+    /// Mimics Python's bulk_create_items merge behaviour.
+    /// </summary>
+    private async Task<ShoppingListItemResponse> CreateItemWithMergeAsync(
+        Guid listId, CreateShoppingListItemRequest request, CancellationToken ct)
+    {
+        if (!request.DisableAmount)
+        {
+            var candidates = await db.ShoppingListItems
+                .Include(i => i.Unit).Include(i => i.Food)
+                .Where(i => i.ShoppingListId == listId && !i.Checked && !i.DisableAmount)
+                .ToListAsync(ct);
+
+            var mergeable = candidates.FirstOrDefault(i => CanMerge(i, request));
+            if (mergeable is not null)
+            {
+                mergeable.Quantity = (mergeable.Quantity ?? 0) + (request.Quantity ?? 1);
+                mergeable.UpdateAt = DateTime.UtcNow;
+                await db.SaveChangesAsync(ct);
+                return MapItemToResponse(mergeable);
+            }
+        }
+
+        var position = await db.ShoppingListItems.Where(i => i.ShoppingListId == listId)
+            .MaxAsync(i => (int?)i.Position, ct) ?? -1;
+        var item = new ShoppingListItem
+        {
+            Id = Guid.NewGuid(), Note = request.Note, IsFood = request.IsFood,
+            DisableAmount = request.DisableAmount, Quantity = request.Quantity,
+            UnitId = request.UnitId, FoodId = request.FoodId, LabelId = request.LabelId,
+            Position = position + 1, ShoppingListId = listId, Checked = false,
+            CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+        };
+        db.ShoppingListItems.Add(item);
+        await db.SaveChangesAsync(ct);
+        return MapItemToResponse(item);
+    }
+
+    private static bool CanMerge(ShoppingListItem existing, CreateShoppingListItemRequest incoming)
+    {
+        if (existing.DisableAmount) return false;
+        if (incoming.DisableAmount) return false;
+
+        if (incoming.FoodId.HasValue && existing.FoodId.HasValue)
+            return existing.FoodId == incoming.FoodId && existing.UnitId == incoming.UnitId;
+
+        if (!incoming.FoodId.HasValue && !existing.FoodId.HasValue)
+            return !string.IsNullOrEmpty(existing.Note) && existing.Note == incoming.Note;
+
+        return false;
     }
 }
