@@ -16,17 +16,6 @@ public record GetAllHouseholdsQuery : IQuery<object>
     }
 }
 
-public record GetAdminHouseholdQuery(Guid HouseholdId) : IQuery<AdminHouseholdResponse?>
-{
-    public async Task<AdminHouseholdResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var h = await services.Db.Households.IgnoreQueryFilters()
-            .Include(h => h.Users).Include(h => h.Preferences)
-            .FirstOrDefaultAsync(h => h.Id == HouseholdId, ct);
-        return h is null ? null : AdminHouseholdMappings.MapHouseholdToResponse(h);
-    }
-}
-
 file static class AdminHouseholdMappings
 {
     public static AdminHouseholdResponse MapHouseholdToResponse(Household h) =>
