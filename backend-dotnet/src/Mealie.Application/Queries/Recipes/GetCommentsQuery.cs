@@ -19,28 +19,6 @@ public record GetCommentsQuery(string Slug) : IQuery<IList<CommentResponse>>
     }
 }
 
-public record GetAllCommentsQuery(Guid GroupId) : IQuery<IList<CommentResponse>>
-{
-    public async Task<IList<CommentResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        return await services.Db.RecipeComments
-            .Include(c => c.Recipe)
-            .Where(c => c.Recipe.GroupId == GroupId)
-            .OrderBy(c => c.CreatedAt)
-            .Select(c => CommentMappings.MapToResponse(c))
-            .ToListAsync(ct);
-    }
-}
-
-public record GetCommentByIdQuery(Guid CommentId) : IQuery<CommentResponse?>
-{
-    public async Task<CommentResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
-    {
-        var comment = await services.Db.RecipeComments.FirstOrDefaultAsync(c => c.Id == CommentId, ct);
-        return comment is null ? null : CommentMappings.MapToResponse(comment);
-    }
-}
-
 file static class CommentMappings
 {
     public static CommentResponse MapToResponse(RecipeComment c) => new()
