@@ -28,6 +28,28 @@ public class MealPlansController(IMealPlanService mealPlanService, ITenantContex
         });
     }
 
+    [HttpGet("today")]
+    public async Task<ActionResult<IList<MealPlanResponse>>> GetTodayMealPlans(CancellationToken ct)
+    {
+        return Ok(await mealPlanService.GetTodayAsync(CurrentHouseholdId, ct));
+    }
+
+    [HttpGet("random")]
+    public async Task<IActionResult> GetRandomRecipe(
+        [FromQuery(Name = "date")] DateOnly? date,
+        [FromQuery(Name = "entry_type")] string entryType = "dinner",
+        CancellationToken ct = default)
+    {
+        var queryDate = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var recipeId = await mealPlanService.GetRandomRecipeIdAsync(CurrentGroupId, queryDate, entryType, ct);
+        if (recipeId is null)
+        {
+            return NotFound(new { detail = "No recipes available for the given filters." });
+        }
+
+        return Ok(new { recipeId });
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<MealPlanResponse>> GetMealPlan(Guid id, CancellationToken ct)
     {

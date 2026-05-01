@@ -7,6 +7,10 @@ public interface IMealPlanService
     Task<IList<MealPlanResponse>> GetMealPlansAsync(Guid householdId, DateOnly? startDate = null,
         DateOnly? endDate = null, CancellationToken ct = default);
 
+    Task<IList<MealPlanResponse>> GetTodayAsync(Guid householdId, CancellationToken ct = default);
+
+    Task<Guid?> GetRandomRecipeIdAsync(Guid groupId, DateOnly date, string entryType, CancellationToken ct = default);
+
     Task<MealPlanResponse?> GetByIdAsync(Guid householdId, Guid id, CancellationToken ct = default);
 
     Task<MealPlanResponse> CreateAsync(Guid groupId, Guid householdId, Guid userId, CreateMealPlanRequest request,

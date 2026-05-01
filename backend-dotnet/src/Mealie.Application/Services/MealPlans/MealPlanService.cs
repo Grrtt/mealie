@@ -33,16 +33,26 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
         return plans.Select(MapToResponse).ToList();
     }
 
+    public async Task<IList<MealPlanResponse>> GetTodayAsync(Guid householdId, CancellationToken ct = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var plans = await WithRecipe(db.MealPlans.IgnoreQueryFilters()
+            .Where(m => m.HouseholdId == householdId && m.Date == today))
+            .ToListAsync(ct);
+        return plans.Select(MapToResponse).ToList();
+    }
+
+    public async Task<Guid?> GetRandomRecipeIdAsync(Guid groupId, DateOnly date, string entryType,
+        CancellationToken ct = default)
+    {
+        return await GetRandomRecipeIdInternalAsync(groupId, date, entryType, ct);
+    }
+
     public async Task<MealPlanResponse?> GetByIdAsync(Guid householdId, Guid id, CancellationToken ct = default)
     {
         var m = await WithRecipe(db.MealPlans.IgnoreQueryFilters())
             .FirstOrDefaultAsync(m => m.HouseholdId == householdId && m.Id == id, ct);
-        if (m is null)
-        {
-            return null;
-        }
-
-        return MapToResponse(m);
+        return m is null ? null : MapToResponse(m);
     }
 
     public async Task<MealPlanResponse> CreateAsync(Guid groupId, Guid householdId, Guid userId,
@@ -108,7 +118,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
     public async Task<MealPlanResponse?> CreateRandomAsync(Guid groupId, Guid householdId, Guid userId,
         CreateRandomMealPlanRequest request, CancellationToken ct = default)
     {
-        var recipeId = await GetRandomRecipeIdAsync(groupId, request.Date, request.EntryType, ct);
+        var recipeId = await GetRandomRecipeIdInternalAsync(groupId, request.Date, request.EntryType, ct);
         if (recipeId is null)
         {
             return null;
@@ -129,6 +139,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
         };
         db.MealPlans.Add(plan);
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, groupId, householdId), ct);
         await LoadRecipeNav(plan, ct);
         return MapToResponse(plan);
     }
@@ -139,7 +150,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
         var plans = new List<MealPlan>();
         foreach (var entryType in request.EntryTypes)
         {
-            var recipeId = await GetRandomRecipeIdAsync(groupId, request.Date, entryType, ct);
+            var recipeId = await GetRandomRecipeIdInternalAsync(groupId, request.Date, entryType, ct);
             if (recipeId is null)
             {
                 continue;
@@ -166,6 +177,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
         foreach (var plan in plans)
         {
             await LoadRecipeNav(plan, ct);
+            await mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, plan.GroupId, plan.HouseholdId), ct);
         }
 
         return plans.Select(MapToResponse).ToList();
@@ -217,7 +229,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
                 }
                 else
                 {
-                    recipeId = await GetRandomRecipeIdAsync(groupId, date, entryType, ct);
+                    recipeId = await GetRandomRecipeIdInternalAsync(groupId, date, entryType, ct);
                 }
 
                 if (recipeId is null)
@@ -247,6 +259,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
         foreach (var plan in plans)
         {
             await LoadRecipeNav(plan, ct);
+            await mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, plan.GroupId, plan.HouseholdId), ct);
         }
 
         return plans.Select(MapToResponse).ToList();
@@ -289,7 +302,7 @@ public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogge
     ///     automatically filters to recipes whose tags or categories match the entry type by slug.
     ///     Falls back to all group recipes only if nothing matches.
     /// </summary>
-    private async Task<Guid?> GetRandomRecipeIdAsync(Guid groupId, DateOnly date, string entryType,
+    private async Task<Guid?> GetRandomRecipeIdInternalAsync(Guid groupId, DateOnly date, string entryType,
         CancellationToken ct)
     {
         var dayName = DayOfWeekToRuleDay(date.DayOfWeek);
