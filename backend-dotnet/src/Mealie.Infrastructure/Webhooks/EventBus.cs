@@ -36,9 +36,3 @@ public class EventBus(ILogger<EventBus> logger) : IEventBus
     }
 }
 
-// Domain events
-public record RecipeCreatedEvent(Guid RecipeId, string Slug, Guid GroupId, Guid HouseholdId);
-public record RecipeUpdatedEvent(Guid RecipeId, string Slug, Guid GroupId, Guid HouseholdId);
-public record RecipeDeletedEvent(Guid RecipeId, string Slug, Guid GroupId, Guid HouseholdId);
-public record MealPlanCreatedEvent(Guid MealPlanId, Guid GroupId, Guid HouseholdId);
-public record ShoppingListCreatedEvent(Guid ShoppingListId, Guid GroupId, Guid HouseholdId);

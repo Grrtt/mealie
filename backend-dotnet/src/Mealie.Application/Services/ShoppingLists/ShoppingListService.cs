@@ -1,12 +1,14 @@
 using Mealie.Application.Dtos.ShoppingLists;
 using Mealie.Domain.Entities.Planning;
+using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
+using MediatR;
 using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Services.ShoppingLists;
 
-public class ShoppingListService(ApplicationDbContext db) : IShoppingListService
+public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : IShoppingListService
 {
     public async Task<PaginatedResponse<ShoppingListSummaryResponse>> GetShoppingListsAsync(Guid householdId, PaginationParams pagination, CancellationToken ct = default)
     {
@@ -40,6 +42,7 @@ public class ShoppingListService(ApplicationDbContext db) : IShoppingListService
         };
         db.ShoppingLists.Add(list);
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new ShoppingListCreatedEvent(list.Id, groupId, householdId), ct);
         return MapToResponse(list);
     }
 
@@ -54,6 +57,7 @@ public class ShoppingListService(ApplicationDbContext db) : IShoppingListService
         if (request.Name is not null) list.Name = request.Name;
         list.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new ShoppingListUpdatedEvent(list.Id, list.GroupId, householdId), ct);
         return MapToResponse(list);
     }
 
@@ -64,6 +68,7 @@ public class ShoppingListService(ApplicationDbContext db) : IShoppingListService
         if (list is null) return false;
         db.ShoppingLists.Remove(list);
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new ShoppingListDeletedEvent(id, householdId), ct);
         return true;
     }
 

@@ -1,12 +1,14 @@
 using Mealie.Application.Dtos.MealPlans;
 using Mealie.Domain.Entities.Planning;
+using Mealie.Domain.Events;
 using Mealie.Infrastructure.Data;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Services.MealPlans;
 
-public class MealPlanService(ApplicationDbContext db, ILogger<MealPlanService> logger) : IMealPlanService
+public class MealPlanService(ApplicationDbContext db, IMediator mediator, ILogger<MealPlanService> logger) : IMealPlanService
 {
     private static string DayOfWeekToRuleDay(DayOfWeek dow) => dow switch
     {
@@ -141,6 +143,7 @@ public class MealPlanService(ApplicationDbContext db, ILogger<MealPlanService> l
         };
         db.MealPlans.Add(plan);
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new MealPlanEntryCreatedEvent(plan.Id, groupId, householdId), ct);
         await LoadRecipeNav(plan, ct);
         return MapToResponse(plan);
     }
@@ -157,6 +160,7 @@ public class MealPlanService(ApplicationDbContext db, ILogger<MealPlanService> l
         if (request.RecipeId.HasValue) plan.RecipeId = request.RecipeId;
         plan.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new MealPlanEntryUpdatedEvent(plan.Id, plan.GroupId, householdId), ct);
         await LoadRecipeNav(plan, ct);
         return MapToResponse(plan);
     }
@@ -320,6 +324,7 @@ public class MealPlanService(ApplicationDbContext db, ILogger<MealPlanService> l
         if (plan is null) return false;
         db.MealPlans.Remove(plan);
         await db.SaveChangesAsync(ct);
+        await mediator.Publish(new MealPlanEntryDeletedEvent(id, householdId), ct);
         return true;
     }
 

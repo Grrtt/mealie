@@ -206,6 +206,7 @@ builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 
 // Phase 7: Background services
 builder.Services.AddHttpClient<IWebhookDeliveryService, WebhookDeliveryService>(c => c.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<AppriseNotificationHandler>(c => c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddSingleton<IEventBus, EventBus>();
 builder.Services.AddScoped<IWebhookService, WebhookService>();
 builder.Services.AddScoped<IEventNotifierService, EventNotifierService>();
@@ -240,10 +241,11 @@ builder.Services.AddHostedService<Mealie.Application.Services.ImageScrape.ImageS
 builder.Services.AddSingleton<Mealie.Application.Services.Seeder.SeedQueue>();
 builder.Services.AddHostedService<Mealie.Application.Services.Seeder.SeedBackgroundService>();
 
-// MediatR — scan Application + Api assemblies for handlers
+// MediatR — scan Application + Infrastructure + Api assemblies for handlers
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Mealie.Application.Services.Search.RecipeSearchIndexHandler).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(Mealie.Infrastructure.Webhooks.AppriseNotificationHandler).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
 });
 
