@@ -1,6 +1,7 @@
 using Mealie.Application.Dtos.Users;
+using Mealie.Application.Queries;
+using Mealie.Application.Queries.Users;
 using Mealie.Application.Services.Auth;
-using Mealie.Application.Services.Users;
 using Mealie.Application.Validators.Auth;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
@@ -16,7 +17,7 @@ namespace Mealie.Api.Controllers.Users;
 public class UsersController(
     IRegistrationService registrationService,
     IPasswordResetService passwordResetService,
-    IUserService userService,
+    QueryExecutor executor,
     ITenantContext tenantContext,
     IOptions<AppSettings> settings) : ControllerBase
 {
@@ -25,24 +26,18 @@ public class UsersController(
     [HttpGet("registration")]
     [AllowAnonymous]
     public IActionResult GetRegistrationInfo()
-    {
-        return Ok(new { allow_registration = settings.Value.AllowSignup });
-    }
+        => Ok(new { allow_registration = settings.Value.AllowSignup });
 
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!registrationService.AllowSignup)
-        {
             return BadRequest(new { detail = "Registration is disabled" });
-        }
 
         var success = await registrationService.RegisterAsync(request);
         if (!success)
-        {
             return BadRequest(new { detail = "Registration failed — username or email already taken" });
-        }
 
         return Ok(new { detail = "Registration successful" });
     }
@@ -60,11 +55,7 @@ public class UsersController(
     public async Task<IActionResult> ResetPassword([FromBody] PasswordResetConfirmRequest request)
     {
         var success = await passwordResetService.ResetPasswordAsync(request.Token, request.NewPassword);
-        if (!success)
-        {
-            return BadRequest(new { detail = "Invalid or expired reset token" });
-        }
-
+        if (!success) return BadRequest(new { detail = "Invalid or expired reset token" });
         return Ok(new { detail = "Password reset successful" });
     }
 
@@ -72,183 +63,122 @@ public class UsersController(
 
     [HttpGet("self")]
     [Authorize]
-    public async Task<ActionResult<UserResponse>> GetSelf()
+    public async Task<ActionResult<UserResponse>> GetSelf(CancellationToken ct = default)
     {
-        var user = await userService.GetProfileAsync(tenantContext.UserId);
-        // Return 401 so the frontend re-authenticates rather than looping on 404
-        if (user is null)
-        {
-            return Unauthorized(new { detail = "User not found — please log in again" });
-        }
-
+        var user = await executor.ExecuteAsync(new GetUserProfileQuery(tenantContext.UserId), ct);
+        if (user is null) return Unauthorized(new { detail = "User not found — please log in again" });
         return Ok(user);
     }
 
     [HttpPut("self")]
     [Authorize]
-    public async Task<ActionResult<UserResponse>> UpdateSelf([FromBody] UpdateUserRequest request)
+    public async Task<ActionResult<UserResponse>> UpdateSelf([FromBody] UpdateUserRequest request, CancellationToken ct = default)
     {
-        var user = await userService.UpdateProfileAsync(tenantContext.UserId, request);
-        if (user is null)
-        {
-            return NotFound();
-        }
-
+        var user = await executor.ExecuteAsync(new UpdateUserProfileCommand(tenantContext.UserId, request), ct);
+        if (user is null) return NotFound();
         return Ok(user);
     }
 
     [HttpPut("self/password")]
     [Authorize]
-    public async Task<IActionResult> ChangePasswordSelf([FromBody] ChangePasswordRequest request)
+    public async Task<IActionResult> ChangePasswordSelf([FromBody] ChangePasswordRequest request, CancellationToken ct = default)
     {
-        var success =
-            await userService.ChangePasswordAsync(tenantContext.UserId, request.CurrentPassword, request.NewPassword);
-        if (!success)
-        {
-            return BadRequest(new { detail = "Current password is incorrect" });
-        }
-
+        var success = await executor.ExecuteAsync(
+            new ChangePasswordCommand(tenantContext.UserId, request.CurrentPassword, request.NewPassword), ct);
+        if (!success) return BadRequest(new { detail = "Current password is incorrect" });
         return Ok(new { detail = "Password updated successfully" });
     }
 
-    // Alias: frontend calls PUT /api/users/password (not /api/users/self/password)
     [HttpPut("password")]
     [Authorize]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
-    {
-        var success =
-            await userService.ChangePasswordAsync(tenantContext.UserId, request.CurrentPassword, request.NewPassword);
-        if (!success)
-        {
-            return BadRequest(new { detail = "Current password is incorrect" });
-        }
-
-        return Ok(new { detail = "Password updated successfully" });
-    }
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct = default)
+        => await ChangePasswordSelf(request, ct);
 
     [HttpGet("self/api-tokens")]
     [Authorize]
-    public async Task<ActionResult<IList<ApiKeyResponse>>> GetApiTokens()
-    {
-        var keys = await userService.GetApiKeysAsync(tenantContext.UserId);
-        return Ok(keys);
-    }
+    public async Task<ActionResult<IList<ApiKeyResponse>>> GetApiTokens(CancellationToken ct = default)
+        => Ok(await executor.ExecuteAsync(new GetApiKeysQuery(tenantContext.UserId), ct));
 
     [HttpPost("self/api-tokens")]
     [Authorize]
-    public async Task<ActionResult<ApiKeyResponse>> CreateApiToken([FromBody] CreateApiKeyRequest request)
-    {
-        var key = await userService.CreateApiKeyAsync(tenantContext.UserId, request.Name);
-        return Ok(key);
-    }
+    public async Task<ActionResult<ApiKeyResponse>> CreateApiToken([FromBody] CreateApiKeyRequest request, CancellationToken ct = default)
+        => Ok(await executor.ExecuteAsync(new CreateApiKeyCommand(tenantContext.UserId, request.Name), ct));
 
     [HttpPost("api-tokens")]
     [Authorize]
-    public async Task<ActionResult<ApiKeyResponse>> CreateApiTokenAlias([FromBody] CreateApiKeyRequest request)
-    {
-        var key = await userService.CreateApiKeyAsync(tenantContext.UserId, request.Name);
-        return Ok(key);
-    }
+    public async Task<ActionResult<ApiKeyResponse>> CreateApiTokenAlias([FromBody] CreateApiKeyRequest request, CancellationToken ct = default)
+        => Ok(await executor.ExecuteAsync(new CreateApiKeyCommand(tenantContext.UserId, request.Name), ct));
 
     [HttpDelete("self/api-tokens/{tokenId:int}")]
     [Authorize]
-    public async Task<IActionResult> DeleteApiToken(int tokenId)
+    public async Task<IActionResult> DeleteApiToken(int tokenId, CancellationToken ct = default)
     {
-        var success = await userService.DeleteApiKeyAsync(tenantContext.UserId, tokenId);
-        if (!success)
-        {
-            return NotFound();
-        }
-
+        var success = await executor.ExecuteAsync(new DeleteApiKeyCommand(tenantContext.UserId, tokenId), ct);
+        if (!success) return NotFound();
         return Ok(new { detail = "API token deleted" });
     }
 
     [HttpDelete("api-tokens/{tokenId:int}")]
     [Authorize]
-    public async Task<IActionResult> DeleteApiTokenAlias(int tokenId)
-    {
-        var success = await userService.DeleteApiKeyAsync(tenantContext.UserId, tokenId);
-        if (!success)
-        {
-            return NotFound();
-        }
-
-        return Ok(new { detail = "API token deleted" });
-    }
+    public async Task<IActionResult> DeleteApiTokenAlias(int tokenId, CancellationToken ct = default)
+        => await DeleteApiToken(tokenId, ct);
 
     // ── User lookup ────────────────────────────────────────────────────────
 
     [HttpGet("{userId:guid}")]
     [Authorize]
-    public async Task<ActionResult<UserResponse>> GetUser(Guid userId)
+    public async Task<ActionResult<UserResponse>> GetUser(Guid userId, CancellationToken ct = default)
     {
-        var user = await userService.GetProfileAsync(userId);
-        if (user is null)
-        {
-            return NotFound();
-        }
-
+        var user = await executor.ExecuteAsync(new GetUserProfileQuery(userId), ct);
+        if (user is null) return NotFound();
         return Ok(user);
     }
 
     [HttpPut("{userId:guid}")]
     [Authorize]
-    public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request)
+    public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UpdateUserRequest request, CancellationToken ct = default)
     {
-        var user = await userService.UpdateProfileAsync(userId, request);
-        if (user is null)
-        {
-            return NotFound();
-        }
-
+        var user = await executor.ExecuteAsync(new UpdateUserProfileCommand(userId, request), ct);
+        if (user is null) return NotFound();
         return Ok(user);
     }
 
     [HttpPut("{userId:guid}/favorites/{slug}")]
     [Authorize]
-    public async Task<IActionResult> AddFavorite(Guid userId, string slug)
+    public async Task<IActionResult> AddFavorite(Guid userId, string slug, CancellationToken ct = default)
     {
-        await userService.AddFavoriteAsync(userId, slug);
+        await executor.ExecuteAsync(new AddFavoriteRecipeCommand(userId, slug), ct);
         return Ok();
     }
 
     [HttpGet("{userId:guid}/favorites")]
     [Authorize]
-    public async Task<ActionResult<IList<string>>> GetFavorites(Guid userId)
-    {
-        var favorites = await userService.GetFavoritesAsync(userId);
-        return Ok(favorites);
-    }
+    public async Task<ActionResult<IList<string>>> GetFavorites(Guid userId, CancellationToken ct = default)
+        => Ok(await executor.ExecuteAsync(new GetFavoriteRecipesQuery(userId), ct));
 
     [HttpDelete("{userId:guid}/favorites/{slug}")]
     [Authorize]
-    public async Task<IActionResult> RemoveFavorite(Guid userId, string slug)
+    public async Task<IActionResult> RemoveFavorite(Guid userId, string slug, CancellationToken ct = default)
     {
-        await userService.RemoveFavoriteAsync(userId, slug);
+        await executor.ExecuteAsync(new RemoveFavoriteRecipeCommand(userId, slug), ct);
         return Ok();
     }
 
     [HttpGet("self/ratings")]
     [Authorize]
-    public async Task<ActionResult<IList<UserRatingResponse>>> GetSelfRatings()
-    {
-        var ratings = await userService.GetRatingsAsync(tenantContext.UserId);
-        return Ok(ratings);
-    }
+    public async Task<ActionResult<IList<UserRatingResponse>>> GetSelfRatings(CancellationToken ct = default)
+        => Ok(await executor.ExecuteAsync(new GetUserRatingsQuery(tenantContext.UserId), ct));
 
     [HttpGet("{userId:guid}/ratings")]
     [Authorize]
-    public async Task<ActionResult<IList<UserRatingResponse>>> GetRatings(Guid userId)
-    {
-        var ratings = await userService.GetRatingsAsync(userId);
-        return Ok(ratings);
-    }
+    public async Task<ActionResult<IList<UserRatingResponse>>> GetRatings(Guid userId, CancellationToken ct = default)
+        => Ok(await executor.ExecuteAsync(new GetUserRatingsQuery(userId), ct));
 
     [HttpPost("{userId:guid}/ratings/{slug}")]
     [Authorize]
-    public async Task<IActionResult> SetRating(Guid userId, string slug, [FromBody] SetRatingRequest request)
+    public async Task<IActionResult> SetRating(Guid userId, string slug, [FromBody] SetRatingRequest request, CancellationToken ct = default)
     {
-        await userService.SetRatingAsync(userId, slug, request.Rating, request.IsFavorite);
+        await executor.ExecuteAsync(new SetUserRatingCommand(userId, slug, request.Rating, request.IsFavorite), ct);
         return Ok();
     }
 
@@ -257,23 +187,17 @@ public class UsersController(
     [HttpPost("self/image")]
     [Authorize]
     public Task<IActionResult> UploadSelfImage(IFormFile image)
-    {
-        return SaveProfileImageAsync(tenantContext.UserId, image);
-    }
+        => SaveProfileImageAsync(tenantContext.UserId, image);
 
     [HttpPost("{userId:guid}/image")]
     [Authorize]
     public Task<IActionResult> UploadUserImage(Guid userId, IFormFile image)
-    {
-        return SaveProfileImageAsync(userId, image);
-    }
+        => SaveProfileImageAsync(userId, image);
 
     private async Task<IActionResult> SaveProfileImageAsync(Guid userId, IFormFile image)
     {
         if (image is null || image.Length == 0)
-        {
             return BadRequest(new { detail = "No image provided" });
-        }
 
         var dir = Path.Combine(settings.Value.DataDir, "users", userId.ToString());
         Directory.CreateDirectory(dir);
@@ -281,13 +205,8 @@ public class UsersController(
 
         using var stream = image.OpenReadStream();
         using var original = SKBitmap.Decode(stream);
-        if (original is null)
-        {
-            return BadRequest(new { detail = "Invalid image format" });
-        }
+        if (original is null) return BadRequest(new { detail = "Invalid image format" });
 
-        // Resize to 200×200 for the profile thumbnail
-        var size = Math.Min(original.Width, original.Height);
         var resized = original.Width != 200 || original.Height != 200
             ? original.Resize(new SKImageInfo(200, 200),
                 new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear))
@@ -298,10 +217,7 @@ public class UsersController(
         await using var output = System.IO.File.OpenWrite(destPath);
         data.SaveTo(output);
 
-        if (!ReferenceEquals(resized, original))
-        {
-            resized?.Dispose();
-        }
+        if (!ReferenceEquals(resized, original)) resized?.Dispose();
 
         return Ok(new { detail = "Profile image updated" });
     }

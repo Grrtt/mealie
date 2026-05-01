@@ -1,5 +1,6 @@
 using Mealie.Application.Dtos.ShoppingLists;
-using Mealie.Application.Services.ShoppingLists;
+using Mealie.Application.Queries;
+using Mealie.Application.Queries.ShoppingLists;
 using Mealie.Infrastructure.Auth;
 using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
 [Route("api/households/shopping/items")]
-public class ShoppingItemsController(IShoppingListService shoppingListService, ITenantContext tenantContext)
+public class ShoppingItemsController(QueryExecutor executor, ITenantContext tenantContext)
     : MealieControllerBase(tenantContext)
 {
     [HttpGet]
@@ -16,19 +17,13 @@ public class ShoppingItemsController(IShoppingListService shoppingListService, I
         [FromQuery] PaginationParams pagination,
         [FromQuery] bool? checked_,
         CancellationToken ct)
-    {
-        return Ok(await shoppingListService.GetItemsAsync(CurrentHouseholdId, pagination, checked_, ct));
-    }
+        => Ok(await executor.ExecuteAsync(new GetShoppingListItemsQuery(CurrentHouseholdId, pagination, checked_), ct));
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ShoppingListItemResponse>> GetItem(Guid id, CancellationToken ct)
     {
-        var item = await shoppingListService.GetItemByIdAsync(CurrentHouseholdId, id, ct);
-        if (item is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
+        var item = await executor.ExecuteAsync(new GetShoppingListItemByIdQuery(CurrentHouseholdId, id), ct);
+        if (item is null) return NotFoundOrForbidden();
         return Ok(item);
     }
 
@@ -36,7 +31,8 @@ public class ShoppingItemsController(IShoppingListService shoppingListService, I
     public async Task<ActionResult<ShoppingListItemResponse>> CreateItem(
         [FromBody] CreateShoppingListItemWithListRequest request, CancellationToken ct)
     {
-        var item = await shoppingListService.CreateStandaloneItemAsync(CurrentHouseholdId,
+        var item = await executor.ExecuteAsync(new CreateStandaloneItemCommand(
+            CurrentHouseholdId, request.ListId,
             new CreateShoppingListItemRequest
             {
                 Note = request.Note,
@@ -46,74 +42,44 @@ public class ShoppingItemsController(IShoppingListService shoppingListService, I
                 UnitId = request.UnitId,
                 FoodId = request.FoodId,
                 LabelId = request.LabelId
-            }, request.ListId, ct);
+            }), ct);
         return CreatedAtAction(nameof(GetItem), new { id = item.Id }, item);
     }
 
     [HttpPut("{id:guid}")]
+    [HttpPatch("{id:guid}")]
     public async Task<ActionResult<ShoppingListItemResponse>> UpdateItem(Guid id,
         [FromBody] UpdateShoppingListItemRequest request, CancellationToken ct)
     {
-        var item = await shoppingListService.UpdateStandaloneItemAsync(CurrentHouseholdId, id, request, ct);
-        if (item is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(item);
-    }
-
-    [HttpPatch("{id:guid}")]
-    public async Task<ActionResult<ShoppingListItemResponse>> PatchItem(Guid id,
-        [FromBody] UpdateShoppingListItemRequest request, CancellationToken ct)
-    {
-        var item = await shoppingListService.UpdateStandaloneItemAsync(CurrentHouseholdId, id, request, ct);
-        if (item is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
+        var item = await executor.ExecuteAsync(new UpdateStandaloneItemCommand(CurrentHouseholdId, id, request), ct);
+        if (item is null) return NotFoundOrForbidden();
         return Ok(item);
     }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteItem(Guid id, CancellationToken ct)
     {
-        var deleted = await shoppingListService.DeleteStandaloneItemAsync(CurrentHouseholdId, id, ct);
-        if (!deleted)
-        {
-            return NotFoundOrForbidden();
-        }
-
+        var deleted = await executor.ExecuteAsync(new DeleteStandaloneItemCommand(CurrentHouseholdId, id), ct);
+        if (!deleted) return NotFoundOrForbidden();
         return NoContent();
     }
 
     [HttpPost("create-bulk")]
     public async Task<ActionResult<IList<ShoppingListItemResponse>>> CreateBulkItems(
         [FromBody] BulkCreateShoppingListItemRequest request, CancellationToken ct)
-    {
-        var items = await shoppingListService.CreateBulkItemsAsync(CurrentHouseholdId, request, ct);
-        return Ok(items);
-    }
+        => Ok(await executor.ExecuteAsync(new CreateBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct));
 
     [HttpPut]
     public async Task<ActionResult<IList<ShoppingListItemResponse>>> UpdateBulkItems(
         [FromBody] BulkUpdateShoppingListItemRequest request, CancellationToken ct)
-    {
-        var items = await shoppingListService.UpdateBulkItemsAsync(CurrentHouseholdId, request, ct);
-        return Ok(items);
-    }
+        => Ok(await executor.ExecuteAsync(new UpdateBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct));
 
     [HttpDelete]
     public async Task<IActionResult> DeleteBulkItems([FromBody] BulkDeleteShoppingListItemRequest request,
         CancellationToken ct)
     {
-        var deleted = await shoppingListService.DeleteBulkItemsAsync(CurrentHouseholdId, request, ct);
-        if (!deleted)
-        {
-            return BadRequest(new { detail = "No items were deleted" });
-        }
-
+        var deleted = await executor.ExecuteAsync(new DeleteBulkShoppingListItemsCommand(CurrentHouseholdId, request), ct);
+        if (!deleted) return BadRequest(new { detail = "No items were deleted" });
         return NoContent();
     }
 }

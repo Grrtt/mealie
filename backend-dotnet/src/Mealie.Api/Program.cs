@@ -21,6 +21,7 @@ using Mealie.Application.Services.MealPlans;
 using Mealie.Application.Services.Migrations;
 using Mealie.Application.Services.Organizers;
 using Mealie.Application.Services.Parser;
+using Mealie.Application.Queries;
 using Mealie.Application.Services.Recipes;
 using Mealie.Application.Services.Search;
 using Mealie.Application.Services.Seeder;
@@ -200,6 +201,10 @@ builder.Services.AddScoped<IRecipeImportService, RecipeImportService>();
 builder.Services.AddScoped<IRecipeScraperService, RecipeScraperService>();
 builder.Services.AddHttpClient<RecipeScraperService>(client =>
     client.Timeout = TimeSpan.FromSeconds(30));
+
+// Query pattern
+builder.Services.AddScoped<IQueryServices, QueryServices>();
+builder.Services.AddScoped<QueryExecutor>();
 
 // Application services — Admin
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
