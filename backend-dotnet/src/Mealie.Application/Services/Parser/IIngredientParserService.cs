@@ -43,9 +43,14 @@ public class ParsedIngredientFoodDto
 
 public interface IIngredientParserService
 {
-    Task<ParsedIngredientDto> ParseAsync(Guid groupId, string ingredientString, string parserName = "nlp",
-        CancellationToken ct = default);
+    /// <param name="parserKey">
+    ///     "nlp" | "brute" | &lt;ai_configuration_uuid&gt; | null.
+    ///     Null means "resolve from site default".
+    /// </param>
+    Task<ParsedIngredientDto> ParseAsync(Guid groupId, string ingredientString,
+        string? parserKey = null, CancellationToken ct = default);
 
+    /// <inheritdoc cref="ParseAsync" />
     Task<IList<ParsedIngredientDto>> ParseBatchAsync(Guid groupId, IList<string> ingredients,
-        string parserName = "nlp", CancellationToken ct = default);
+        string? parserKey = null, CancellationToken ct = default);
 }

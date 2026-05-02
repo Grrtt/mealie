@@ -65,6 +65,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Webhook> Webhooks => Set<Webhook>();
     public DbSet<EventNotifier> EventNotifiers => Set<EventNotifier>();
     public DbSet<ServerTask> ServerTasks => Set<ServerTask>();
+    public DbSet<AiConfiguration> AiConfigurations => Set<AiConfiguration>();
+    public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
 
     // Reports
     public DbSet<Report> Reports => Set<Report>();

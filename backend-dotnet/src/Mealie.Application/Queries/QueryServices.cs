@@ -1,6 +1,7 @@
 using Mealie.Application.Contracts.Search;
 using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.IngredientParser;
+using Mealie.Infrastructure.Admin;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
@@ -20,7 +21,8 @@ public class QueryServices(
     IngredientParserService ingredientParser,
     ImageScrapeQueue imageScrapeQueue,
     IWebhookDeliveryService webhookDeliveryService,
-    IRecipeSearchIndex searchIndex) : IQueryServices
+    IRecipeSearchIndex searchIndex,
+    IApiKeyEncryptionService encryptionService) : IQueryServices
 {
     public ApplicationDbContext Db { get; } = db;
     public ITenantContext Tenant { get; } = tenant;
@@ -31,4 +33,5 @@ public class QueryServices(
     public ImageScrapeQueue ImageScrapeQueue { get; } = imageScrapeQueue;
     public IWebhookDeliveryService WebhookDeliveryService { get; } = webhookDeliveryService;
     public IRecipeSearchIndex SearchIndex { get; } = searchIndex;
+    public IApiKeyEncryptionService EncryptionService { get; } = encryptionService;
 }

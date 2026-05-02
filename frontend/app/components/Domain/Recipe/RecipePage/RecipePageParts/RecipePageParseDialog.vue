@@ -17,16 +17,29 @@
             <p>{{ $t("recipe.parser.ingredient-parser-final-review-description") }}</p>
           </div>
           <div class="d-flex flex-wrap align-center">
-            <div class="text-body-2 mr-2">
-              {{ $t("recipe.parser.select-parser") }}
-            </div>
-            <div class="d-flex align-center">
-              <BaseOverflowButton
-                v-model="parser"
-                :disabled="state.loading.parser"
-                btn-class="mx-2"
-                :items="availableParsers"
-              />
+            <template v-if="isAdmin">
+              <div class="text-body-2 mr-2">
+                {{ $t("recipe.parser.select-parser") }}
+              </div>
+              <div class="d-flex align-center">
+                <BaseOverflowButton
+                  v-model="parser"
+                  :disabled="state.loading.parser"
+                  btn-class="mx-2"
+                  :items="availableParsers"
+                />
+                <v-btn
+                  icon
+                  size="40"
+                  color="info"
+                  :disabled="state.loading.parser"
+                  @click="parseIngredients"
+                >
+                  <v-icon>{{ $globals.icons.refresh }}</v-icon>
+                </v-btn>
+              </div>
+            </template>
+            <template v-else>
               <v-btn
                 icon
                 size="40"
@@ -36,7 +49,7 @@
               >
                 <v-icon>{{ $globals.icons.refresh }}</v-icon>
               </v-btn>
-            </div>
+            </template>
           </div>
         </BaseCardSectionTitle>
         <v-card v-if="!state.allReviewed && currentIng">
@@ -196,12 +209,12 @@ import { VueDraggable } from "vue-draggable-plus";
 import type { IngredientFood, IngredientUnit, ParsedIngredient, RecipeIngredient } from "~/lib/api/types/recipe";
 import type { Parser } from "~/lib/api/user/recipes/recipe";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
-import { useUserApi } from "~/composables/api";
+import { useAdminApi, useUserApi } from "~/composables/api";
 import { useIngredientTextParser } from "~/composables/recipes";
 import { useFoodData, useFoodStore, useUnitData, useUnitStore } from "~/composables/store";
 import { useGlobalI18n } from "~/composables/use-global-i18n";
 import { alert } from "~/composables/use-toast";
-import { useParsingPreferences } from "~/composables/use-users/preferences";
+import { useMealieAuth } from "~/composables/use-mealie-auth";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -218,31 +231,43 @@ const emit = defineEmits<{
 const { $appInfo } = useNuxtApp();
 const i18n = useGlobalI18n();
 const api = useUserApi();
+const adminApi = useAdminApi();
 const drag = ref(false);
+
+const { user } = useMealieAuth();
+const isAdmin = computed(() => user.value?.admin ?? false);
 
 const unitStore = useUnitStore();
 const unitData = useUnitData();
 const foodStore = useFoodStore();
 const foodData = useFoodData();
 
-const parserPreferences = useParsingPreferences();
-const parser = ref<Parser>(parserPreferences.value.parser || "nlp");
+const parser = ref<Parser | string>("nlp");
 const availableParsers = computed(() => {
-  return [
-    {
-      text: i18n.t("recipe.parser.natural-language-processor"),
-      value: "nlp",
-    },
-    {
-      text: i18n.t("recipe.parser.brute-parser"),
-      value: "brute",
-    },
-    {
-      text: i18n.t("recipe.parser.openai-parser"),
-      value: "openai",
-      hide: !$appInfo.enableOpenai,
-    },
+  const base = [
+    { text: i18n.t("recipe.parser.natural-language-processor"), value: "nlp" },
+    { text: i18n.t("recipe.parser.brute-parser"), value: "brute" },
   ];
+  const aiOptions = aiConfigs.value.map(c => ({
+    text: c.name,
+    value: c.id,
+  }));
+  if ($appInfo.enableOpenai) {
+    return [...base, ...aiOptions];
+  }
+  return base;
+});
+
+const aiConfigs = ref<Array<{ id: string; name: string }>>([]);
+
+onMounted(async () => {
+  if (isAdmin.value) {
+    const { data } = await adminApi.aiConfigurations.getAll();
+    if (data) aiConfigs.value = data;
+
+    const { data: settings } = await adminApi.siteSettings.get();
+    if (settings) parser.value = settings.defaultParser;
+  }
 });
 
 /**
@@ -373,7 +398,7 @@ async function parseIngredients() {
   try {
     const filteredIngredients = props.ingredients.filter(ing => !ing.referencedRecipe);
     const ingsAsString = filteredIngredients.map(ing => ingredientToParserString(ing));
-    const { data, error } = await api.recipes.parseIngredients(parser.value, ingsAsString);
+    const { data, error } = await api.recipes.parseIngredients(isAdmin.value ? parser.value as Parser : null, ingsAsString);
     if (error || !data) {
       throw new Error("Failed to parse ingredients");
     }
@@ -515,10 +540,6 @@ watch(() => props.modelValue, () => {
   parseIngredients();
 });
 
-watch(parser, () => {
-  parserPreferences.value.parser = parser.value;
-  parseIngredients();
-});
 
 watch([parsedIngs, () => state.allReviewed], () => {
   if (!state.allReviewed) {

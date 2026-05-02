@@ -8,6 +8,8 @@ import { AdminAnalyticsApi } from "./admin/admin-analytics";
 import { AdminDebugAPI } from "./admin/admin-debug";
 import { AdminIngredientAliasesApi } from "./admin/admin-ingredient-aliases";
 import { AdminIndexesApi } from "./admin/admin-indexes";
+import { AdminAiConfigurationsApi } from "./admin/admin-ai-configurations";
+import { AdminSiteSettingsApi } from "./admin/admin-site-settings";
 import type { ApiRequestInstance } from "~/lib/api/types/non-generated";
 
 export class AdminAPI {
@@ -21,6 +23,8 @@ export class AdminAPI {
   public debug: AdminDebugAPI;
   public ingredientAliases: AdminIngredientAliasesApi;
   public indexes: AdminIndexesApi;
+  public aiConfigurations: AdminAiConfigurationsApi;
+  public siteSettings: AdminSiteSettingsApi;
 
   constructor(requests: ApiRequestInstance) {
     this.about = new AdminAboutAPI(requests);
@@ -33,6 +37,8 @@ export class AdminAPI {
     this.debug = new AdminDebugAPI(requests);
     this.ingredientAliases = new AdminIngredientAliasesApi(requests);
     this.indexes = new AdminIndexesApi(requests);
+    this.aiConfigurations = new AdminAiConfigurationsApi(requests);
+    this.siteSettings = new AdminSiteSettingsApi(requests);
 
     Object.freeze(this);
   }

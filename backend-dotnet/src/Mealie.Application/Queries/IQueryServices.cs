@@ -1,6 +1,7 @@
 using Mealie.Application.Contracts.Search;
 using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.IngredientParser;
+using Mealie.Infrastructure.Admin;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
@@ -27,4 +28,5 @@ public interface IQueryServices
     ImageScrapeQueue ImageScrapeQueue { get; }
     IWebhookDeliveryService WebhookDeliveryService { get; }
     IRecipeSearchIndex SearchIndex { get; }
+    IApiKeyEncryptionService EncryptionService { get; }
 }

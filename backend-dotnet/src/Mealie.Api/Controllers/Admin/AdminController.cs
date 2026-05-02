@@ -58,14 +58,15 @@ public class AdminController(
     }
 
     [HttpGet("about/check")]
-    public IActionResult Check()
+    public async Task<IActionResult> Check(CancellationToken ct)
     {
+        var hasActiveAiConfig = await db.AiConfigurations.AnyAsync(c => c.IsActive, ct);
         return Ok(new
         {
             emailReady = emailService.IsConfigured,
             ldapReady = settings.Value.LdapEnabled && !string.IsNullOrEmpty(settings.Value.LdapServer),
             oidcReady = settings.Value.OidcEnabled && !string.IsNullOrEmpty(settings.Value.OidcAuthority),
-            enableOpenai = !string.IsNullOrEmpty(settings.Value.OpenAiApiKey),
+            enableOpenai = hasActiveAiConfig,
             baseUrlSet = !string.IsNullOrEmpty(settings.Value.BaseUrl),
             isUpToDate = true
         });

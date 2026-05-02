@@ -78,6 +78,12 @@ const topLinks: SidebarLinks = [
     restricted: true,
   },
   {
+    icon: $globals.icons.robot,
+    to: "/admin/ai-configurations",
+    title: i18n.t("admin.ai-configurations"),
+    restricted: true,
+  },
+  {
     icon: $globals.icons.database,
     to: "/admin/backups",
     title: i18n.t("sidebar.backups"),

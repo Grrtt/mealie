@@ -226,6 +226,45 @@
         </template>
       </v-card>
     </section>
+    <!-- Default Ingredient Parser -->
+    <section class="mt-4">
+      <BaseCardSectionTitle
+        class="pb-0"
+        :icon="$globals.icons.slotMachine"
+        title="Ingredient Parsing"
+      />
+      <v-card class="mb-4 pa-4">
+        <div class="text-body-2 mb-3">
+          Select the default parsing algorithm used for all users when importing recipes.
+          Admins can still override this per-session.
+        </div>
+        <v-select
+          v-model="defaultParser"
+          :items="parserOptions"
+          item-title="text"
+          item-value="value"
+          label="Default Parser"
+          variant="outlined"
+          density="comfortable"
+          class="mb-3"
+          :loading="parserLoading"
+        />
+        <v-alert
+          v-if="siteSettings?.defaultParserUnavailable"
+          type="warning"
+          variant="tonal"
+          class="mb-3"
+        >
+          The configured default parser is no longer available. NLP will be used as fallback.
+        </v-alert>
+        <div class="d-flex justify-end">
+          <BaseButton color="info" :loading="parserSaving" @click="saveDefaultParser">
+            <template #icon>{{ $globals.icons.save }}</template>
+            {{ $t("general.save") }}
+          </BaseButton>
+        </div>
+      </v-card>
+    </section>
   </v-container>
 </template>
 
@@ -235,7 +274,10 @@ import { useAdminApi, useUserApi } from "~/composables/api";
 import { validators } from "~/composables/use-validators";
 import { useAsyncKey } from "~/composables/use-utils";
 import type { CheckAppConfig } from "~/lib/api/types/admin";
+import type { SiteSettingsResponse } from "~/lib/api/admin/admin-site-settings";
+import type { AiConfigurationResponse } from "~/lib/api/admin/admin-ai-configurations";
 import AppLoader from "~/components/global/AppLoader.vue";
+import { alert } from "~/composables/use-toast";
 
 interface SimpleCheck {
   id: string;
@@ -497,7 +539,54 @@ const bugReportText = computed(() => {
   });
   text += `${i18n.t("settings.email-configured")}: ${appConfig.value.emailReady ? i18n.t("general.yes") : i18n.t("general.no")}\n`;
   return text;
+});// ============================================================
+// Default Parser
+const siteSettings = ref<SiteSettingsResponse | null>(null);
+const aiConfigs = ref<AiConfigurationResponse[]>([]);
+const defaultParser = ref("nlp");
+const parserLoading = ref(false);
+const parserSaving = ref(false);
+
+const parserOptions = computed(() => {
+  const base = [
+    { text: "NLP (Natural Language Processing)", value: "nlp" },
+    { text: "Brute Force", value: "brute" },
+  ];
+  const aiOptions = aiConfigs.value.map(c => ({
+    text: `${c.name} (${c.providerType})`,
+    value: c.id,
+  }));
+  return [...base, ...aiOptions];
 });
+
+onMounted(async () => {
+  parserLoading.value = true;
+  const [settingsRes, aiRes] = await Promise.all([
+    adminApi.siteSettings.get(),
+    adminApi.aiConfigurations.getAll(),
+  ]);
+  if (settingsRes.data) {
+    siteSettings.value = settingsRes.data;
+    defaultParser.value = settingsRes.data.defaultParser;
+  }
+  if (aiRes.data) {
+    aiConfigs.value = aiRes.data;
+  }
+  parserLoading.value = false;
+});
+
+async function saveDefaultParser() {
+  parserSaving.value = true;
+  const { data, error } = await adminApi.siteSettings.update({ defaultParser: defaultParser.value });
+  if (error) {
+    alert.error(i18n.t("events.something-went-wrong"));
+  }
+  else if (data) {
+    siteSettings.value = data;
+    alert.success(i18n.t("general.item-updated"));
+  }
+  parserSaving.value = false;
+}
 </script>
 
 <style scoped>

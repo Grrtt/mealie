@@ -1,10 +1,11 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Mealie.Application.Services.IngredientParser;
-using Mealie.Infrastructure.Configuration;
+using Mealie.Infrastructure.Admin;
+using Mealie.Infrastructure.Data;
 using Mealie.Infrastructure.Parser;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Mealie.Application.Services.Parser;
 
@@ -13,61 +14,112 @@ public class IngredientParserService(
     FoodMatcher foodMatcher,
     IngredientParser.IngredientParserService nlpParserService,
     IHttpClientFactory httpClientFactory,
-    IOptions<AppSettings> appSettings,
+    ApplicationDbContext db,
+    IApiKeyEncryptionService encryptionService,
     ILogger<IngredientParserService> logger) : IIngredientParserService
 {
     public async Task<ParsedIngredientDto> ParseAsync(Guid groupId, string ingredientString,
-        string parserName = "nlp", CancellationToken ct = default)
+        string? parserKey = null, CancellationToken ct = default)
     {
-        if (parserName == "openai" && !string.IsNullOrEmpty(appSettings.Value.OpenAiApiKey))
-        {
-            var openAiResult = await ParseWithOpenAiAsync(ingredientString, ct);
-            if (openAiResult is not null)
-            {
-                return openAiResult;
-            }
+        var resolvedParser = await ResolveParserAsync(parserKey, ct);
 
-            logger.LogWarning("OpenAI parse failed for '{Ingredient}', falling back to brute parser", ingredientString);
+        if (resolvedParser == "brute")
+        {
+            return await ParseBruteAsync(groupId, ingredientString, ct);
         }
-        else if (parserName is "nlp" or "nlp-brute")
+
+        if (resolvedParser == "nlp")
         {
             var nlpResults = await nlpParserService.ParseBatchAsync([ingredientString], ct);
             if (nlpResults.Count > 0 && nlpResults[0].Food is not null)
             {
                 return MapNlpResult(nlpResults[0]);
             }
+
+            return await ParseBruteAsync(groupId, ingredientString, ct);
+        }
+
+        // UUID → AI provider
+        if (Guid.TryParse(resolvedParser, out var configId))
+        {
+            var openAiResult = await ParseWithAiConfigAsync(configId, ingredientString, ct);
+            if (openAiResult is not null)
+            {
+                return openAiResult;
+            }
+
+            logger.LogWarning(
+                "AI parse failed for '{Ingredient}' using config {ConfigId}, falling back to NLP",
+                ingredientString, configId);
+        }
+
+        // Fallback to NLP
+        var fallbackResults = await nlpParserService.ParseBatchAsync([ingredientString], ct);
+        if (fallbackResults.Count > 0 && fallbackResults[0].Food is not null)
+        {
+            return MapNlpResult(fallbackResults[0]);
         }
 
         return await ParseBruteAsync(groupId, ingredientString, ct);
     }
 
     public async Task<IList<ParsedIngredientDto>> ParseBatchAsync(Guid groupId, IList<string> ingredients,
-        string parserName = "nlp", CancellationToken ct = default)
+        string? parserKey = null, CancellationToken ct = default)
     {
-        if (parserName == "openai" && !string.IsNullOrEmpty(appSettings.Value.OpenAiApiKey))
-        {
-            var results = new List<ParsedIngredientDto>();
-            foreach (var ingredient in ingredients)
-            {
-                results.Add(await ParseAsync(groupId, ingredient, parserName, ct));
-            }
+        var resolvedParser = await ResolveParserAsync(parserKey, ct);
 
-            return results;
-        }
-
-        if (parserName is "nlp" or "nlp-brute")
+        if (resolvedParser is "nlp" or "nlp-brute")
         {
             var nlpResults = await nlpParserService.ParseBatchAsync(ingredients, ct);
             return nlpResults.Select(MapNlpResult).ToList();
         }
 
-        var bruteResults = new List<ParsedIngredientDto>();
-        foreach (var ingredient in ingredients)
+        if (resolvedParser == "brute")
         {
-            bruteResults.Add(await ParseBruteAsync(groupId, ingredient, ct));
+            var bruteResults = new List<ParsedIngredientDto>();
+            foreach (var ingredient in ingredients)
+            {
+                bruteResults.Add(await ParseBruteAsync(groupId, ingredient, ct));
+            }
+
+            return bruteResults;
         }
 
-        return bruteResults;
+        // UUID → AI provider (one at a time)
+        var results = new List<ParsedIngredientDto>();
+        foreach (var ingredient in ingredients)
+        {
+            results.Add(await ParseAsync(groupId, ingredient, resolvedParser, ct));
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    ///     Resolves the effective parser key.
+    ///     - null → read site_settings.default_parser; fallback to "nlp" if table is empty.
+    ///     - "nlp" / "brute" → use as-is.
+    ///     - UUID string → use as-is (caller is responsible for valid ID).
+    /// </summary>
+    private async Task<string> ResolveParserAsync(string? parserKey, CancellationToken ct)
+    {
+        if (parserKey is not null) return parserKey;
+
+        var settings = await db.SiteSettings.FirstOrDefaultAsync(ct);
+        return settings?.DefaultParser ?? "nlp";
+    }
+
+    private async Task<ParsedIngredientDto?> ParseWithAiConfigAsync(Guid configId,
+        string ingredientString, CancellationToken ct)
+    {
+        var config = await db.AiConfigurations.FindAsync([configId], ct);
+        if (config is null) return null;
+
+        var apiKey = encryptionService.Decrypt(config.EncryptedApiKey);
+        var baseUrl = config.BaseUrl;
+        var model = config.DefaultModel ?? "gpt-4o-mini";
+
+        return await ParseWithOpenAiAsync(ingredientString, apiKey, baseUrl, model, ct);
     }
 
     private static ParsedIngredientDto MapNlpResult(ParsedIngredientResult nlp)
@@ -129,14 +181,27 @@ public class IngredientParserService(
         };
     }
 
-    private async Task<ParsedIngredientDto?> ParseWithOpenAiAsync(string ingredientString, CancellationToken ct)
+    private async Task<ParsedIngredientDto?> ParseWithOpenAiAsync(string ingredientString,
+        string? apiKey, string? baseUrl, string model, CancellationToken ct)
     {
+        if (string.IsNullOrEmpty(apiKey)) return null;
+
         try
         {
             var client = httpClientFactory.CreateClient("OpenAi");
+
+            // Override base URL if provided (for Azure OpenAI, Ollama, custom endpoints)
+            if (!string.IsNullOrEmpty(baseUrl))
+            {
+                client = httpClientFactory.CreateClient();
+                client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+                client.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+            }
+
             var requestBody = new
             {
-                model = "gpt-4o-mini",
+                model,
                 response_format = new { type = "json_object" },
                 messages = new[]
                 {
@@ -163,7 +228,8 @@ public class IngredientParserService(
             }
 
             var json = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-            var content = json.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            var content = json.GetProperty("choices")[0].GetProperty("message").GetProperty("content")
+                .GetString();
             if (content is null)
             {
                 return null;
@@ -200,7 +266,7 @@ public class IngredientParserService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "OpenAI ingredient parse request failed for '{Ingredient}'", ingredientString);
+            logger.LogWarning(ex, "AI ingredient parse request failed for '{Ingredient}'", ingredientString);
             return null;
         }
     }

@@ -255,6 +255,8 @@ builder.Services.AddScoped<IWebhookService, WebhookService>();
 builder.Services.AddScoped<IEventNotifierService, EventNotifierService>();
 builder.Services.AddScoped<IBackupService, BackupService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<IApiKeyEncryptionService>(
+    new ApiKeyEncryptionService(appSettings.Secret));
 builder.Services.AddScoped<ScheduledBackupJob>();
 builder.Services.AddScoped<MealPlanNotificationJob>();
 builder.Services.AddHostedService<SchedulerHostedService>();
