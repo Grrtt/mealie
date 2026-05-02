@@ -184,20 +184,25 @@ public class IngredientParserService(
     private async Task<ParsedIngredientDto?> ParseWithOpenAiAsync(string ingredientString,
         string? apiKey, string? baseUrl, string model, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(apiKey)) return null;
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            logger.LogWarning("AI parse skipped for '{Ingredient}': API key is empty after decryption", ingredientString);
+            return null;
+        }
 
         try
         {
             var client = httpClientFactory.CreateClient("OpenAi");
 
-            // Override base URL if provided (for Azure OpenAI, Ollama, custom endpoints)
             if (!string.IsNullOrEmpty(baseUrl))
             {
                 client = httpClientFactory.CreateClient();
                 client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
-                client.DefaultRequestHeaders.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
             }
+
+            // Always authenticate with the DB-stored API key (overrides any env-var-based header on the named client)
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
 
             var requestBody = new
             {
@@ -224,6 +229,12 @@ public class IngredientParserService(
             var response = await client.PostAsJsonAsync("chat/completions", requestBody, ct);
             if (!response.IsSuccessStatusCode)
             {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                logger.LogWarning(
+                    "AI parse HTTP {StatusCode} for '{Ingredient}' (model={Model}, baseUrl={BaseUrl}): {ErrorBody}",
+                    (int)response.StatusCode, ingredientString, model,
+                    string.IsNullOrEmpty(baseUrl) ? "default" : baseUrl,
+                    errorBody.Length > 500 ? errorBody[..500] : errorBody);
                 return null;
             }
 
