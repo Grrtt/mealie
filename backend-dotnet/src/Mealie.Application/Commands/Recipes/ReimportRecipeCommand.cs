@@ -20,44 +20,47 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
     public async Task<RecipeDetailResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
-        // Do NOT include RecipeIngredients or RecipeInstructions here — we delete them via
-        // ExecuteDeleteAsync (raw SQL that bypasses the change tracker) to avoid the duplicate-delete
-        // concurrency conflict that occurs when RemoveRange + Clear are both used on tracked collections.
-        var recipe = await db.Recipes.IgnoreQueryFilters()
+
+        // Load current values AsNoTracking — we never put the Recipe in the change tracker.
+        // All mutations go through ExecuteDeleteAsync / ExecuteUpdateAsync (raw SQL), so
+        // SaveChangesAsync only ever sees INSERTs (new ingredients/instructions/foods/units),
+        // which avoids the SQLite AffectedCountModificationCommandBatch "expected 1, got 0" bug
+        // that occurs when a tracked Recipe UPDATE follows an ExecuteDeleteAsync on the same context.
+        var current = await db.Recipes.IgnoreQueryFilters().AsNoTracking()
             .Where(r => r.GroupId == GroupId && r.Slug == Slug)
-            .Include(r => r.Notes)
-            .Include(r => r.Assets)
-            .Include(r => r.Tags)
-            .Include(r => r.Categories)
-            .Include(r => r.Tools)
             .FirstOrDefaultAsync(ct);
 
-        if (recipe is null)
+        if (current is null)
             return null;
 
-        // Delete old ingredients and instructions directly via SQL — no change tracker involvement.
-        await db.RecipeIngredients.Where(i => i.RecipeId == recipe.Id).ExecuteDeleteAsync(ct);
-        await db.RecipeInstructions.Where(i => i.RecipeId == recipe.Id).ExecuteDeleteAsync(ct);
+        // Step 1 — Delete old ingredients and instructions via raw SQL.
+        await db.RecipeIngredients.Where(i => i.RecipeId == current.Id).ExecuteDeleteAsync(ct);
+        await db.RecipeInstructions.Where(i => i.RecipeId == current.Id).ExecuteDeleteAsync(ct);
 
-        // Update scalar fields from the fresh scrape
-        recipe.Name = Scraped.Name ?? recipe.Name;
-        recipe.Description = Scraped.Description ?? recipe.Description;
-        recipe.RecipeYield = Scraped.RecipeYield ?? recipe.RecipeYield;
-        recipe.TotalTime = Scraped.TotalTime ?? recipe.TotalTime;
-        recipe.PrepTime = Scraped.PrepTime ?? recipe.PrepTime;
-        recipe.CookTime = Scraped.CookTime ?? recipe.CookTime;
-        recipe.UpdateAt = DateTime.UtcNow;
+        // Step 2 — Update recipe scalar fields via raw SQL.
+        await db.Recipes.IgnoreQueryFilters()
+            .Where(r => r.Id == current.Id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(r => r.Name, Scraped.Name ?? current.Name)
+                .SetProperty(r => r.Description, Scraped.Description)
+                .SetProperty(r => r.RecipeYield, Scraped.RecipeYield)
+                .SetProperty(r => r.TotalTime, Scraped.TotalTime)
+                .SetProperty(r => r.PrepTime, Scraped.PrepTime)
+                .SetProperty(r => r.CookTime, Scraped.CookTime)
+                .SetProperty(r => r.UpdateAt, DateTime.UtcNow), ct);
 
         if (Scraped.Nutrition is not null)
         {
-            recipe.Nutrition ??= new Nutrition();
-            recipe.Nutrition.Calories = Scraped.Nutrition.Calories;
-            recipe.Nutrition.FatContent = Scraped.Nutrition.FatContent;
-            recipe.Nutrition.ProteinContent = Scraped.Nutrition.ProteinContent;
-            recipe.Nutrition.CarbohydrateContent = Scraped.Nutrition.CarbohydrateContent;
+            await db.Recipes.IgnoreQueryFilters()
+                .Where(r => r.Id == current.Id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.Nutrition!.Calories, Scraped.Nutrition.Calories)
+                    .SetProperty(r => r.Nutrition!.FatContent, Scraped.Nutrition.FatContent)
+                    .SetProperty(r => r.Nutrition!.ProteinContent, Scraped.Nutrition.ProteinContent)
+                    .SetProperty(r => r.Nutrition!.CarbohydrateContent, Scraped.Nutrition.CarbohydrateContent), ct);
         }
 
-        // Replace ingredients — use FullParser so the admin-configured default strategy is respected
+        // Step 3 — Parse and match ingredients.
         var ingredientStrings = Scraped.RecipeIngredient
             .Select(IngredientNormalizer.Normalize)
             .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -70,6 +73,7 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
         var units = await db.Units.IgnoreQueryFilters()
             .Where(u => u.GroupId == GroupId).ToListAsync(ct);
 
+        var newIngredients = new List<RecipeIngredient>();
         for (var i = 0; i < parsed.Count; i++)
         {
             var p = parsed[i];
@@ -117,27 +121,40 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
                 }
             }
 
-            recipe.RecipeIngredients.Add(new RecipeIngredient
+            newIngredients.Add(new RecipeIngredient
             {
                 Id = Guid.NewGuid(), Position = i,
                 OriginalText = p.Input ?? ingredientStrings.ElementAtOrDefault(i),
                 Note = p.Ingredient.Note,
                 Quantity = p.Ingredient.Quantity,
-                FoodId = matchedFood?.Id, UnitId = matchedUnit?.Id, RecipeId = recipe.Id
+                FoodId = matchedFood?.Id, UnitId = matchedUnit?.Id, RecipeId = current.Id
             });
         }
 
-        // Replace instructions
-        for (var i = 0; i < Scraped.RecipeInstructions.Count; i++)
+        var newInstructions = Scraped.RecipeInstructions.Select((text, i) => new RecipeInstruction
         {
-            recipe.RecipeInstructions.Add(new RecipeInstruction
-            {
-                Id = Guid.NewGuid(), Position = i, Text = Scraped.RecipeInstructions[i], RecipeId = recipe.Id
-            });
-        }
+            Id = Guid.NewGuid(), Position = i, Text = text, RecipeId = current.Id
+        }).ToList();
 
+        // Step 4 — Persist only INSERTs through the change tracker (no UPDATE/DELETE paths).
+        db.RecipeIngredients.AddRange(newIngredients);
+        db.RecipeInstructions.AddRange(newInstructions);
         await db.SaveChangesAsync(ct);
-        return RecipeCommandMappings.MapToDetail(recipe);
+
+        // Step 5 — Reload the full recipe (with all relationships) for the response.
+        var updated = await db.Recipes.IgnoreQueryFilters().AsNoTracking()
+            .Where(r => r.Id == current.Id)
+            .Include(r => r.RecipeIngredients).ThenInclude(i => i.Unit)
+            .Include(r => r.RecipeIngredients).ThenInclude(i => i.Food)
+            .Include(r => r.RecipeInstructions)
+            .Include(r => r.Notes)
+            .Include(r => r.Assets)
+            .Include(r => r.Tags)
+            .Include(r => r.Categories)
+            .Include(r => r.Tools)
+            .FirstOrDefaultAsync(ct);
+
+        return updated is null ? null : RecipeCommandMappings.MapToDetail(updated);
     }
 }
 
