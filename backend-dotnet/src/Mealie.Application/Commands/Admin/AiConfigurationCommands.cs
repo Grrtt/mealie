@@ -47,6 +47,7 @@ public record CreateAiConfigurationCommand(CreateAiConfigurationRequest Request)
             Name = Request.Name,
             ProviderType = Request.ProviderType,
             EncryptedApiKey = services.EncryptionService.Encrypt(Request.ApiKey),
+            ProjectId = Request.ProjectId,
             BaseUrl = Request.BaseUrl,
             DefaultModel = Request.DefaultModel,
             EnableImageServices = Request.EnableImageServices,
@@ -85,6 +86,7 @@ public record UpdateAiConfigurationCommand(Guid Id, UpdateAiConfigurationRequest
         }
 
         if (Request.BaseUrl is not null) config.BaseUrl = Request.BaseUrl;
+        if (Request.ProjectId is not null) config.ProjectId = Request.ProjectId == string.Empty ? null : Request.ProjectId;
         if (Request.DefaultModel is not null) config.DefaultModel = Request.DefaultModel;
         if (Request.EnableImageServices.HasValue) config.EnableImageServices = Request.EnableImageServices.Value;
         if (Request.EnableTranscriptionServices.HasValue)
@@ -196,6 +198,7 @@ file static class AiConfigurationMappings
             ProviderType = c.ProviderType,
             HasApiKey = c.EncryptedApiKey is not null,
             MaskedApiKey = encryption.Mask(c.EncryptedApiKey),
+            ProjectId = c.ProjectId,
             BaseUrl = c.BaseUrl,
             DefaultModel = c.DefaultModel,
             IsActive = c.IsActive,

@@ -1381,6 +1381,7 @@
     "provider-type": "Provider Type",
     "api-key": "API Key",
     "api-key-leave-blank": "Leave blank to keep existing key",
+    "project-id-optional": "Project ID (Optional)",
     "base-url-optional": "Base URL (Optional)",
     "default-model": "Default Model",
     "enable-image-services": "Enable Image Services",

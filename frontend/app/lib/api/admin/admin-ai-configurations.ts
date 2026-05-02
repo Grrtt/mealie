@@ -7,6 +7,7 @@ export interface AiConfigurationResponse {
   providerType: string;
   hasApiKey: boolean;
   maskedApiKey: string | null;
+  projectId: string | null;
   baseUrl: string | null;
   defaultModel: string | null;
   isActive: boolean;
@@ -19,6 +20,7 @@ export interface CreateAiConfigurationRequest {
   name: string;
   providerType: string;
   apiKey?: string | null;
+  projectId?: string | null;
   baseUrl?: string | null;
   defaultModel?: string | null;
   enableImageServices?: boolean;
@@ -28,6 +30,7 @@ export interface CreateAiConfigurationRequest {
 export interface UpdateAiConfigurationRequest {
   name?: string | null;
   apiKey?: string | null;
+  projectId?: string | null;
   baseUrl?: string | null;
   defaultModel?: string | null;
   enableImageServices?: boolean | null;

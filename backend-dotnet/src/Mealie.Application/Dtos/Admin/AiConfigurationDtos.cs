@@ -15,6 +15,7 @@ public class AiConfigurationResponse
     /// <summary>Masked key preview, e.g. "sk-...••••1234". Never the real key.</summary>
     public string? MaskedApiKey { get; set; }
 
+    public string? ProjectId { get; set; }
     public string? BaseUrl { get; set; }
     public string? DefaultModel { get; set; }
     public bool IsActive { get; set; }
@@ -35,6 +36,7 @@ public class CreateAiConfigurationRequest
     /// <summary>Plaintext API key; encrypted before storage. Nullable for keyless providers.</summary>
     public string? ApiKey { get; set; }
 
+    public string? ProjectId { get; set; }
     public string? BaseUrl { get; set; }
     public string? DefaultModel { get; set; }
     public bool EnableImageServices { get; set; } = true;
@@ -55,6 +57,7 @@ public class UpdateAiConfigurationRequest
     /// </summary>
     public string? ApiKey { get; set; }
 
+    public string? ProjectId { get; set; }
     public string? BaseUrl { get; set; }
     public string? DefaultModel { get; set; }
     public bool? EnableImageServices { get; set; }

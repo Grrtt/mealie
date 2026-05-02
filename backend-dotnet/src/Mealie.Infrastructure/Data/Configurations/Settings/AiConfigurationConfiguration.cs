@@ -14,6 +14,7 @@ public class AiConfigurationConfiguration : IEntityTypeConfiguration<AiConfigura
         builder.Property(e => e.Name).IsRequired();
         builder.Property(e => e.ProviderType).IsRequired();
         builder.Property(e => e.EncryptedApiKey);
+        builder.Property(e => e.ProjectId);
         builder.Property(e => e.BaseUrl);
         builder.Property(e => e.DefaultModel);
         builder.Property(e => e.IsActive).IsRequired().HasDefaultValue(false);

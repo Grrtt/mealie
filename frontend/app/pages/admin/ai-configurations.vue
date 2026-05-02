@@ -100,6 +100,12 @@
           class="mb-3"
         />
         <v-text-field
+          v-model="form.projectId"
+          :label="$t('admin.project-id-optional')"
+          variant="outlined"
+          class="mb-3"
+        />
+        <v-text-field
           v-model="form.baseUrl"
           :label="$t('admin.base-url-optional')"
           variant="outlined"
@@ -178,6 +184,7 @@ const defaultForm = () => ({
   name: "",
   providerType: "openAi",
   apiKey: "",
+  projectId: "",
   baseUrl: "",
   defaultModel: "",
   enableImageServices: true,
@@ -203,6 +210,7 @@ function openEditDialog(config: AiConfigurationResponse) {
   form.name = config.name;
   form.providerType = config.providerType;
   form.apiKey = "";
+  form.projectId = config.projectId ?? "";
   form.baseUrl = config.baseUrl ?? "";
   form.defaultModel = config.defaultModel ?? "";
   form.enableImageServices = config.enableImageServices;
@@ -217,6 +225,7 @@ async function saveConfig() {
     const { error } = await adminApi.aiConfigurations.update(dialog.editingId, {
       name: form.name || null,
       apiKey: form.apiKey || null,
+      projectId: form.projectId || null,
       baseUrl: form.baseUrl || null,
       defaultModel: form.defaultModel || null,
       enableImageServices: form.enableImageServices,
@@ -230,6 +239,7 @@ async function saveConfig() {
       name: form.name,
       providerType: form.providerType,
       apiKey: form.apiKey || null,
+      projectId: form.projectId || null,
       baseUrl: form.baseUrl || null,
       defaultModel: form.defaultModel || null,
       enableImageServices: form.enableImageServices,

@@ -18,6 +18,9 @@ public class AiConfiguration
     /// <summary>AES-encrypted API key; null for providers that don't use one (e.g. local Ollama).</summary>
     public string? EncryptedApiKey { get; set; }
 
+    /// <summary>OpenAI project ID (e.g. "proj_..."); sent as OpenAI-Project header when set.</summary>
+    public string? ProjectId { get; set; }
+
     /// <summary>Base URL; required for azureOpenAi, ollama, custom; optional for others.</summary>
     public string? BaseUrl { get; set; }
 

@@ -118,8 +118,9 @@ public class IngredientParserService(
         var apiKey = encryptionService.Decrypt(config.EncryptedApiKey);
         var baseUrl = config.BaseUrl;
         var model = config.DefaultModel ?? "gpt-4o-mini";
+        var projectId = config.ProjectId;
 
-        return await ParseWithOpenAiAsync(ingredientString, apiKey, baseUrl, model, ct);
+        return await ParseWithOpenAiAsync(ingredientString, apiKey, baseUrl, model, projectId, ct);
     }
 
     private static ParsedIngredientDto MapNlpResult(ParsedIngredientResult nlp)
@@ -182,7 +183,7 @@ public class IngredientParserService(
     }
 
     private async Task<ParsedIngredientDto?> ParseWithOpenAiAsync(string ingredientString,
-        string? apiKey, string? baseUrl, string model, CancellationToken ct)
+        string? apiKey, string? baseUrl, string model, string? projectId, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(apiKey))
         {
@@ -203,6 +204,13 @@ public class IngredientParserService(
             // Always authenticate with the DB-stored API key (overrides any env-var-based header on the named client)
             client.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+
+            // Send OpenAI project header if configured (required for project-scoped API keys)
+            if (!string.IsNullOrEmpty(projectId))
+            {
+                client.DefaultRequestHeaders.Remove("OpenAI-Project");
+                client.DefaultRequestHeaders.Add("OpenAI-Project", projectId);
+            }
 
             var requestBody = new
             {
