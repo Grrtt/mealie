@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -25,11 +26,12 @@ public interface IApiKeyEncryptionService
 public class ApiKeyEncryptionService : IApiKeyEncryptionService
 {
     private readonly byte[] _key;
+    private readonly ILogger<ApiKeyEncryptionService> _logger;
 
-    public ApiKeyEncryptionService(string secret)
+    public ApiKeyEncryptionService(string secret, ILogger<ApiKeyEncryptionService> logger)
     {
-        // Derive a 32-byte AES-256 key from the application secret
         _key = SHA256.HashData(Encoding.UTF8.GetBytes(secret));
+        _logger = logger;
     }
 
     public string? Encrypt(string? plaintext)
@@ -72,8 +74,9 @@ public class ApiKeyEncryptionService : IApiKeyEncryptionService
             var plaintextBytes = decryptor.TransformFinalBlock(ciphertextBytes, 0, ciphertextBytes.Length);
             return Encoding.UTF8.GetString(plaintextBytes);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Failed to decrypt API key — key may have been encrypted with a different SECRET");
             return null;
         }
     }
