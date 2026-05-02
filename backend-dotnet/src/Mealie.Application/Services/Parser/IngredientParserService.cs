@@ -85,14 +85,19 @@ public class IngredientParserService(
             return bruteResults;
         }
 
-        // UUID → AI provider (one at a time)
-        var results = new List<ParsedIngredientDto>();
-        foreach (var ingredient in ingredients)
+        // UUID → AI provider (single batched request)
+        if (Guid.TryParse(resolvedParser, out var configId))
         {
-            results.Add(await ParseAsync(groupId, ingredient, resolvedParser, ct));
+            var aiResults = await ParseBatchWithAiConfigAsync(configId, ingredients, ct);
+            if (aiResults is not null && aiResults.Count == ingredients.Count)
+                return aiResults;
+
+            logger.LogWarning("AI batch parse failed or returned wrong count, falling back to NLP for all ingredients");
         }
 
-        return results;
+        // Fallback to NLP
+        var fallback = await nlpParserService.ParseBatchAsync(ingredients, ct);
+        return fallback.Select(MapNlpResult).ToList();
     }
 
     /// <summary>
@@ -112,6 +117,13 @@ public class IngredientParserService(
     private async Task<ParsedIngredientDto?> ParseWithAiConfigAsync(Guid configId,
         string ingredientString, CancellationToken ct)
     {
+        var results = await ParseBatchWithAiConfigAsync(configId, [ingredientString], ct);
+        return results?.Count > 0 ? results[0] : null;
+    }
+
+    private async Task<List<ParsedIngredientDto>?> ParseBatchWithAiConfigAsync(Guid configId,
+        IList<string> ingredients, CancellationToken ct)
+    {
         var config = await db.AiConfigurations.FindAsync([configId], ct);
         if (config is null) return null;
 
@@ -120,7 +132,7 @@ public class IngredientParserService(
         var model = config.DefaultModel ?? "gpt-4o-mini";
         var projectId = config.ProjectId;
 
-        return await ParseWithOpenAiAsync(ingredientString, apiKey, baseUrl, model, projectId, ct);
+        return await ParseBatchWithOpenAiAsync(ingredients, apiKey, baseUrl, model, projectId, ct);
     }
 
     private static ParsedIngredientDto MapNlpResult(ParsedIngredientResult nlp)
@@ -182,12 +194,12 @@ public class IngredientParserService(
         };
     }
 
-    private async Task<ParsedIngredientDto?> ParseWithOpenAiAsync(string ingredientString,
+    private async Task<List<ParsedIngredientDto>?> ParseBatchWithOpenAiAsync(IList<string> ingredients,
         string? apiKey, string? baseUrl, string model, string? projectId, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(apiKey))
         {
-            logger.LogWarning("AI parse skipped for '{Ingredient}': API key is empty after decryption", ingredientString);
+            logger.LogWarning("AI parse skipped: API key is empty after decryption");
             return null;
         }
 
@@ -201,16 +213,17 @@ public class IngredientParserService(
                 client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
             }
 
-            // Always authenticate with the DB-stored API key (overrides any env-var-based header on the named client)
             client.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
 
-            // Send OpenAI project header if configured (required for project-scoped API keys)
             if (!string.IsNullOrEmpty(projectId))
             {
                 client.DefaultRequestHeaders.Remove("OpenAI-Project");
                 client.DefaultRequestHeaders.Add("OpenAI-Project", projectId);
             }
+
+            // Build a numbered list so the model returns a positionally-matched array
+            var numbered = string.Join("\n", ingredients.Select((s, i) => $"{i + 1}. {s}"));
 
             var requestBody = new
             {
@@ -222,15 +235,18 @@ public class IngredientParserService(
                     {
                         role = "system",
                         content = """
-                                  You are a recipe ingredient parser. Given an ingredient string, extract the structured data.
-                                  Respond with a JSON object containing exactly these fields:
+                                  You are a recipe ingredient parser. Given a numbered list of ingredient strings,
+                                  extract the structured data for each one and return a JSON object with a single key
+                                  "ingredients" whose value is an array of objects — one per input line, in the same order.
+                                  Each object must have exactly these fields:
                                   - quantity: number or null
                                   - unit: string or null (the unit of measure, e.g. "cup", "tablespoon")
                                   - food: string or null (the main ingredient, e.g. "flour", "butter")
                                   - note: string or null (preparation notes, e.g. "finely chopped", "room temperature")
+                                  The array length must equal the number of input lines.
                                   """
                     },
-                    new { role = "user", content = ingredientString }
+                    new { role = "user", content = numbered }
                 }
             };
 
@@ -239,53 +255,73 @@ public class IngredientParserService(
             {
                 var errorBody = await response.Content.ReadAsStringAsync(ct);
                 logger.LogWarning(
-                    "AI parse HTTP {StatusCode} for '{Ingredient}' (model={Model}, baseUrl={BaseUrl}): {ErrorBody}",
-                    (int)response.StatusCode, ingredientString, model,
+                    "AI batch parse HTTP {StatusCode} (model={Model}, baseUrl={BaseUrl}, count={Count}): {ErrorBody}",
+                    (int)response.StatusCode, model,
                     string.IsNullOrEmpty(baseUrl) ? "default" : baseUrl,
+                    ingredients.Count,
                     errorBody.Length > 500 ? errorBody[..500] : errorBody);
                 return null;
             }
 
             var json = await response.Content.ReadFromJsonAsync<JsonElement>(ct);
-            var content = json.GetProperty("choices")[0].GetProperty("message").GetProperty("content")
-                .GetString();
-            if (content is null)
+            var content = json.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            if (content is null) return null;
+
+            var parsed = JsonSerializer.Deserialize<JsonElement>(content);
+            if (!parsed.TryGetProperty("ingredients", out var arr) || arr.ValueKind != JsonValueKind.Array)
             {
+                logger.LogWarning("AI batch parse: response missing 'ingredients' array");
                 return null;
             }
 
-            var parsed = JsonSerializer.Deserialize<JsonElement>(content);
-            var quantity = parsed.TryGetProperty("quantity", out var q) && q.ValueKind == JsonValueKind.Number
-                ? (decimal?)q.GetDecimal()
-                : null;
-            var unit = parsed.TryGetProperty("unit", out var u) && u.ValueKind == JsonValueKind.String
-                ? u.GetString()
-                : null;
-            var food = parsed.TryGetProperty("food", out var f) && f.ValueKind == JsonValueKind.String
-                ? f.GetString()
-                : null;
-            var note = parsed.TryGetProperty("note", out var n) && n.ValueKind == JsonValueKind.String
-                ? n.GetString()
-                : null;
+            var results = new List<ParsedIngredientDto>();
+            var items = arr.EnumerateArray().ToList();
 
-            return new ParsedIngredientDto
+            for (var i = 0; i < ingredients.Count; i++)
             {
-                Input = ingredientString,
-                Confidence = new IngredientConfidenceDto { Average = 1.0, Quantity = 1.0, Unit = 1.0, Food = 1.0 },
-                Ingredient = new ParsedIngredientIngredientDto
+                var input = ingredients[i];
+                if (i >= items.Count)
                 {
-                    Quantity = quantity,
-                    Unit = unit is not null ? new ParsedIngredientUnitDto { Name = unit } : null,
-                    Food = food is not null ? new ParsedIngredientFoodDto { Name = food } : null,
-                    Note = note,
-                    Display = ingredientString,
-                    OriginalText = ingredientString
+                    logger.LogWarning("AI batch parse: response array too short (expected {Expected}, got {Got})", ingredients.Count, items.Count);
+                    return null;
                 }
-            };
+
+                var item = items[i];
+                var quantity = item.TryGetProperty("quantity", out var q) && q.ValueKind == JsonValueKind.Number
+                    ? (decimal?)q.GetDecimal()
+                    : null;
+                var unit = item.TryGetProperty("unit", out var u) && u.ValueKind == JsonValueKind.String
+                    ? u.GetString()
+                    : null;
+                var food = item.TryGetProperty("food", out var f) && f.ValueKind == JsonValueKind.String
+                    ? f.GetString()
+                    : null;
+                var note = item.TryGetProperty("note", out var n) && n.ValueKind == JsonValueKind.String
+                    ? n.GetString()
+                    : null;
+
+                results.Add(new ParsedIngredientDto
+                {
+                    Input = input,
+                    Confidence = new IngredientConfidenceDto { Average = 1.0, Quantity = 1.0, Unit = 1.0, Food = 1.0 },
+                    Ingredient = new ParsedIngredientIngredientDto
+                    {
+                        Quantity = quantity,
+                        Unit = unit is not null ? new ParsedIngredientUnitDto { Name = unit } : null,
+                        Food = food is not null ? new ParsedIngredientFoodDto { Name = food } : null,
+                        Note = note,
+                        Display = input,
+                        OriginalText = input
+                    }
+                });
+            }
+
+            logger.LogInformation("AI batch parse succeeded for {Count} ingredients (model={Model})", results.Count, model);
+            return results;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "AI ingredient parse request failed for '{Ingredient}'", ingredientString);
+            logger.LogWarning(ex, "AI batch ingredient parse request failed");
             return null;
         }
     }
