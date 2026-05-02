@@ -20,11 +20,11 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
     public async Task<RecipeDetailResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
+        // Do NOT include RecipeIngredients or RecipeInstructions here — we delete them via
+        // ExecuteDeleteAsync (raw SQL that bypasses the change tracker) to avoid the duplicate-delete
+        // concurrency conflict that occurs when RemoveRange + Clear are both used on tracked collections.
         var recipe = await db.Recipes.IgnoreQueryFilters()
             .Where(r => r.GroupId == GroupId && r.Slug == Slug)
-            .Include(r => r.RecipeIngredients).ThenInclude(i => i.Unit)
-            .Include(r => r.RecipeIngredients).ThenInclude(i => i.Food)
-            .Include(r => r.RecipeInstructions)
             .Include(r => r.Notes)
             .Include(r => r.Assets)
             .Include(r => r.Tags)
@@ -34,6 +34,10 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
 
         if (recipe is null)
             return null;
+
+        // Delete old ingredients and instructions directly via SQL — no change tracker involvement.
+        await db.RecipeIngredients.Where(i => i.RecipeId == recipe.Id).ExecuteDeleteAsync(ct);
+        await db.RecipeInstructions.Where(i => i.RecipeId == recipe.Id).ExecuteDeleteAsync(ct);
 
         // Update scalar fields from the fresh scrape
         recipe.Name = Scraped.Name ?? recipe.Name;
@@ -54,9 +58,6 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
         }
 
         // Replace ingredients — use FullParser so the admin-configured default strategy is respected
-        db.RecipeIngredients.RemoveRange(recipe.RecipeIngredients);
-        recipe.RecipeIngredients.Clear();
-
         var ingredientStrings = Scraped.RecipeIngredient
             .Select(IngredientNormalizer.Normalize)
             .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -127,9 +128,6 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
         }
 
         // Replace instructions
-        db.RecipeInstructions.RemoveRange(recipe.RecipeInstructions);
-        recipe.RecipeInstructions.Clear();
-
         for (var i = 0; i < Scraped.RecipeInstructions.Count; i++)
         {
             recipe.RecipeInstructions.Add(new RecipeInstruction
