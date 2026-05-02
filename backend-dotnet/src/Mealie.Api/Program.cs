@@ -325,7 +325,9 @@ builder.Services.AddSingleton<Mealie.Application.Services.IngredientParser.Ingre
 // ── MCP Server ─────────────────────────────────────────────────────────────
 builder.Services.AddMcpServer()
     .WithHttpTransport()
-    .WithTools<LogsTool>();
+    .WithTools<LogsTool>()
+    .WithTools<RecipeSearchTool>()
+    .WithTools<OrganizerSearchTool>();
 
 // ── FluentValidation ───────────────────────────────────────────────────────
 builder.Services.AddValidatorsFromAssembly(typeof(PlaceholderMarker).Assembly);
