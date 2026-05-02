@@ -262,6 +262,9 @@ builder.Services.AddHostedService<SchedulerHostedService>();
 // Phase 8: Ingredient parser
 builder.Services.AddScoped<UnitMatcher>();
 builder.Services.AddScoped<FoodMatcher>();
+builder.Services.AddScoped<BruteParserStrategy>();
+builder.Services.AddScoped<NlpParserStrategy>();
+builder.Services.AddScoped<IParserStrategyResolver, ParserStrategyResolver>();
 builder.Services.AddScoped<IIngredientParserService, IngredientParserService>();
 
 // Phase 9: Migration importers
