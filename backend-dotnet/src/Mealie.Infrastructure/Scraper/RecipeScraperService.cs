@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Logging;
+
 namespace Mealie.Infrastructure.Scraper;
 
-public class RecipeScraperService(HttpClient httpClient) : IRecipeScraperService
+public class RecipeScraperService(HttpClient httpClient, ILogger<RecipeScraperService> logger) : IRecipeScraperService
 {
     private readonly HeuristicScraperStrategy _heuristic = new();
     private readonly JsonLdScraperStrategy _jsonLd = new();
@@ -15,8 +17,9 @@ public class RecipeScraperService(HttpClient httpClient) : IRecipeScraperService
             response.EnsureSuccessStatusCode();
             html = await response.Content.ReadAsStringAsync(ct);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Failed to fetch URL for scraping: {Url}", url);
             return new ScrapedRecipeDto { ScrapingNotSupported = true };
         }
 

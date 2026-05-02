@@ -516,7 +516,7 @@ public class RecipesController(
             return BadRequest(new { detail = "Failed to create recipe" });
         }
 
-        return Ok(recipe);
+        return CreatedAtAction(nameof(GetRecipeBySlug), new { slug = recipe.Slug }, recipe.Slug);
     }
 
     [HttpPost("create/url/bulk")]

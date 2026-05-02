@@ -102,6 +102,9 @@
         <v-divider class="my-3 mx-2" />
 
         <div class="force-url-white">
+          <p v-if="state.errorMessage" class="font-weight-bold mb-2">
+            {{ state.errorMessage }}
+          </p>
           <p>
             {{ $t("recipe.scrape-recipe-website-being-blocked") }}
             <router-link :to="htmlOrJsonImporterTarget">{{ $t("recipe.scrape-recipe-try-importing-raw-html-instead") }}</router-link>
@@ -155,6 +158,7 @@ definePageMeta({
 });
 const state = reactive({
   error: false,
+  errorMessage: null as string | null,
   loading: false,
 });
 
@@ -177,9 +181,10 @@ const {
 const bulkImporterTarget = computed(() => `/g/${groupSlug.value}/r/create/bulk`);
 const htmlOrJsonImporterTarget = computed(() => `/g/${groupSlug.value}/r/create/html`);
 
-function handleResponse(response: AxiosResponse<string> | null, refreshTags = false) {
+function handleResponse(response: AxiosResponse<string> | null, error: Error | null, refreshTags = false) {
   if (response?.status !== 201) {
     state.error = true;
+    state.errorMessage = error?.message ?? null;
     state.loading = false;
     return;
   }
@@ -251,14 +256,14 @@ async function createByUrl(url: string | null, importKeywordsAsTags: boolean, im
     return;
   }
   state.loading = true;
-  const { response } = await api.recipes.createOneByUrl(
+  const { response, error } = await api.recipes.createOneByUrl(
     url,
     importKeywordsAsTags,
     importCategories,
     (message: string) => createStatus.value = message,
   );
   createStatus.value = null;
-  handleResponse(response, importKeywordsAsTags);
+  handleResponse(response, error, importKeywordsAsTags);
 }
 </script>
 
