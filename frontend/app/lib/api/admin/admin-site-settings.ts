@@ -4,7 +4,6 @@ import type { ApiRequestInstance } from "~/lib/api/types/non-generated";
 export interface SiteSettingsResponse {
   defaultParser: string;
   defaultParserUnavailable: boolean;
-  legacyEnvVarsDetected: boolean;
 }
 
 export interface UpdateSiteSettingsRequest {

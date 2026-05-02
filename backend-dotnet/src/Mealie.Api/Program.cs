@@ -66,7 +66,6 @@ appSettings.DatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
 appSettings.DbEngine = Environment.GetEnvironmentVariable("DB_ENGINE") ?? appSettings.DbEngine;
 appSettings.DataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? appSettings.DataDir;
 appSettings.LogLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? appSettings.LogLevel;
-appSettings.OpenAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 
 var allowSignupEnv = Environment.GetEnvironmentVariable("ALLOW_SIGNUP");
 if (allowSignupEnv is not null)
@@ -82,7 +81,6 @@ builder.Services.AddOptions<AppSettings>().Configure(o =>
     o.DbEngine = appSettings.DbEngine;
     o.DataDir = appSettings.DataDir;
     o.LogLevel = appSettings.LogLevel;
-    o.OpenAiApiKey = appSettings.OpenAiApiKey;
     o.AllowSignup = appSettings.AllowSignup;
     o.SmtpHost = appSettings.SmtpHost;
     o.SmtpPort = appSettings.SmtpPort;
@@ -239,16 +237,10 @@ builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 builder.Services.AddHttpClient<IWebhookDeliveryService, WebhookDeliveryService>(c =>
     c.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddHttpClient<AppriseNotificationHandler>(c => c.Timeout = TimeSpan.FromSeconds(10));
-builder.Services.AddHttpClient("OpenAi", (sp, c) =>
+builder.Services.AddHttpClient("OpenAi", (_, c) =>
 {
-    var key = sp.GetRequiredService<IOptions<AppSettings>>().Value.OpenAiApiKey;
     c.BaseAddress = new Uri("https://api.openai.com/v1/");
     c.Timeout = TimeSpan.FromSeconds(30);
-    if (!string.IsNullOrEmpty(key))
-    {
-        c.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", key);
-    }
 });
 builder.Services.AddSingleton<IEventBus, EventBus>();
 builder.Services.AddScoped<IWebhookService, WebhookService>();

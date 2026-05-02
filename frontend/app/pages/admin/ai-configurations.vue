@@ -9,18 +9,6 @@
       </template>
     </BasePageTitle>
 
-    <!-- Legacy env var warning -->
-    <v-alert
-      v-if="legacyEnvVarsDetected"
-      type="warning"
-      border="start"
-      variant="tonal"
-      class="mb-4"
-    >
-      <strong>{{ $t("admin.legacy-env-vars-title") }}</strong>
-      <div>{{ $t("admin.legacy-env-vars-description") }}</div>
-    </v-alert>
-
     <!-- Add provider button -->
     <div class="d-flex justify-end mb-4">
       <BaseButton create @click="openCreateDialog">
@@ -171,14 +159,9 @@ const adminApi = useAdminApi();
 useSeoMeta({ title: i18n.t("admin.ai-configurations") });
 
 const configs = ref<AiConfigurationResponse[]>([]);
-const legacyEnvVarsDetected = ref(false);
-
 async function loadConfigs() {
   const { data } = await adminApi.aiConfigurations.getAll();
   if (data) configs.value = data;
-
-  const { data: settings } = await adminApi.siteSettings.get();
-  if (settings) legacyEnvVarsDetected.value = settings.legacyEnvVarsDetected;
 }
 
 onMounted(loadConfigs);

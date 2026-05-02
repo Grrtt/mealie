@@ -36,13 +36,9 @@ public record GetSiteSettingsQuery : IQuery<SiteSettingsResponse>
     internal static async Task<SiteSettingsResponse> BuildResponseAsync(SiteSettings settings,
         IQueryServices services, CancellationToken ct)
     {
-        var legacyEnvVarsDetected = !string.IsNullOrEmpty(
-            Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
-
         bool defaultParserUnavailable = false;
         var parser = settings.DefaultParser;
 
-        // If it looks like a UUID, verify the AI config still exists
         if (Guid.TryParse(parser, out var configId))
         {
             var configExists = await services.Db.AiConfigurations
@@ -56,8 +52,7 @@ public record GetSiteSettingsQuery : IQuery<SiteSettingsResponse>
         return new SiteSettingsResponse
         {
             DefaultParser = parser,
-            DefaultParserUnavailable = defaultParserUnavailable,
-            LegacyEnvVarsDetected = legacyEnvVarsDetected
+            DefaultParserUnavailable = defaultParserUnavailable
         };
     }
 }

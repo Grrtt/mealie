@@ -1388,9 +1388,7 @@
     "set-active": "Set Active",
     "no-ai-providers": "No AI providers configured yet.",
     "delete-ai-provider": "Delete AI Provider",
-    "delete-ai-provider-confirm": "Are you sure you want to delete this AI provider?",
-    "legacy-env-vars-title": "Legacy Environment Variables Detected",
-    "legacy-env-vars-description": "OpenAI-related environment variables are set (OPENAI_API_KEY, etc.) but are no longer used. Please configure AI providers through this admin panel and remove the old environment variables."
+    "delete-ai-provider-confirm": "Are you sure you want to delete this AI provider?"
   },
   "profile": {
     "welcome-user": "👋 Welcome, {0}!",

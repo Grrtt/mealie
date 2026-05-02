@@ -8,9 +8,6 @@ public class SiteSettingsResponse
 
     /// <summary>True if the default_parser points to a deleted or missing AI configuration.</summary>
     public bool DefaultParserUnavailable { get; set; }
-
-    /// <summary>True if the OPENAI_API_KEY environment variable is still set at runtime.</summary>
-    public bool LegacyEnvVarsDetected { get; set; }
 }
 
 public class UpdateSiteSettingsRequest
