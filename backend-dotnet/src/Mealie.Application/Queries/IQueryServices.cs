@@ -1,7 +1,8 @@
 using Mealie.Application.Contracts.Search;
 using Mealie.Application.Services.ImageScrape;
-using Mealie.Application.Services.IngredientParser;
+using Mealie.Application.Services.Parser;
 using Mealie.Infrastructure.Admin;
+using NlpParserService = Mealie.Application.Services.IngredientParser.IngredientParserService;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
@@ -24,7 +25,8 @@ public interface IQueryServices
     IMediator Mediator { get; }
     ILoggerFactory LoggerFactory { get; }
     IOptions<AppSettings> Settings { get; }
-    IngredientParserService IngredientParser { get; }
+    NlpParserService IngredientParser { get; }
+    IIngredientParserService FullParser { get; }
     ImageScrapeQueue ImageScrapeQueue { get; }
     IWebhookDeliveryService WebhookDeliveryService { get; }
     IRecipeSearchIndex SearchIndex { get; }

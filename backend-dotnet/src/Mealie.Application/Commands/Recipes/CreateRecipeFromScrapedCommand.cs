@@ -52,7 +52,19 @@ public record CreateRecipeFromScrapedCommand(
                 .Where(s => !string.IsNullOrWhiteSpace(s)).ToList()
             : Scraped.RecipeIngredient;
 
-        var parsed = ParsedIngredients ?? await services.IngredientParser.ParseBatchAsync(ingredientStrings, ct);
+        var parsed = ParsedIngredients;
+        if (parsed is null)
+        {
+            // Use the full parser so the site-wide default (including AI providers) is respected
+            var dtoParsed = await services.FullParser.ParseBatchAsync(GroupId, ingredientStrings, null, ct);
+            parsed = dtoParsed.Select(dto => new ParsedIngredientResult(
+                dto.Input ?? string.Empty,
+                dto.Ingredient.Food?.Name,
+                dto.Ingredient.Quantity.HasValue ? (double?)dto.Ingredient.Quantity.Value : null,
+                dto.Ingredient.Unit?.Name,
+                dto.Ingredient.Note
+            )).ToList();
+        }
 
         var foods = CachedFoods ?? await db.Foods.IgnoreQueryFilters()
             .Where(f => f.GroupId == GroupId).Include(f => f.Aliases).ToListAsync(ct);
