@@ -1,5 +1,5 @@
-using System.Text.Json;
 using HtmlAgilityPack;
+using Schema.NET;
 
 namespace Mealie.Infrastructure.Scraper;
 
@@ -12,35 +12,16 @@ public class JsonLdScraperStrategy
 
         var scripts = doc.DocumentNode.SelectNodes("//script[@type='application/ld+json']");
         if (scripts is null)
-        {
             return null;
-        }
 
         foreach (var script in scripts)
         {
             try
             {
                 var json = script.InnerText.Trim();
-                var element = JsonDocument.Parse(json).RootElement;
-
-                // Handle @graph array
-                if (element.TryGetProperty("@graph", out var graph))
-                {
-                    foreach (var item in graph.EnumerateArray())
-                    {
-                        var recipe = TryParseRecipe(item);
-                        if (recipe is not null)
-                        {
-                            return recipe;
-                        }
-                    }
-                }
-
-                var directRecipe = TryParseRecipe(element);
-                if (directRecipe is not null)
-                {
-                    return directRecipe;
-                }
+                var result = TryParseBlock(json);
+                if (result is not null)
+                    return result;
             }
             catch
             {
@@ -51,104 +32,140 @@ public class JsonLdScraperStrategy
         return null;
     }
 
-    private static ScrapedRecipeDto? TryParseRecipe(JsonElement element)
+    private static ScrapedRecipeDto? TryParseBlock(string json)
     {
-        if (!element.TryGetProperty("@type", out var typeEl))
+        // Direct Recipe object
+        try
         {
-            return null;
+            var recipe = SchemaSerializer.DeserializeObject<Recipe>(json);
+            if (recipe is not null)
+                return MapRecipe(recipe);
         }
+        catch { }
 
-        var type = typeEl.ValueKind == JsonValueKind.Array
-            ? typeEl.EnumerateArray().Select(e => e.GetString()).FirstOrDefault()
-            : typeEl.GetString();
-        if (!string.Equals(type, "Recipe", StringComparison.OrdinalIgnoreCase))
+        // @graph: re-parse raw JSON to iterate graph nodes
+        try
         {
-            return null;
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("@graph", out var graph))
+            {
+                foreach (var item in graph.EnumerateArray())
+                {
+                    if (!IsRecipeType(item)) continue;
+                    try
+                    {
+                        var recipe = SchemaSerializer.DeserializeObject<Recipe>(item.GetRawText());
+                        if (recipe is not null)
+                            return MapRecipe(recipe);
+                    }
+                    catch { }
+                }
+            }
         }
+        catch { }
 
-        return new ScrapedRecipeDto
-        {
-            Name = GetString(element, "name"),
-            Description = GetString(element, "description"),
-            Image = GetImageUrl(element),
-            RecipeYield = GetString(element, "recipeYield"),
-            TotalTime = GetString(element, "totalTime"),
-            PrepTime = GetString(element, "prepTime"),
-            CookTime = GetString(element, "cookTime"),
-            RecipeIngredient = GetStringArray(element, "recipeIngredient"),
-            RecipeInstructions = GetInstructions(element),
-            Keywords = GetStringArray(element, "keywords")
-        };
+        return null;
     }
 
-    private static string? GetString(JsonElement el, string key)
+    private static bool IsRecipeType(System.Text.Json.JsonElement el)
     {
-        return el.TryGetProperty(key, out var v) ? v.GetString() : null;
+        if (!el.TryGetProperty("@type", out var t)) return false;
+        if (t.ValueKind == System.Text.Json.JsonValueKind.String)
+            return t.GetString()?.Equals("Recipe", StringComparison.OrdinalIgnoreCase) ?? false;
+        if (t.ValueKind == System.Text.Json.JsonValueKind.Array)
+            return t.EnumerateArray().Any(e => e.GetString()?.Equals("Recipe", StringComparison.OrdinalIgnoreCase) ?? false);
+        return false;
     }
 
-    private static string? GetImageUrl(JsonElement el)
+    private static ScrapedRecipeDto MapRecipe(Recipe r) => new()
     {
-        if (!el.TryGetProperty("image", out var img))
-        {
-            return null;
-        }
+        Name = r.Name.FirstOrDefault(),
+        Description = r.Description.FirstOrDefault()?.ToString(),
+        Image = ExtractImageUrl(r),
+        RecipeYield = r.RecipeYield.FirstOrDefault()?.ToString(),
+        TotalTime = FormatDuration(r.TotalTime.FirstOrDefault()),
+        PrepTime = FormatDuration(r.PrepTime.FirstOrDefault()),
+        CookTime = FormatDuration(r.CookTime.FirstOrDefault()),
+        RecipeIngredient = r.RecipeIngredient.Select(v => v.ToString() ?? "")
+            .Where(s => !string.IsNullOrWhiteSpace(s)).ToList(),
+        RecipeInstructions = ExtractInstructions(r),
+        Keywords = ExtractKeywords(r),
+        Categories = r.RecipeCategory.Select(v => v.ToString() ?? "")
+            .Where(s => !string.IsNullOrWhiteSpace(s)).ToList(),
+        Nutrition = ExtractNutrition(r)
+    };
 
-        return img.ValueKind switch
+    private static string? ExtractImageUrl(Recipe r)
+    {
+        var img = r.Image.FirstOrDefault();
+        return img switch
         {
-            JsonValueKind.String => img.GetString(),
-            JsonValueKind.Array => img.EnumerateArray()
-                .Select(e => e.TryGetProperty("url", out var u) ? u.GetString() : e.GetString())
-                .FirstOrDefault(),
-            JsonValueKind.Object => img.TryGetProperty("url", out var u) ? u.GetString() : null,
+            Uri uri => uri.ToString(),
+            ImageObject io => io.Url.FirstOrDefault()?.ToString(),
+            string s => s,
             _ => null
         };
     }
 
-    private static IList<string> GetStringArray(JsonElement el, string key)
+    private static IList<string> ExtractInstructions(Recipe r)
     {
-        if (!el.TryGetProperty(key, out var arr))
+        var results = new List<string>();
+        foreach (var item in r.RecipeInstructions)
         {
-            return [];
+            switch (item)
+            {
+                case string s when !string.IsNullOrWhiteSpace(s):
+                    results.Add(s);
+                    break;
+                case HowToStep step:
+                    var text = step.Text.FirstOrDefault()?.ToString();
+                    if (!string.IsNullOrWhiteSpace(text)) results.Add(text);
+                    break;
+                case HowToSection section:
+                    foreach (var sItem in section.ItemListElement)
+                    {
+                        if (sItem is HowToStep sStep)
+                        {
+                            var sText = sStep.Text.FirstOrDefault()?.ToString();
+                            if (!string.IsNullOrWhiteSpace(sText)) results.Add(sText);
+                        }
+                    }
+                    break;
+            }
         }
-
-        if (arr.ValueKind == JsonValueKind.String)
-        {
-            return arr.GetString()?.Split(',').Select(s => s.Trim()).ToList() ?? [];
-        }
-
-        if (arr.ValueKind == JsonValueKind.Array)
-        {
-            return arr.EnumerateArray()
-                .Select(e => e.GetString() ?? "")
-                .Where(s => !string.IsNullOrEmpty(s))
-                .ToList();
-        }
-
-        return [];
+        return results;
     }
 
-    private static IList<string> GetInstructions(JsonElement el)
+    private static IList<string> ExtractKeywords(Recipe r)
     {
-        if (!el.TryGetProperty("recipeInstructions", out var arr))
+        var results = new List<string>();
+        foreach (var kw in r.Keywords)
         {
-            return [];
+            var s = kw.ToString() ?? "";
+            // Keywords are often comma-separated in a single string
+            results.AddRange(s.Split(',').Select(k => k.Trim()).Where(k => !string.IsNullOrEmpty(k)));
         }
-
-        if (arr.ValueKind == JsonValueKind.String)
-        {
-            return [arr.GetString() ?? ""];
-        }
-
-        if (arr.ValueKind == JsonValueKind.Array)
-        {
-            return arr.EnumerateArray()
-                .Select(e => e.ValueKind == JsonValueKind.Object
-                    ? (e.TryGetProperty("text", out var t) ? t.GetString() : e.GetString()) ?? ""
-                    : e.GetString() ?? "")
-                .Where(s => !string.IsNullOrEmpty(s))
-                .ToList();
-        }
-
-        return [];
+        return results;
     }
+
+    private static NutritionDto? ExtractNutrition(Recipe r)
+    {
+        var n = r.Nutrition.FirstOrDefault();
+        if (n is not NutritionInformation ni) return null;
+        return new NutritionDto
+        {
+            Calories = ni.Calories.FirstOrDefault()?.ToString(),
+            FatContent = ni.FatContent.FirstOrDefault()?.ToString(),
+            ProteinContent = ni.ProteinContent.FirstOrDefault()?.ToString(),
+            CarbohydrateContent = ni.CarbohydrateContent.FirstOrDefault()?.ToString()
+        };
+    }
+
+    private static string? FormatDuration(object? value) => value switch
+    {
+        TimeSpan ts when ts > TimeSpan.Zero => System.Xml.XmlConvert.ToString(ts),
+        string s when !string.IsNullOrWhiteSpace(s) => s,
+        _ => null
+    };
 }
+
