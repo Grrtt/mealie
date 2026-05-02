@@ -26,4 +26,5 @@ public class AppSettings
     public string? OidcClientId { get; set; }
     public string? OidcClientSecret { get; set; }
     public string? OidcAuthority { get; set; }
+    public string McpSecret { get; set; } = string.Empty;
 }

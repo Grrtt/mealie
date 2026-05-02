@@ -7,6 +7,7 @@ using FluentValidation.AspNetCore;
 using Mealie.Api.Caching;
 using Mealie.Api.Commands;
 using Mealie.Api.Filters;
+using Mealie.Api.Mcp;
 using Mealie.Api.Middleware;
 using Mealie.Application;
 using Mealie.Application.Contracts.Search;
@@ -66,6 +67,7 @@ appSettings.DatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
 appSettings.DbEngine = Environment.GetEnvironmentVariable("DB_ENGINE") ?? appSettings.DbEngine;
 appSettings.DataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? appSettings.DataDir;
 appSettings.LogLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? appSettings.LogLevel;
+appSettings.McpSecret = Environment.GetEnvironmentVariable("MCP_SECRET") ?? appSettings.McpSecret;
 
 var allowSignupEnv = Environment.GetEnvironmentVariable("ALLOW_SIGNUP");
 if (allowSignupEnv is not null)
@@ -97,7 +99,12 @@ builder.Services.AddOptions<AppSettings>().Configure(o =>
     o.OidcAuthority = appSettings.OidcAuthority;
     o.ApiPort = appSettings.ApiPort;
     o.BaseUrl = appSettings.BaseUrl;
+    o.McpSecret = appSettings.McpSecret;
 });
+
+// ── MCP Log Store ──────────────────────────────────────────────────────────
+var inMemoryLogStore = new InMemoryLogStore();
+builder.Services.AddSingleton(inMemoryLogStore);
 
 // ── Serilog ────────────────────────────────────────────────────────────────
 var logLevelEnum = Enum.TryParse<LogEventLevel>(appSettings.LogLevel, true, out var lvl)
@@ -111,7 +118,8 @@ builder.Host.UseSerilog((ctx, cfg) =>
         .MinimumLevel.Override("System", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .Enrich.WithMachineName()
-        .Enrich.WithThreadId();
+        .Enrich.WithThreadId()
+        .WriteTo.Sink(inMemoryLogStore);
 
     if (ctx.HostingEnvironment.IsProduction())
     {
@@ -167,12 +175,18 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.Zero
         };
     })
-    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { });
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { })
+    .AddScheme<McpKeyAuthOptions, McpKeyAuthHandler>("McpKey", _ => { });
 
 builder.Services.AddAuthorizationBuilder()
     .SetDefaultPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
-        .Build());
+        .Build())
+    .AddPolicy("McpPolicy", policy =>
+    {
+        policy.AddAuthenticationSchemes("McpKey");
+        policy.RequireAuthenticatedUser();
+    });
 
 // ── Infrastructure Services ────────────────────────────────────────────────
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -308,6 +322,11 @@ builder.Services.AddHostedService<SearchIndexRebuildService>();
 // Ingredient NLP parser: singleton Python subprocess bridge
 builder.Services.AddSingleton<Mealie.Application.Services.IngredientParser.IngredientParserService>();
 
+// ── MCP Server ─────────────────────────────────────────────────────────────
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithTools<LogsTool>();
+
 // ── FluentValidation ───────────────────────────────────────────────────────
 builder.Services.AddValidatorsFromAssembly(typeof(PlaceholderMarker).Assembly);
 builder.Services.AddFluentValidationAutoValidation();
@@ -421,6 +440,7 @@ if (Directory.Exists(dataDir))
 }
 
 app.MapControllers();
+app.MapMcp("/mcp").RequireAuthorization("McpPolicy");
 app.MapHealthChecks("/healthz");
 app.MapHealthChecks("/readyz");
 
