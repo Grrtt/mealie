@@ -34,28 +34,38 @@ public class JsonLdScraperStrategy
 
     private static ScrapedRecipeDto? TryParseBlock(string json)
     {
-        // Direct Recipe object
-        try
-        {
-            var recipe = SchemaSerializer.DeserializeObject<Recipe>(json);
-            if (recipe is not null)
-                return MapRecipe(recipe);
-        }
-        catch { }
-
-        // @graph: re-parse raw JSON to iterate graph nodes
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("@graph", out var graph))
+            var root = doc.RootElement;
+
+            // Direct Recipe object
+            if (IsRecipeType(root))
+            {
+                try
+                {
+                    var recipe = SchemaSerializer.DeserializeObject<Recipe>(json);
+                    if (recipe is not null && (recipe.Name.Any() || recipe.RecipeIngredient.Any()))
+                        return MapRecipe(recipe);
+                }
+                catch { }
+            }
+
+            // @graph: find the Recipe node and deserialize it individually
+            if (root.TryGetProperty("@graph", out var graph))
             {
                 foreach (var item in graph.EnumerateArray())
                 {
+                    // Skip non-object elements (e.g. bare [] that Yoast sometimes emits)
+                    if (item.ValueKind != System.Text.Json.JsonValueKind.Object) continue;
                     if (!IsRecipeType(item)) continue;
                     try
                     {
-                        var recipe = SchemaSerializer.DeserializeObject<Recipe>(item.GetRawText());
-                        if (recipe is not null)
+                        // Individual graph nodes have no @context; prepend it so Schema.NET
+                        // can resolve union types and converters correctly.
+                        var nodeJson = $"{{\"@context\":\"https://schema.org\",{item.GetRawText()[1..]}";
+                        var recipe = SchemaSerializer.DeserializeObject<Recipe>(nodeJson);
+                        if (recipe is not null && (recipe.Name.Any() || recipe.RecipeIngredient.Any()))
                             return MapRecipe(recipe);
                     }
                     catch { }
@@ -141,7 +151,7 @@ public class JsonLdScraperStrategy
         var results = new List<string>();
         foreach (var kw in r.Keywords)
         {
-            var s = kw.ToString() ?? "";
+            var s = kw?.ToString() ?? "";
             // Keywords are often comma-separated in a single string
             results.AddRange(s.Split(',').Select(k => k.Trim()).Where(k => !string.IsNullOrEmpty(k)));
         }
