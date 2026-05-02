@@ -154,6 +154,25 @@ public class RecipesController(
         return Ok(recipe);
     }
 
+    [HttpPost("{slug}/reimport")]
+    [Authorize(Roles = "admin")]
+    public async Task<ActionResult<RecipeDetailResponse>> ReimportRecipe(string slug, CancellationToken ct)
+    {
+        var existing = await executor.ExecuteAsync(new GetRecipeDetailBySlugQuery(tenantContext.GroupId, slug), ct);
+        if (existing is null)
+            return NotFound(new { detail = "Recipe not found" });
+
+        if (string.IsNullOrWhiteSpace(existing.OrgUrl))
+            return UnprocessableEntity(new { detail = "Recipe has no original URL to re-import from." });
+
+        var scraped = await scraperService.ScrapeAsync(existing.OrgUrl, ct);
+        if (scraped.ScrapingNotSupported)
+            return UnprocessableEntity(new { detail = "Could not scrape recipe from the original URL." });
+
+        var result = await executor.ExecuteAsync(new ReimportRecipeCommand(tenantContext.GroupId, slug, scraped), ct);
+        return result is null ? NotFound(new { detail = "Recipe not found" }) : Ok(result);
+    }
+
     // ── Bulk Actions ────────────────────────────────────────────────────────
 
     [HttpPost("bulk-actions/delete")]

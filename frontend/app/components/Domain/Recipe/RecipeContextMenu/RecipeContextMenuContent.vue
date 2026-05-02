@@ -2,6 +2,18 @@
   <RecipeDialogShare v-model="shareDialog" :recipe-id="recipeId" :name="name" />
   <RecipeDialogPrintPreferences v-model="printPreferencesDialog" :recipe="recipeRef" />
   <BaseDialog
+    v-model="recipeReimportDialog"
+    :title="$t('recipe.reimport')"
+    color="primary"
+    :icon="$globals.icons.refresh"
+    can-confirm
+    @confirm="reimportRecipe()"
+  >
+    <v-card-text>
+      {{ $t("recipe.reimport-confirmation") }}
+    </v-card-text>
+  </BaseDialog>
+  <BaseDialog
     v-model="recipeDeleteDialog"
     :title="$t('recipe.delete-recipe')"
     color="error"
@@ -125,6 +137,7 @@ export interface ContextMenuIncludes {
   printPreferences: boolean;
   share: boolean;
   recipeActions: boolean;
+  reimport?: boolean;
 }
 
 export interface ContextMenuItem {
@@ -161,6 +174,7 @@ const props = withDefaults(defineProps<Props>(), {
     printPreferences: true,
     share: true,
     recipeActions: true,
+    reimport: false,
   }),
   appendItems: () => [],
   leadingItems: () => [],
@@ -183,6 +197,7 @@ const api = useUserApi();
 const printPreferencesDialog = ref(false);
 const shareDialog = ref(false);
 const recipeDeleteDialog = ref(false);
+const recipeReimportDialog = ref(false);
 const mealplannerDialog = ref(false);
 const shoppingListDialog = ref(false);
 const recipeDuplicateDialog = ref(false);
@@ -280,6 +295,13 @@ const defaultItems: { [key: string]: ContextMenuItem } = {
     event: "share",
     isPublic: false,
   },
+  reimport: {
+    title: i18n.t("recipe.reimport"),
+    icon: $globals.icons.refresh,
+    color: undefined,
+    event: "reimport",
+    isPublic: false,
+  },
 };
 
 // Add leading and Appending Items
@@ -311,6 +333,9 @@ for (const [key, value] of Object.entries(props.useItems)) {
 
   // Skip delete if not allowed
   if (key === "delete" && !canDelete.value) continue;
+
+  // Skip reimport if not admin or recipe has no original URL
+  if (key === "reimport" && (!auth.user.value?.admin || !props.recipe?.orgURL)) continue;
 
   const item = defaultItems[key];
   if (item && (item.isPublic || isOwnGroup.value)) {
@@ -394,6 +419,19 @@ async function duplicateRecipe() {
   }
 }
 
+async function reimportRecipe() {
+  const { data, error } = await api.recipes.reimport(props.slug);
+  if (error) {
+    alert.error(i18n.t("events.something-went-wrong"));
+    return;
+  }
+  if (data) {
+    recipeRef.value = data;
+    alert.success(i18n.t("recipe.reimport-success"));
+    router.go(0);
+  }
+}
+
 // Note: Print is handled as an event in the parent component
 // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 const eventHandlers: { [key: string]: () => void | Promise<any> } = {
@@ -426,6 +464,9 @@ const eventHandlers: { [key: string]: () => void | Promise<any> } = {
   },
   share: () => {
     shareDialog.value = true;
+  },
+  reimport: () => {
+    recipeReimportDialog.value = true;
   },
 };
 

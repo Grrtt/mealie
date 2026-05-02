@@ -74,6 +74,7 @@
           share: loggedIn,
           recipeActions: true,
           delete: loggedIn,
+          reimport: isAdmin,
         }"
         class="ml-1"
         @print="$emit('print')"
@@ -129,6 +130,9 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits(["print", "input", "save", "delete", "close", "json", "edit"]);
 
 const deleteDialog = ref(false);
+
+const auth = useMealieAuth();
+const isAdmin = computed(() => auth.user.value?.admin === true);
 
 const i18n = useI18n();
 const { $globals } = useNuxtApp();
