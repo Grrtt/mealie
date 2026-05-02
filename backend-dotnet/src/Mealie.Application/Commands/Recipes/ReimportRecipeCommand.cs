@@ -2,6 +2,7 @@ using Mealie.Application.Common;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Ingredients;
+using Mealie.Domain.Entities.Organizers;
 using Mealie.Domain.Entities.Recipes;
 using Mealie.Infrastructure.Parser;
 using Mealie.Infrastructure.Scraper;
@@ -11,8 +12,8 @@ using NutritionDto = Mealie.Application.Dtos.Recipes.NutritionDto;
 namespace Mealie.Application.Commands.Recipes;
 
 /// <summary>
-///     Replaces a recipe's content (name, times, ingredients, instructions) by re-scraping
-///     its original URL. Notes, tags, categories, assets, and other user-added data are preserved.
+///     Replaces a recipe's content (name, times, ingredients, instructions, tags, categories)
+///     by re-scraping its original URL. Notes, assets, and other user-added data are preserved.
 /// </summary>
 public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto Scraped)
     : IQuery<RecipeDetailResponse?>
@@ -33,9 +34,13 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
         if (current is null)
             return null;
 
-        // Step 1 — Delete old ingredients and instructions via raw SQL.
+        // Step 1 — Delete old ingredients, instructions, and tag/category associations via raw SQL.
         await db.RecipeIngredients.Where(i => i.RecipeId == current.Id).ExecuteDeleteAsync(ct);
         await db.RecipeInstructions.Where(i => i.RecipeId == current.Id).ExecuteDeleteAsync(ct);
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM recipes_to_tags WHERE recipe_id = {current.Id}", ct);
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM recipes_to_categories WHERE recipe_id = {current.Id}", ct);
 
         // Step 2 — Update recipe scalar fields via raw SQL.
         await db.Recipes.IgnoreQueryFilters()
@@ -136,12 +141,74 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
             Id = Guid.NewGuid(), Position = i, Text = text, RecipeId = current.Id
         }).ToList();
 
-        // Step 4 — Persist only INSERTs through the change tracker (no UPDATE/DELETE paths).
+        // Step 4 — Resolve tags and categories (create new organizers if they don't exist yet).
+        var resolvedTags = new List<Tag>();
+        foreach (var keyword in Scraped.Keywords)
+        {
+            var tagName = keyword.Trim();
+            if (string.IsNullOrEmpty(tagName))
+                continue;
+
+            var tagSlug = SlugHelper.Generate(tagName);
+            var tag = await db.Tags.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(t => t.Slug == tagSlug && t.GroupId == GroupId, ct);
+            if (tag is null)
+            {
+                tag = new Tag
+                {
+                    Id = Guid.NewGuid(), Name = tagName, Slug = tagSlug, GroupId = GroupId,
+                    CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+                };
+                db.Tags.Add(tag);
+            }
+
+            resolvedTags.Add(tag);
+        }
+
+        var resolvedCategories = new List<Category>();
+        foreach (var catName in Scraped.Categories)
+        {
+            var name = catName.Trim();
+            if (string.IsNullOrEmpty(name))
+                continue;
+
+            var catSlug = SlugHelper.Generate(name);
+            var cat = await db.Categories.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Slug == catSlug && c.GroupId == GroupId, ct);
+            if (cat is null)
+            {
+                cat = new Category
+                {
+                    Id = Guid.NewGuid(), Name = name, Slug = catSlug, GroupId = GroupId,
+                    CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+                };
+                db.Categories.Add(cat);
+            }
+
+            resolvedCategories.Add(cat);
+        }
+
+        // Step 5 — Persist only INSERTs through the change tracker (no UPDATE/DELETE paths).
+        // Includes any new tags/categories, foods, units, ingredients, and instructions.
         db.RecipeIngredients.AddRange(newIngredients);
         db.RecipeInstructions.AddRange(newInstructions);
         await db.SaveChangesAsync(ct);
 
-        // Step 5 — Reload the full recipe (with all relationships) for the response.
+        // Step 6 — Insert tag and category join-table rows via raw SQL (safe after SaveChangesAsync
+        // has persisted any newly created tags/categories above).
+        foreach (var tag in resolvedTags)
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"INSERT INTO recipes_to_tags (recipe_id, tag_id) VALUES ({current.Id}, {tag.Id})", ct);
+        }
+
+        foreach (var cat in resolvedCategories)
+        {
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"INSERT INTO recipes_to_categories (category_id, recipe_id) VALUES ({cat.Id}, {current.Id})", ct);
+        }
+
+        // Step 7 — Reload the full recipe (with all relationships) for the response.
         var updated = await db.Recipes.IgnoreQueryFilters().AsNoTracking()
             .Where(r => r.Id == current.Id)
             .Include(r => r.RecipeIngredients).ThenInclude(i => i.Unit)
