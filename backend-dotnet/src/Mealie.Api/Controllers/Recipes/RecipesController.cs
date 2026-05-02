@@ -158,14 +158,18 @@ public class RecipesController(
     [Authorize(Roles = "admin")]
     public async Task<ActionResult<RecipeDetailResponse>> ReimportRecipe(string slug, CancellationToken ct)
     {
-        var existing = await executor.ExecuteAsync(new GetRecipeDetailBySlugQuery(tenantContext.GroupId, slug), ct);
-        if (existing is null)
+        var orgUrl = await db.Recipes.IgnoreQueryFilters().AsNoTracking()
+            .Where(r => r.GroupId == tenantContext.GroupId && r.Slug == slug)
+            .Select(r => r.OrgUrl)
+            .FirstOrDefaultAsync(ct);
+
+        if (orgUrl is null)
             return NotFound(new { detail = "Recipe not found" });
 
-        if (string.IsNullOrWhiteSpace(existing.OrgUrl))
+        if (string.IsNullOrWhiteSpace(orgUrl))
             return UnprocessableEntity(new { detail = "Recipe has no original URL to re-import from." });
 
-        var scraped = await scraperService.ScrapeAsync(existing.OrgUrl, ct);
+        var scraped = await scraperService.ScrapeAsync(orgUrl, ct);
         if (scraped.ScrapingNotSupported)
             return UnprocessableEntity(new { detail = "Could not scrape recipe from the original URL." });
 
