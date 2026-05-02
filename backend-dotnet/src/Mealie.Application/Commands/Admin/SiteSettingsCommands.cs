@@ -90,15 +90,28 @@ public record UpdateSiteSettingsCommand(UpdateSiteSettingsRequest Request)
             }
         }
 
-        // Update site settings
-        var settings = await GetSiteSettingsQuery.GetOrCreateAsync(services, ct);
-        settings.DefaultParser = newParser;
-        settings.UpdatedAt = DateTime.UtcNow;
+        // Update site settings using bulk SQL to avoid change-tracker concurrency issues
+        var rowsUpdated = await services.Db.SiteSettings
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(e => e.DefaultParser, newParser)
+                .SetProperty(e => e.UpdatedAt, DateTime.UtcNow), ct);
+
+        // If no row existed yet, create one
+        if (rowsUpdated == 0)
+        {
+            services.Db.SiteSettings.Add(new SiteSettings
+            {
+                Id = Guid.NewGuid(),
+                DefaultParser = newParser,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            await services.Db.SaveChangesAsync(ct);
+        }
 
         // Sync is_active on AI configurations
         if (Guid.TryParse(newParser, out var activeId))
         {
-            // Activate the referenced config, deactivate all others
             await services.Db.AiConfigurations
                 .Where(c => c.IsActive && c.Id != activeId)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsActive, false), ct);
@@ -109,15 +122,14 @@ public record UpdateSiteSettingsCommand(UpdateSiteSettingsRequest Request)
         }
         else
         {
-            // Built-in parser selected — deactivate all AI configs
             await services.Db.AiConfigurations
                 .Where(c => c.IsActive)
                 .ExecuteUpdateAsync(s => s.SetProperty(c => c.IsActive, false), ct);
         }
 
-        await services.Db.SaveChangesAsync(ct);
-
-        var response = await GetSiteSettingsQuery.BuildResponseAsync(settings, services, ct);
+        // Build response from fresh DB read
+        var updatedSettings = await services.Db.SiteSettings.FirstAsync(ct);
+        var response = await GetSiteSettingsQuery.BuildResponseAsync(updatedSettings, services, ct);
         return (response, null);
     }
 }
