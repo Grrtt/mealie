@@ -83,6 +83,7 @@
       v-model="dialog.show"
       :title="dialog.editing ? $t('admin.edit-ai-provider') : $t('admin.add-ai-provider')"
       :icon="$globals.icons.robot"
+      :can-confirm="true"
       @confirm="saveConfig"
     >
       <v-card-text class="pt-4">
@@ -143,6 +144,7 @@
       :title="$t('admin.delete-ai-provider')"
       :icon="$globals.icons.alertCircle"
       color="error"
+      :can-confirm="true"
       @confirm="deleteConfig"
     >
       <v-card-text>
