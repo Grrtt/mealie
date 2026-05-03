@@ -20,6 +20,7 @@ RUN dotnet restore Mealie.slnx -p:AllowMissingPrunePackageData=true
 COPY src/ src/
 COPY tests/ tests/
 COPY tools/ tools/
+COPY scripts/ scripts/
 
 # Build and publish (restore included to ensure analyzer packages resolve correctly)
 RUN dotnet publish src/Mealie.Api/Mealie.Api.csproj \
@@ -45,11 +46,8 @@ RUN pip3 install --no-cache-dir --break-system-packages ingredient-parser-nlp \
 # Create data directory
 RUN mkdir -p /app/data /app/scripts
 
-# Copy published output
+# Copy published output (includes scripts/ingredient_parser_bridge.py via Content item)
 COPY --from=build /app/publish .
-
-# Copy Python bridge script
-COPY scripts/ingredient_parser_bridge.py /app/scripts/ingredient_parser_bridge.py
 
 # Expose port 9000 (same as Python backend)
 EXPOSE 9000
