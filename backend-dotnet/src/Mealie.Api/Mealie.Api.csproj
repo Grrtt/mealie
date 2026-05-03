@@ -30,4 +30,12 @@
         <ProjectReference Include="..\Mealie.Shared\Mealie.Shared.csproj" />
     </ItemGroup>
 
+    <!-- Copy the Python NLP bridge script to the output directory so IngredientParserService can launch it -->
+    <ItemGroup>
+        <Content Include="..\..\scripts\ingredient_parser_bridge.py">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Link>scripts\ingredient_parser_bridge.py</Link>
+        </Content>
+    </ItemGroup>
+
 </Project>
