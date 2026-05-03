@@ -18,7 +18,7 @@ public record GetShoppingListsQuery(Guid HouseholdId, PaginationParams Paginatio
             .Select(s => new ShoppingListSummaryResponse
             {
                 Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
-                CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt
+                UserId = s.UserId, CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt
             })
             .ToListAsync(ct);
         return new PaginatedResponse<ShoppingListSummaryResponse>

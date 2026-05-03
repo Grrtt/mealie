@@ -37,7 +37,16 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
         [FromBody] CreateShoppingListRequest request, CancellationToken ct)
     {
         var list = await executor.ExecuteAsync(
-            new CreateShoppingListCommand(CurrentGroupId, CurrentHouseholdId, request), ct);
+            new CreateShoppingListCommand(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request), ct);
+        return CreatedAtAction(nameof(GetShoppingList), new { id = list.Id }, list);
+    }
+
+    [HttpPost("with-recipe")]
+    public async Task<ActionResult<ShoppingListResponse>> CreateShoppingListWithRecipe(
+        [FromBody] CreateShoppingListWithRecipeRequest request, CancellationToken ct)
+    {
+        var list = await executor.ExecuteAsync(
+            new CreateShoppingListWithRecipeCommand(CurrentGroupId, CurrentHouseholdId, CurrentUserId, request), ct);
         return CreatedAtAction(nameof(GetShoppingList), new { id = list.Id }, list);
     }
 
@@ -103,9 +112,9 @@ public class ShoppingListsController(QueryExecutor executor, ITenantContext tena
 
     [HttpPost("{id:guid}/recipe")]
     public async Task<ActionResult<ShoppingListResponse>> AddRecipe(Guid id,
-        [FromBody] AddRecipeToShoppingListRequest request, CancellationToken ct)
+        [FromBody] List<AddRecipeToShoppingListRequest> requests, CancellationToken ct)
     {
-        var list = await executor.ExecuteAsync(new AddRecipeToShoppingListCommand(CurrentHouseholdId, id, request), ct);
+        var list = await executor.ExecuteAsync(new AddRecipeToShoppingListCommand(CurrentHouseholdId, id, requests), ct);
         if (list is null)
         {
             return NotFoundOrForbidden();

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.ShoppingLists;
 
-public record CreateShoppingListCommand(Guid GroupId, Guid HouseholdId, CreateShoppingListRequest Request)
+public record CreateShoppingListCommand(Guid GroupId, Guid HouseholdId, Guid UserId, CreateShoppingListRequest Request)
     : IQuery<ShoppingListResponse>
 {
     public async Task<ShoppingListResponse> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
@@ -16,7 +16,7 @@ public record CreateShoppingListCommand(Guid GroupId, Guid HouseholdId, CreateSh
         var list = new ShoppingList
         {
             Id = Guid.NewGuid(), Name = Request.Name, GroupId = GroupId, HouseholdId = HouseholdId,
-            CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+            UserId = UserId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
         };
         db.ShoppingLists.Add(list);
         await db.SaveChangesAsync(ct);

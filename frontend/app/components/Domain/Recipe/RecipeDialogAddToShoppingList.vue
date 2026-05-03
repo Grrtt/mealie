@@ -6,7 +6,7 @@
       :title="$t('recipe.add-to-list')"
       :icon="$globals.icons.cartCheck"
     >
-      <v-container v-if="!filteredShoppingLists.length">
+      <v-container v-if="!filteredShoppingLists.length && !showCreateListInput">
         <BasePageTitle>
           <template #title>
             {{ $t('shopping-list.no-shopping-lists-found') }}
@@ -25,6 +25,34 @@
             {{ list.name }}
           </v-card-title>
         </v-card>
+        <v-expand-transition>
+          <div v-if="showCreateListInput" class="mt-2">
+            <v-text-field
+              ref="createListField"
+              v-model="createListName"
+              autofocus
+              :label="$t('shopping-list.new-list')"
+              :loading="creatingList"
+              :disabled="creatingList"
+              variant="outlined"
+              density="compact"
+              @keydown.enter="createAndOpenList"
+            />
+            <div class="d-flex justify-end gap-2">
+              <v-btn variant="text" color="grey" @click="showCreateListInput = false">
+                {{ $t("general.cancel") }}
+              </v-btn>
+              <v-btn
+                color="primary"
+                :loading="creatingList"
+                :disabled="!createListName.trim()"
+                @click="createAndOpenList"
+              >
+                {{ $t("shopping-list.create-shopping-list") }}
+              </v-btn>
+            </div>
+          </div>
+        </v-expand-transition>
       </v-card-text>
       <template #card-actions>
         <v-btn
@@ -38,6 +66,16 @@
           class="d-flex justify-end"
           style="width: 100%;"
         >
+          <v-btn
+            v-if="!showCreateListInput"
+            variant="text"
+            color="primary"
+            :prepend-icon="$globals.icons.createAlt"
+            class="mr-2"
+            @click="showCreateListInput = true"
+          >
+            {{ $t("shopping-list.new-list") }}
+          </v-btn>
           <v-checkbox
             v-model="preferences.viewAllLists"
             hide-details
@@ -236,6 +274,28 @@ const api = useUserApi();
 const preferences = useShoppingListPreferences();
 const ready = ref(false);
 
+const showCreateListInput = ref(false);
+const createListName = ref("");
+const creatingList = ref(false);
+
+async function createAndOpenList() {
+  const name = createListName.value.trim();
+  if (!name || creatingList.value) return;
+
+  creatingList.value = true;
+  const { data, error } = await api.shopping.lists.createOne({ name });
+  creatingList.value = false;
+
+  if (error || !data) {
+    alert.error(i18n.t("general.something-went-wrong"));
+    return;
+  }
+
+  showCreateListInput.value = false;
+  createListName.value = "";
+  await openShoppingListIngredientDialog(data as unknown as ShoppingListSummary);
+}
+
 // Capture values at initialization to avoid reactive updates
 const currentHouseholdSlug = ref("");
 const filteredShoppingLists = ref<ShoppingListSummary[]>([]);
@@ -402,6 +462,8 @@ function initState() {
   state.shoppingListShowAllToggled = false;
   recipeIngredientSections.value = [];
   selectedShoppingList.value = null;
+  showCreateListInput.value = false;
+  createListName.value = "";
 }
 
 initState();

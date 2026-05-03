@@ -8,4 +8,7 @@ public record AiParserConfig(
     string ApiKey,
     string? BaseUrl,
     string Model,
-    string? ProjectId);
+    string? ProjectId,
+    string? IngredientSystemPrompt = null,
+    string? CategorySystemPrompt = null,
+    string? TagSystemPrompt = null);

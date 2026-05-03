@@ -15,6 +15,15 @@ public class SiteSettings
     /// </summary>
     public string DefaultParser { get; set; } = "nlp";
 
+    /// <summary>Custom system prompt for ingredient parsing. Null = use built-in default.</summary>
+    public string? IngredientSystemPrompt { get; set; }
+
+    /// <summary>Custom system prompt for AI category assignment. Null = use built-in default.</summary>
+    public string? CategorySystemPrompt { get; set; }
+
+    /// <summary>Custom system prompt for AI tag assignment. Null = use built-in default.</summary>
+    public string? TagSystemPrompt { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

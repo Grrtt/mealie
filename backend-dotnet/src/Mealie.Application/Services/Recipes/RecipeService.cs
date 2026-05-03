@@ -1,8 +1,9 @@
+using Mealie.Application.Commands.Recipes;
 using Mealie.Application.Common;
 using Mealie.Application.Contracts.Search;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Services.ImageScrape;
-using Mealie.Application.Services.IngredientParser;
+using Mealie.Application.Services.Parser;
 using Mealie.Domain.Entities.Ingredients;
 using Mealie.Domain.Entities.Organizers;
 using Mealie.Domain.Entities.Recipes;
@@ -20,7 +21,8 @@ namespace Mealie.Application.Services.Recipes;
 
 public class RecipeService(
     ApplicationDbContext db,
-    IngredientParserService ingredientParser,
+    IIngredientParserService ingredientParser,
+    IRecipeOrganizerService recipeOrganizer,
     ImageScrapeQueue imageScrapeQueue,
     IRecipeSearchIndex searchIndex,
     IMediator mediator,
@@ -615,7 +617,7 @@ public class RecipeService(
 
     public async Task<RecipeSummaryResponse?> CreateFromScrapedAsync(
         ScrapedRecipeDto scraped, Guid householdId, Guid groupId,
-        IReadOnlyList<ParsedIngredientResult>? parsedIngredients = null,
+        IReadOnlyList<ParsedIngredientDto>? parsedIngredients = null,
         List<IngredientFood>? cachedFoods = null,
         List<IngredientUnit>? cachedUnits = null,
         CancellationToken ct = default)
@@ -626,9 +628,7 @@ public class RecipeService(
         var existingSlug = await db.Recipes.IgnoreQueryFilters()
             .AnyAsync(r => r.HouseholdId == householdId && r.Slug == slug, ct);
         if (existingSlug)
-        {
             return null;
-        }
 
         var uniqueSlug = await EnsureUniqueSlugAsync(slug, ct);
 
@@ -659,8 +659,14 @@ public class RecipeService(
             : scraped.RecipeIngredient;
 
         // Use pre-parsed results when provided (batch migration path); otherwise parse now.
-        var parsed = parsedIngredients
-                     ?? await ingredientParser.ParseBatchAsync(ingredientStrings, ct);
+        IList<ParsedIngredientDto> parsed = parsedIngredients?.ToList()
+                     ?? await ingredientParser.ParseBatchAsync(groupId, ingredientStrings, null, ct);
+
+        // Call organizer after parsing. Non-AI strategies return null silently.
+        var organizerSuggestions = await RecipeImportHelpers.SuggestOrganizersAsync(
+            recipeOrganizer,
+            scraped.Name ?? "Untitled", scraped.Description,
+            parsed, scraped.Categories, scraped.Keywords, ct);
 
         // Use caller-provided mutable lists (migration batch path) or load fresh from DB.
         // Mutable so newly created foods/units are visible to subsequent ingredients in the same batch.
@@ -678,14 +684,16 @@ public class RecipeService(
         for (var i = 0; i < parsed.Count; i++)
         {
             var p = parsed[i];
+            var foodName = p.Ingredient.Food?.Name;
+            var unitName = p.Ingredient.Unit?.Name;
 
             IngredientFood? matchedFood = null;
-            if (!string.IsNullOrWhiteSpace(p.Food))
+            if (!string.IsNullOrWhiteSpace(foodName))
             {
                 matchedFood = foods.FirstOrDefault(f =>
-                    string.Equals(f.Name, p.Food, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(f.PluralName, p.Food, StringComparison.OrdinalIgnoreCase) ||
-                    f.Aliases.Any(a => string.Equals(a.Name, p.Food, StringComparison.OrdinalIgnoreCase)));
+                    string.Equals(f.Name, foodName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(f.PluralName, foodName, StringComparison.OrdinalIgnoreCase) ||
+                    f.Aliases.Any(a => string.Equals(a.Name, foodName, StringComparison.OrdinalIgnoreCase)));
 
                 // Create food on first encounter so subsequent ingredients in the batch can match it.
                 if (matchedFood is null)
@@ -693,7 +701,7 @@ public class RecipeService(
                     matchedFood = new IngredientFood
                     {
                         Id = Guid.NewGuid(),
-                        Name = p.Food,
+                        Name = foodName,
                         GroupId = groupId,
                         CreatedAt = DateTime.UtcNow,
                         UpdateAt = DateTime.UtcNow
@@ -704,13 +712,13 @@ public class RecipeService(
             }
 
             IngredientUnit? matchedUnit = null;
-            if (!string.IsNullOrWhiteSpace(p.Unit))
+            if (!string.IsNullOrWhiteSpace(unitName))
             {
                 matchedUnit = units.FirstOrDefault(u =>
-                    string.Equals(u.Name, p.Unit, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(u.PluralName, p.Unit, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(u.Abbreviation, p.Unit, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(u.PluralAbbreviation, p.Unit, StringComparison.OrdinalIgnoreCase));
+                    string.Equals(u.Name, unitName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(u.PluralName, unitName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(u.Abbreviation, unitName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(u.PluralAbbreviation, unitName, StringComparison.OrdinalIgnoreCase));
 
                 // Create unit on first encounter.
                 if (matchedUnit is null)
@@ -718,7 +726,7 @@ public class RecipeService(
                     matchedUnit = new IngredientUnit
                     {
                         Id = Guid.NewGuid(),
-                        Name = p.Unit,
+                        Name = unitName,
                         GroupId = groupId,
                         CreatedAt = DateTime.UtcNow,
                         UpdateAt = DateTime.UtcNow
@@ -732,9 +740,9 @@ public class RecipeService(
             {
                 Id = Guid.NewGuid(),
                 Position = i,
-                OriginalText = p.Input,
-                Note = p.Note,
-                Quantity = p.Quantity.HasValue ? (decimal?)p.Quantity.Value : null,
+                OriginalText = p.Input ?? ingredientStrings.ElementAtOrDefault(i),
+                Note = p.Ingredient.Note,
+                Quantity = p.Ingredient.Quantity,
                 FoodId = matchedFood?.Id,
                 UnitId = matchedUnit?.Id,
                 RecipeId = recipe.Id
@@ -755,62 +763,18 @@ public class RecipeService(
         db.Recipes.Add(recipe);
         await db.SaveChangesAsync(ct);
 
-        // Upsert and assign tags from keywords
-        foreach (var keyword in scraped.Keywords)
-        {
-            var tagName = keyword.Trim();
-            if (string.IsNullOrEmpty(tagName))
-            {
-                continue;
-            }
-
-            var tagSlug = SlugHelper.Generate(tagName);
-            var tag = await db.Tags.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(t => t.Slug == tagSlug && t.GroupId == groupId, ct);
-            if (tag is null)
-            {
-                tag = new Tag
-                {
-                    Id = Guid.NewGuid(), Name = tagName, Slug = tagSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow,
-                    UpdateAt = DateTime.UtcNow
-                };
-                db.Tags.Add(tag);
-                await db.SaveChangesAsync(ct);
-            }
-
+        var tags = await RecipeImportHelpers.ResolveTagsAsync(
+            db, groupId, scraped.Keywords.Concat(organizerSuggestions?.Tags ?? []), ct);
+        foreach (var tag in tags)
             recipe.Tags.Add(tag);
-        }
 
-        // Upsert and assign categories
-        foreach (var catName in scraped.Categories)
-        {
-            var name = catName.Trim();
-            if (string.IsNullOrEmpty(name))
-            {
-                continue;
-            }
-
-            var catSlug = SlugHelper.Generate(name);
-            var cat = await db.Categories.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Slug == catSlug && c.GroupId == groupId, ct);
-            if (cat is null)
-            {
-                cat = new Category
-                {
-                    Id = Guid.NewGuid(), Name = name, Slug = catSlug, GroupId = groupId, CreatedAt = DateTime.UtcNow,
-                    UpdateAt = DateTime.UtcNow
-                };
-                db.Categories.Add(cat);
-                await db.SaveChangesAsync(ct);
-            }
-
+        var categories = await RecipeImportHelpers.ResolveCategoriesAsync(
+            db, groupId, scraped.Categories.Concat(organizerSuggestions?.Categories ?? []), ct);
+        foreach (var cat in categories)
             recipe.Categories.Add(cat);
-        }
 
-        if (scraped.Keywords.Any() || scraped.Categories.Any())
-        {
+        if (tags.Count > 0 || categories.Count > 0)
             await db.SaveChangesAsync(ct);
-        }
 
         // Queue image download: use the URL from scraper if available, otherwise fall back to scraping OrgUrl.
         var hasDirectImage = !string.IsNullOrEmpty(scraped.Image);

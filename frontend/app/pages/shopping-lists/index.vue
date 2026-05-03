@@ -266,8 +266,8 @@ function openDelete(id: string) {
 }
 
 async function deleteOne() {
-  const { data } = await userApi.shopping.lists.deleteOne(state.deleteTarget);
-  if (data) {
+  const { error } = await userApi.shopping.lists.deleteOne(state.deleteTarget);
+  if (!error) {
     refresh();
   }
 }

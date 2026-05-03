@@ -128,6 +128,7 @@
           :label="$t('admin.enable-transcription-services')"
           color="primary"
           hide-details
+          class="mb-4"
         />
       </v-card-text>
     </BaseDialog>

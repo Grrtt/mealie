@@ -5,13 +5,10 @@ trigger:
 
 pr: none
 
-# ─── C# Backend Migration CI ─────────────────────────────────────────────────
-# Separate stage that runs ONLY on the migration branch.
-# No deployment step; never merges to main.
+# ─── C# Backend CI ─────────────────────────────────────────────────────────
 stages:
   - stage: CSharpBuild
     displayName: 'C# Backend Build & Test'
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/001-csharp-backend-migration')
     pool:
       vmImage: ubuntu-latest
     jobs:
@@ -43,34 +40,4 @@ stages:
               bash backend-dotnet/scripts/validate-openapi-compat.sh || true
             displayName: 'OpenAPI Compatibility Check (offline mode)'
             condition: succeededOrFailed()
-# ─────────────────────────────────────────────────────────────────────────────
-
-pool:
-  vmImage: ubuntu-latest
-
-variables:
-  IMAGE_NAME: grrtt/mealie
-
-steps:
-  - task: Docker@2
-    displayName: Build Docker image
-    inputs:
-      command: build
-      containerRegistry: mealie-docker-images
-      dockerfile: docker/Dockerfile
-      buildContext: .
-      repository: $(IMAGE_NAME)
-      tags: |
-        $(Build.SourceVersion)
-        latest
-      arguments: --build-arg COMMIT=$(Build.SourceVersion)
-
-  - task: Docker@2
-    displayName: Push to GHCR
-    inputs:
-      command: push
-      containerRegistry: mealie-docker-images
-      repository: $(IMAGE_NAME)
-      tags: |
-        $(Build.SourceVersion)
-        latest
+# ───────────────────────────────────────────────────────────────────────────

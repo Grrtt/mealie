@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mealie.Application.Commands.ShoppingLists;
 
-public record AddRecipeToShoppingListCommand(Guid HouseholdId, Guid ListId, AddRecipeToShoppingListRequest Request)
+public record AddRecipeToShoppingListCommand(Guid HouseholdId, Guid ListId, List<AddRecipeToShoppingListRequest> Requests)
     : IQuery<ShoppingListResponse?>
 {
     public async Task<ShoppingListResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
@@ -22,58 +22,66 @@ public record AddRecipeToShoppingListCommand(Guid HouseholdId, Guid ListId, AddR
             return null;
         }
 
-        var recipe = await db.Recipes.IgnoreQueryFilters()
-                         .Include(r => r.RecipeIngredients).ThenInclude(ri => ri.Unit)
-                         .Include(r => r.RecipeIngredients).ThenInclude(ri => ri.Food)
-                         .FirstOrDefaultAsync(r => r.Id == Request.RecipeId, ct)
-                     ?? throw new KeyNotFoundException("Recipe not found");
-
-        var recipeRef = new ShoppingListRecipeReference
-        {
-            Id = Guid.NewGuid(), ShoppingListId = ListId, RecipeId = Request.RecipeId,
-            RecipeScale = Request.RecipeIncrementQuantity
-        };
-        db.ShoppingListRecipeReferences.Add(recipeRef);
-
         var maxPos = list.Items.Count > 0 ? list.Items.Max(i => i.Position) : -1;
         var position = maxPos + 1;
 
-        foreach (var ingredient in recipe.RecipeIngredients.OrderBy(i => i.Position))
+        foreach (var request in Requests)
         {
-            if (!ingredient.IsFood)
-            {
-                continue;
-            }
+            var recipe = await db.Recipes.IgnoreQueryFilters()
+                             .Include(r => r.RecipeIngredients).ThenInclude(ri => ri.Unit)
+                             .Include(r => r.RecipeIngredients).ThenInclude(ri => ri.Food)
+                             .FirstOrDefaultAsync(r => r.Id == request.RecipeId, ct)
+                         ?? throw new KeyNotFoundException($"Recipe {request.RecipeId} not found");
 
-            var existingItem =
-                list.Items.FirstOrDefault(i => i.FoodId == ingredient.FoodId && i.ShoppingListId == ListId);
-            if (existingItem != null)
+            var recipeRef = new ShoppingListRecipeReference
             {
-                if (existingItem.Quantity.HasValue && ingredient.Quantity.HasValue)
+                Id = Guid.NewGuid(), ShoppingListId = ListId, RecipeId = request.RecipeId,
+                RecipeScale = request.RecipeIncrementQuantity
+            };
+            db.ShoppingListRecipeReferences.Add(recipeRef);
+
+            // If specific ingredients are provided, filter to only those IDs; otherwise add all ingredients
+            var allowedIds = request.RecipeIngredients?.Select(r => r.Id).Where(id => id.HasValue).Select(id => id!.Value).ToHashSet();
+
+            foreach (var ingredient in recipe.RecipeIngredients.OrderBy(i => i.Position))
+            {
+                if (allowedIds is { Count: > 0 } && !allowedIds.Contains(ingredient.Id))
+                    continue;
+
+                // Merge into an existing item only when both have the same food
+                var existingItem = ingredient.FoodId.HasValue
+                    ? list.Items.FirstOrDefault(i => i.FoodId == ingredient.FoodId && i.ShoppingListId == ListId)
+                    : null;
+
+                if (existingItem != null)
                 {
-                    existingItem.Quantity += ingredient.Quantity.Value * Request.RecipeIncrementQuantity;
+                    if (existingItem.Quantity.HasValue && ingredient.Quantity.HasValue)
+                    {
+                        existingItem.Quantity += ingredient.Quantity.Value * request.RecipeIncrementQuantity;
+                    }
+
+                    existingItem.UpdateAt = DateTime.UtcNow;
                 }
-
-                existingItem.UpdateAt = DateTime.UtcNow;
-            }
-            else
-            {
-                var item = new ShoppingListItem
+                else
                 {
-                    Id = Guid.NewGuid(), Note = ingredient.Title, IsFood = true, Checked = false,
-                    DisableAmount = ingredient.DisableAmount,
-                    Quantity = ingredient.Quantity * Request.RecipeIncrementQuantity,
-                    UnitId = ingredient.UnitId, FoodId = ingredient.FoodId,
-                    Position = position++, ShoppingListId = ListId,
-                    CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-                };
-                db.ShoppingListItems.Add(item);
+                    var isFood = ingredient.FoodId.HasValue;
+                    var item = new ShoppingListItem
+                    {
+                        Id = Guid.NewGuid(), Note = ingredient.Note, IsFood = isFood, Checked = false,
+                        DisableAmount = ingredient.DisableAmount,
+                        Quantity = ingredient.Quantity * request.RecipeIncrementQuantity,
+                        UnitId = ingredient.UnitId, FoodId = ingredient.FoodId,
+                        Position = position++, ShoppingListId = ListId,
+                        CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
+                    };
+                    db.ShoppingListItems.Add(item);
 
-                db.ShoppingListItemRecipeReferences.Add(new ShoppingListItemRecipeReference
-                {
-                    Id = Guid.NewGuid(), ShoppingListItemId = item.Id, RecipeId = Request.RecipeId,
-                    RecipeQuantity = ingredient.Quantity ?? 0m, RecipeScale = Request.RecipeIncrementQuantity
-                });
+                    db.ShoppingListItemRecipeReferences.Add(new ShoppingListItemRecipeReference
+                    {
+                        Id = Guid.NewGuid(), ShoppingListItemId = item.Id, RecipeId = request.RecipeId,
+                        RecipeQuantity = ingredient.Quantity ?? 0m, RecipeScale = request.RecipeIncrementQuantity
+                    });
+                }
             }
         }
 

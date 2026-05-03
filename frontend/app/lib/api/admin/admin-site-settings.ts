@@ -4,10 +4,16 @@ import type { ApiRequestInstance } from "~/lib/api/types/non-generated";
 export interface SiteSettingsResponse {
   defaultParser: string;
   defaultParserUnavailable: boolean;
+  ingredientSystemPrompt: string | null;
+  categorySystemPrompt: string | null;
+  tagSystemPrompt: string | null;
 }
 
 export interface UpdateSiteSettingsRequest {
   defaultParser: string;
+  ingredientSystemPrompt?: string | null;
+  categorySystemPrompt?: string | null;
+  tagSystemPrompt?: string | null;
 }
 
 const route = "/api/admin/site-settings";

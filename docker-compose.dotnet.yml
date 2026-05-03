@@ -55,6 +55,7 @@ services:
       SMTP_AUTH_STRATEGY: NONE
       SMTP_FROM_EMAIL: "noreply@mealie.local"
       SMTP_FROM_NAME: "Mealie (local)"
+      MCP_SECRET: "mealie"
     depends_on:
       mailpit:
         condition: service_started
@@ -91,6 +92,7 @@ services:
       SMTP_AUTH_STRATEGY: NONE
       SMTP_FROM_EMAIL: "noreply@mealie.local"
       SMTP_FROM_NAME: "Mealie (local)"
+      MCP_SECRET: "mealie"
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,6 +1,6 @@
 using Mealie.Application.Services.Images;
 using Mealie.Application.Services.ImageScrape;
-using Mealie.Application.Services.IngredientParser;
+using Mealie.Application.Services.Parser;
 using Mealie.Application.Services.Recipes;
 using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Configuration;
@@ -91,8 +91,7 @@ public class MigrationBackgroundService(
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var parsers = scope.ServiceProvider.GetRequiredService<IEnumerable<IMigrationParser>>();
         var recipeService = scope.ServiceProvider.GetRequiredService<IRecipeService>();
-        // Singleton — resolved from scope but lives for the app lifetime; manages the Python process.
-        var ingredientParser = scope.ServiceProvider.GetRequiredService<IngredientParserService>();
+        var ingredientParser = scope.ServiceProvider.GetRequiredService<IIngredientParserService>();
 
         var report = await db.Reports.IgnoreQueryFilters()
             .FirstOrDefaultAsync(r => r.Id == job.ReportId, ct);
@@ -150,10 +149,10 @@ public class MigrationBackgroundService(
                     allIngredients.AddRange(batch[i].RecipeIngredient);
                 }
 
-                // One Python call for the entire chunk.
+                // One call for the entire chunk — preserves the batch optimization.
                 var allParsed = allIngredients.Count > 0
-                    ? await ingredientParser.ParseBatchAsync(allIngredients, ct)
-                    : (IReadOnlyList<ParsedIngredientResult>)[];
+                    ? await ingredientParser.ParseBatchAsync(job.GroupId, allIngredients, null, ct)
+                    : (IList<ParsedIngredientDto>)[];
 
                 var offset = 0;
                 for (var i = 0; i < batch.Length; i++)

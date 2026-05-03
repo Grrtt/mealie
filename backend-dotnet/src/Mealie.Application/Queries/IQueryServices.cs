@@ -27,6 +27,7 @@ public interface IQueryServices
     IOptions<AppSettings> Settings { get; }
     NlpParserService IngredientParser { get; }
     IIngredientParserService FullParser { get; }
+    IRecipeOrganizerService RecipeOrganizer { get; }
     ImageScrapeQueue ImageScrapeQueue { get; }
     IWebhookDeliveryService WebhookDeliveryService { get; }
     IRecipeSearchIndex SearchIndex { get; }

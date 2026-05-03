@@ -12,6 +12,9 @@ public class SiteSettingsConfiguration : IEntityTypeConfiguration<SiteSettings>
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.DefaultParser).IsRequired().HasDefaultValue("nlp");
+        builder.Property(e => e.IngredientSystemPrompt);
+        builder.Property(e => e.CategorySystemPrompt);
+        builder.Property(e => e.TagSystemPrompt);
         builder.Property(e => e.CreatedAt).IsRequired();
         builder.Property(e => e.UpdatedAt).IsRequired();
     }

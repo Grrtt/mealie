@@ -1392,7 +1392,15 @@
     "set-active": "Set Active",
     "no-ai-providers": "No AI providers configured yet.",
     "delete-ai-provider": "Delete AI Provider",
-    "delete-ai-provider-confirm": "Are you sure you want to delete this AI provider?"
+    "delete-ai-provider-confirm": "Are you sure you want to delete this AI provider?",
+    "system-prompts": "System Prompts",
+    "system-prompts-description": "Override the built-in system prompts for each feature. Leave blank to use the defaults.",
+    "ingredient-system-prompt": "Ingredient Parsing Prompt",
+    "ingredient-system-prompt-placeholder": "Leave blank to use the default ingredient parsing instructions.",
+    "category-system-prompt": "Category Assignment Prompt",
+    "category-system-prompt-placeholder": "Leave blank to use the default category assignment instructions.",
+    "tag-system-prompt": "Tag Assignment Prompt",
+    "tag-system-prompt-placeholder": "Leave blank to use the default tag assignment instructions."
   },
   "profile": {
     "welcome-user": "👋 Welcome, {0}!",

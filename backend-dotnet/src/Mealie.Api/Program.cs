@@ -175,18 +175,12 @@ builder.Services.AddAuthentication(options =>
             ClockSkew = TimeSpan.Zero
         };
     })
-    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { })
-    .AddScheme<McpKeyAuthOptions, McpKeyAuthHandler>("McpKey", _ => { });
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { });
 
 builder.Services.AddAuthorizationBuilder()
     .SetDefaultPolicy(new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
-        .Build())
-    .AddPolicy("McpPolicy", policy =>
-    {
-        policy.AddAuthenticationSchemes("McpKey");
-        policy.RequireAuthenticatedUser();
-    });
+        .Build());
 
 // ── Infrastructure Services ────────────────────────────────────────────────
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -280,6 +274,7 @@ builder.Services.AddScoped<BruteParserStrategy>();
 builder.Services.AddScoped<NlpParserStrategy>();
 builder.Services.AddScoped<IParserStrategyResolver, ParserStrategyResolver>();
 builder.Services.AddScoped<IIngredientParserService, IngredientParserService>();
+builder.Services.AddScoped<IRecipeOrganizerService, RecipeOrganizerService>();
 
 // Phase 9: Migration importers
 builder.Services.AddSingleton<IMigrationParser, ChowdownMigrationParser>();
@@ -442,7 +437,28 @@ if (Directory.Exists(dataDir))
 }
 
 app.MapControllers();
-app.MapMcp("/mcp").RequireAuthorization("McpPolicy");
+
+// Simple Bearer-token guard for the MCP endpoint.
+app.MapMcp("/mcp")
+    .AddEndpointFilter(async (ctx, next) =>
+    {
+        var secret = appSettings.McpSecret;
+        if (string.IsNullOrEmpty(secret))
+        {
+            ctx.HttpContext.Response.StatusCode = 401;
+            return Results.Unauthorized();
+        }
+        var auth = ctx.HttpContext.Request.Headers.Authorization.ToString();
+        var token = auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            ? auth["Bearer ".Length..].Trim()
+            : null;
+        if (token != secret)
+        {
+            ctx.HttpContext.Response.StatusCode = 401;
+            return Results.Unauthorized();
+        }
+        return await next(ctx);
+    });
 app.MapHealthChecks("/healthz");
 app.MapHealthChecks("/readyz");
 
@@ -498,6 +514,25 @@ using (var scope = app.Services.CreateScope())
         );
         CREATE INDEX IF NOT EXISTS ix_report_entries_report_id ON report_entries (report_id);
     ");
+
+    // Ensure site_settings system-prompt columns exist — idempotent guard for hand-written migration discovery issues.
+    // Use PRAGMA to pre-check so we avoid noisy EF error logs on every restart when columns already exist.
+    var promptCols = new[] { "ingredient_system_prompt", "category_system_prompt", "tag_system_prompt" };
+    var existingCols = new HashSet<string>();
+    await using (var conn = db.Database.GetDbConnection())
+    {
+        var wasOpen = conn.State == System.Data.ConnectionState.Open;
+        if (!wasOpen) await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT name FROM pragma_table_info('site_settings')";
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            existingCols.Add(reader.GetString(0));
+        if (!wasOpen) conn.Close();
+    }
+
+    foreach (var col in promptCols.Where(c => !existingCols.Contains(c)))
+        await db.Database.ExecuteSqlRawAsync("ALTER TABLE site_settings ADD COLUMN " + col + " TEXT");
 }
 
 await SeedCommand.RunAsync(app.Services);

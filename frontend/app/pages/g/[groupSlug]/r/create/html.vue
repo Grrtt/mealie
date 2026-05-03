@@ -76,12 +76,6 @@
           hide-details
           :label="$t('recipe.stay-in-edit-mode')"
         />
-        <v-checkbox
-          v-model="parseRecipe"
-          color="primary"
-          hide-details
-          :label="$t('recipe.parse-recipe-ingredients-after-import')"
-        />
       </v-card-text>
       <v-card-actions class="justify-center">
         <div style="width: 100%" class="text-center">
@@ -129,7 +123,6 @@ const {
   importKeywordsAsTags,
   importCategories,
   stayInEditMode,
-  parseRecipe,
   navigateToRecipe,
 } = useNewRecipeOptions();
 

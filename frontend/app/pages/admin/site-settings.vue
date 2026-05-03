@@ -257,6 +257,44 @@
         >
           The configured default parser is no longer available. NLP will be used as fallback.
         </v-alert>
+
+        <v-divider class="mb-4" />
+        <div class="text-subtitle-2 mb-1">
+          {{ $t('admin.system-prompts') }}
+        </div>
+        <p class="text-caption text-medium-emphasis mb-3">
+          {{ $t('admin.system-prompts-description') }}
+        </p>
+        <v-textarea
+          v-model="ingredientSystemPrompt"
+          :label="$t('admin.ingredient-system-prompt')"
+          variant="outlined"
+          class="mb-3"
+          rows="4"
+          auto-grow
+          :hint="$t('admin.ingredient-system-prompt-placeholder')"
+          persistent-hint
+        />
+        <v-textarea
+          v-model="categorySystemPrompt"
+          :label="$t('admin.category-system-prompt')"
+          variant="outlined"
+          class="mb-3"
+          rows="4"
+          auto-grow
+          :hint="$t('admin.category-system-prompt-placeholder')"
+          persistent-hint
+        />
+        <v-textarea
+          v-model="tagSystemPrompt"
+          :label="$t('admin.tag-system-prompt')"
+          variant="outlined"
+          rows="4"
+          auto-grow
+          :hint="$t('admin.tag-system-prompt-placeholder')"
+          persistent-hint
+        />
+
         <div class="d-flex justify-end">
           <BaseButton color="info" :loading="parserSaving" @click="saveDefaultParser">
             <template #icon>{{ $globals.icons.save }}</template>
@@ -544,6 +582,9 @@ const bugReportText = computed(() => {
 const siteSettings = ref<SiteSettingsResponse | null>(null);
 const aiConfigs = ref<AiConfigurationResponse[]>([]);
 const defaultParser = ref("nlp");
+const ingredientSystemPrompt = ref<string>("");
+const categorySystemPrompt = ref<string>("");
+const tagSystemPrompt = ref<string>("");
 const parserLoading = ref(false);
 const parserSaving = ref(false);
 
@@ -568,6 +609,9 @@ onMounted(async () => {
   if (settingsRes.data) {
     siteSettings.value = settingsRes.data;
     defaultParser.value = settingsRes.data.defaultParser;
+    ingredientSystemPrompt.value = settingsRes.data.ingredientSystemPrompt ?? "";
+    categorySystemPrompt.value = settingsRes.data.categorySystemPrompt ?? "";
+    tagSystemPrompt.value = settingsRes.data.tagSystemPrompt ?? "";
   }
   if (aiRes.data) {
     aiConfigs.value = aiRes.data;
@@ -577,12 +621,20 @@ onMounted(async () => {
 
 async function saveDefaultParser() {
   parserSaving.value = true;
-  const { data, error } = await adminApi.siteSettings.update({ defaultParser: defaultParser.value });
+  const { data, error } = await adminApi.siteSettings.update({
+    defaultParser: defaultParser.value,
+    ingredientSystemPrompt: ingredientSystemPrompt.value || null,
+    categorySystemPrompt: categorySystemPrompt.value || null,
+    tagSystemPrompt: tagSystemPrompt.value || null,
+  });
   if (error) {
     alert.error(i18n.t("events.something-went-wrong"));
   }
   else if (data) {
     siteSettings.value = data;
+    ingredientSystemPrompt.value = data.ingredientSystemPrompt ?? "";
+    categorySystemPrompt.value = data.categorySystemPrompt ?? "";
+    tagSystemPrompt.value = data.tagSystemPrompt ?? "";
     alert.success(i18n.t("general.item-updated"));
   }
   parserSaving.value = false;

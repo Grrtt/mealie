@@ -324,27 +324,16 @@ const hasLinkedIngredients = computed(() => {
 type BooleanString = "true" | "false" | "";
 
 const paramsEdit = useRouteQuery<BooleanString>("edit", "");
-const paramsParse = useRouteQuery<BooleanString>("parse", "");
 
 onMounted(() => {
   if (paramsEdit.value === "true" && isOwnGroup.value) {
     setMode(PageMode.EDIT);
-  }
-
-  if (paramsParse.value === "true" && isOwnGroup.value) {
-    toggleIsParsing(true);
   }
 });
 
 watch(isEditMode, (newVal) => {
   if (!newVal) {
     paramsEdit.value = undefined;
-  }
-});
-
-watch(isParsing, () => {
-  if (!isParsing.value) {
-    paramsParse.value = undefined;
   }
 });
 

@@ -52,7 +52,10 @@ public record GetSiteSettingsQuery : IQuery<SiteSettingsResponse>
         return new SiteSettingsResponse
         {
             DefaultParser = parser,
-            DefaultParserUnavailable = defaultParserUnavailable
+            DefaultParserUnavailable = defaultParserUnavailable,
+            IngredientSystemPrompt = settings.IngredientSystemPrompt,
+            CategorySystemPrompt = settings.CategorySystemPrompt,
+            TagSystemPrompt = settings.TagSystemPrompt,
         };
     }
 }
@@ -85,21 +88,36 @@ public record UpdateSiteSettingsCommand(UpdateSiteSettingsRequest Request)
             }
         }
 
-        // Update site settings using bulk SQL to avoid change-tracker concurrency issues
+        // Load current values so we can preserve unchanged prompts (null in request = no change)
+        var current = await services.Db.SiteSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+
+        static string? ResolvePrompt(string? requestValue, string? currentValue) =>
+            requestValue is null ? currentValue : (requestValue == "" ? null : requestValue);
+
+        var ingredientPrompt = ResolvePrompt(Request.IngredientSystemPrompt, current?.IngredientSystemPrompt);
+        var categoryPrompt   = ResolvePrompt(Request.CategorySystemPrompt,   current?.CategorySystemPrompt);
+        var tagPrompt        = ResolvePrompt(Request.TagSystemPrompt,        current?.TagSystemPrompt);
+
+        // Single bulk update — bypasses change-tracker to avoid DbUpdateConcurrencyException
         var rowsUpdated = await services.Db.SiteSettings
             .ExecuteUpdateAsync(s => s
-                .SetProperty(e => e.DefaultParser, newParser)
-                .SetProperty(e => e.UpdatedAt, DateTime.UtcNow), ct);
+                .SetProperty(e => e.DefaultParser,          newParser)
+                .SetProperty(e => e.IngredientSystemPrompt, ingredientPrompt)
+                .SetProperty(e => e.CategorySystemPrompt,   categoryPrompt)
+                .SetProperty(e => e.TagSystemPrompt,        tagPrompt)
+                .SetProperty(e => e.UpdatedAt,              DateTime.UtcNow), ct);
 
-        // If no row existed yet, create one
         if (rowsUpdated == 0)
         {
             services.Db.SiteSettings.Add(new SiteSettings
             {
                 Id = Guid.NewGuid(),
-                DefaultParser = newParser,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                DefaultParser          = newParser,
+                IngredientSystemPrompt = ingredientPrompt,
+                CategorySystemPrompt   = categoryPrompt,
+                TagSystemPrompt        = tagPrompt,
+                CreatedAt              = DateTime.UtcNow,
+                UpdatedAt              = DateTime.UtcNow
             });
             await services.Db.SaveChangesAsync(ct);
         }

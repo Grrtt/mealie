@@ -21,6 +21,7 @@ public class QueryServices(
     IOptions<AppSettings> settings,
     NlpParserService ingredientParser,
     IIngredientParserService fullParser,
+    IRecipeOrganizerService recipeOrganizer,
     ImageScrapeQueue imageScrapeQueue,
     IWebhookDeliveryService webhookDeliveryService,
     IRecipeSearchIndex searchIndex,
@@ -33,6 +34,7 @@ public class QueryServices(
     public IOptions<AppSettings> Settings { get; } = settings;
     public NlpParserService IngredientParser { get; } = ingredientParser;
     public IIngredientParserService FullParser { get; } = fullParser;
+    public IRecipeOrganizerService RecipeOrganizer { get; } = recipeOrganizer;
     public ImageScrapeQueue ImageScrapeQueue { get; } = imageScrapeQueue;
     public IWebhookDeliveryService WebhookDeliveryService { get; } = webhookDeliveryService;
     public IRecipeSearchIndex SearchIndex { get; } = searchIndex;

@@ -4,7 +4,6 @@ export interface UseNewRecipeOptionsProps {
   enableImportKeywords?: boolean;
   enableImportCategories?: boolean;
   enableStayInEditMode?: boolean;
-  enableParseRecipe?: boolean;
 }
 
 export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
@@ -12,7 +11,6 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     enableImportKeywords = true,
     enableImportCategories = true,
     enableStayInEditMode = true,
-    enableParseRecipe = true,
   } = props;
 
   const router = useRouter();
@@ -51,27 +49,12 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     },
   });
 
-  const parseRecipe = computed({
-    get() {
-      if (!enableParseRecipe) return false;
-      return recipeCreatePreferences.value.parseRecipe;
-    },
-    set(v: boolean) {
-      if (!enableParseRecipe) return;
-      recipeCreatePreferences.value.parseRecipe = v;
-    },
-  });
-
   function navigateToRecipe(recipeSlug: string, groupSlug: string, createPagePath: string) {
     const editParam = enableStayInEditMode ? stayInEditMode.value : false;
-    const parseParam = enableParseRecipe ? parseRecipe.value : false;
 
     const queryParams = new URLSearchParams();
     if (editParam) {
       queryParams.set("edit", "true");
-    }
-    if (parseParam) {
-      queryParams.set("parse", "true");
     }
 
     const queryString = queryParams.toString();
@@ -86,7 +69,6 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     importKeywordsAsTags,
     importCategories,
     stayInEditMode,
-    parseRecipe,
 
     // Helper functions
     navigateToRecipe,
@@ -95,6 +77,5 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     enableImportKeywords,
     enableImportCategories,
     enableStayInEditMode,
-    enableParseRecipe,
   };
 }

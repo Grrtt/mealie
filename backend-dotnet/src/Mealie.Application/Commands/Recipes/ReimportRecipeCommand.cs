@@ -1,8 +1,8 @@
 using Mealie.Application.Common;
 using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
+using Mealie.Application.Services.Parser;
 using Mealie.Domain.Entities.Ingredients;
-using Mealie.Domain.Entities.Organizers;
 using Mealie.Domain.Entities.Recipes;
 using Mealie.Infrastructure.Parser;
 using Mealie.Infrastructure.Scraper;
@@ -73,6 +73,12 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
 
         var parsed = await services.FullParser.ParseBatchAsync(GroupId, ingredientStrings, parserKey: null, ct);
 
+        // Call organizer after parsing so it works off the same structured ingredient data shown to the user.
+        var organizerSuggestions = await RecipeImportHelpers.SuggestOrganizersAsync(
+            services.RecipeOrganizer,
+            Scraped.Name ?? current.Name, Scraped.Description,
+            parsed, Scraped.Categories, Scraped.Keywords, ct);
+
         var foods = await db.Foods.IgnoreQueryFilters()
             .Where(f => f.GroupId == GroupId).Include(f => f.Aliases).ToListAsync(ct);
         var units = await db.Units.IgnoreQueryFilters()
@@ -142,51 +148,11 @@ public record ReimportRecipeCommand(Guid GroupId, string Slug, ScrapedRecipeDto 
         }).ToList();
 
         // Step 4 — Resolve tags and categories (create new organizers if they don't exist yet).
-        var resolvedTags = new List<Tag>();
-        foreach (var keyword in Scraped.Keywords)
-        {
-            var tagName = keyword.Trim();
-            if (string.IsNullOrEmpty(tagName))
-                continue;
+        var resolvedTags = await RecipeImportHelpers.ResolveTagsAsync(
+            db, GroupId, Scraped.Keywords.Concat(organizerSuggestions?.Tags ?? []), ct);
 
-            var tagSlug = SlugHelper.Generate(tagName);
-            var tag = await db.Tags.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(t => t.Slug == tagSlug && t.GroupId == GroupId, ct);
-            if (tag is null)
-            {
-                tag = new Tag
-                {
-                    Id = Guid.NewGuid(), Name = tagName, Slug = tagSlug, GroupId = GroupId,
-                    CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-                };
-                db.Tags.Add(tag);
-            }
-
-            resolvedTags.Add(tag);
-        }
-
-        var resolvedCategories = new List<Category>();
-        foreach (var catName in Scraped.Categories)
-        {
-            var name = catName.Trim();
-            if (string.IsNullOrEmpty(name))
-                continue;
-
-            var catSlug = SlugHelper.Generate(name);
-            var cat = await db.Categories.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Slug == catSlug && c.GroupId == GroupId, ct);
-            if (cat is null)
-            {
-                cat = new Category
-                {
-                    Id = Guid.NewGuid(), Name = name, Slug = catSlug, GroupId = GroupId,
-                    CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
-                };
-                db.Categories.Add(cat);
-            }
-
-            resolvedCategories.Add(cat);
-        }
+        var resolvedCategories = await RecipeImportHelpers.ResolveCategoriesAsync(
+            db, GroupId, Scraped.Categories.Concat(organizerSuggestions?.Categories ?? []), ct);
 
         // Step 5 — Persist only INSERTs through the change tracker (no UPDATE/DELETE paths).
         // Includes any new tags/categories, foods, units, ingredients, and instructions.

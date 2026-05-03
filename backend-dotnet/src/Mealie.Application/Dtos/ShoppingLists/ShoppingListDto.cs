@@ -36,6 +36,7 @@ public class ShoppingListSummaryResponse
     public string Name { get; set; } = string.Empty;
     public Guid GroupId { get; set; }
     public Guid HouseholdId { get; set; }
+    public Guid UserId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdateAt { get; set; }
 }
@@ -43,6 +44,13 @@ public class ShoppingListSummaryResponse
 public class CreateShoppingListRequest
 {
     public string Name { get; set; } = string.Empty;
+}
+
+public class CreateShoppingListWithRecipeRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public Guid RecipeId { get; set; }
+    public decimal RecipeIncrementQuantity { get; set; } = 1m;
 }
 
 public class UpdateShoppingListRequest
@@ -111,10 +119,19 @@ public class BulkDeleteShoppingListItemRequest
     public IList<Guid> Ids { get; set; } = [];
 }
 
+public class RecipeIngredientRef
+{
+    public Guid? Id { get; set; }
+}
+
 public class AddRecipeToShoppingListRequest
 {
     public Guid RecipeId { get; set; }
     public decimal RecipeIncrementQuantity { get; set; } = 1m;
+    /// <summary>
+    /// If provided, only these ingredients are added. If null/empty, all food ingredients are added.
+    /// </summary>
+    public List<RecipeIngredientRef>? RecipeIngredients { get; set; }
 }
 
 public class RemoveRecipeFromShoppingListRequest

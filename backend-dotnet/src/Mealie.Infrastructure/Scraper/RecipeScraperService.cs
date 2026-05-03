@@ -8,12 +8,17 @@ public class RecipeScraperService(HttpClient httpClient, ILogger<RecipeScraperSe
     private readonly JsonLdScraperStrategy _jsonLd = new();
     private readonly MicrodataScraperStrategy _microdata = new();
 
-    public async Task<ScrapedRecipeDto> ScrapeAsync(string url, CancellationToken ct = default)
+    public async Task<ScrapedRecipeDto> ScrapeAsync(string url, string? userAgent = null, CancellationToken ct = default)
     {
         string html;
         try
         {
-            var response = await httpClient.GetAsync(url, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (!string.IsNullOrWhiteSpace(userAgent))
+            {
+                request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+            }
+            var response = await httpClient.SendAsync(request, ct);
             response.EnsureSuccessStatusCode();
             html = await response.Content.ReadAsStringAsync(ct);
         }

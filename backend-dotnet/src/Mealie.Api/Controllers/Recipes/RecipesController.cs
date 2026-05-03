@@ -169,7 +169,7 @@ public class RecipesController(
         if (string.IsNullOrWhiteSpace(orgUrl))
             return UnprocessableEntity(new { detail = "Recipe has no original URL to re-import from." });
 
-        var scraped = await scraperService.ScrapeAsync(orgUrl, ct);
+        var scraped = await scraperService.ScrapeAsync(orgUrl, Request.Headers.UserAgent.ToString(), ct);
         if (scraped.ScrapingNotSupported)
             return UnprocessableEntity(new { detail = "Could not scrape recipe from the original URL." });
 
@@ -367,7 +367,7 @@ public class RecipesController(
             return BadRequest(new { detail = "URL is required" });
         }
 
-        var scraped = await scraperService.ScrapeAsync(url, ct);
+        var scraped = await scraperService.ScrapeAsync(url, Request.Headers.UserAgent.ToString(), ct);
         if (scraped.ScrapingNotSupported)
         {
             return BadRequest(new { detail = "Could not scrape recipe from the provided URL" });
@@ -468,13 +468,11 @@ public class RecipesController(
         await StreamSseAsync(async onProgress =>
         {
             await onProgress("Fetching recipe...");
-            var scraped = await scraperService.ScrapeAsync(request.Url, ct);
+            var scraped = await scraperService.ScrapeAsync(request.Url, Request.Headers.UserAgent.ToString(), ct);
             if (scraped.ScrapingNotSupported)
             {
                 throw new InvalidOperationException("Could not scrape recipe from the provided URL");
             }
-
-            if (!request.IncludeTags)
             {
                 scraped.Keywords.Clear();
             }
@@ -526,7 +524,7 @@ public class RecipesController(
     public async Task<ActionResult<RecipeSummaryResponse>> CreateFromUrl(
         [FromBody] RecipeScraperRequest request, CancellationToken ct)
     {
-        var scraped = await scraperService.ScrapeAsync(request.Url, ct);
+        var scraped = await scraperService.ScrapeAsync(request.Url, Request.Headers.UserAgent.ToString(), ct);
         if (scraped.ScrapingNotSupported)
         {
             return BadRequest(new { detail = "Could not scrape recipe from the provided URL" });
@@ -551,7 +549,7 @@ public class RecipesController(
         {
             try
             {
-                var scraped = await scraperService.ScrapeAsync(url, ct);
+                var scraped = await scraperService.ScrapeAsync(url, Request.Headers.UserAgent.ToString(), ct);
                 if (scraped.ScrapingNotSupported)
                 {
                     results.Add(new { url, success = false, detail = "Scraping not supported" });

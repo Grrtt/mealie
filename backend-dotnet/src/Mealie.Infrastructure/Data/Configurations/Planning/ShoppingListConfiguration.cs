@@ -12,7 +12,12 @@ public class ShoppingListConfiguration : IEntityTypeConfiguration<ShoppingList>
         builder.HasKey(s => s.Id);
         builder.HasIndex(s => s.GroupId);
         builder.HasIndex(s => s.HouseholdId);
+        builder.HasIndex(s => s.UserId);
         builder.Property(s => s.Name).IsRequired();
+        builder.HasOne(s => s.User)
+            .WithMany()
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(s => s.Group)
             .WithMany(g => g.ShoppingLists)
             .HasForeignKey(s => s.GroupId)

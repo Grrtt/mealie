@@ -52,12 +52,18 @@ public class ParserStrategyResolver(
             return nlp;
         }
 
+        // System prompts are global site settings, not per-provider
+        var siteSettings = await db.SiteSettings.FirstOrDefaultAsync(ct);
+
         var apiKey = encryption.Decrypt(config.EncryptedApiKey) ?? string.Empty;
         var aiConfig = new AiParserConfig(
             ApiKey: apiKey,
             BaseUrl: config.BaseUrl,
             Model: config.DefaultModel ?? "gpt-4o-mini",
-            ProjectId: config.ProjectId);
+            ProjectId: config.ProjectId,
+            IngredientSystemPrompt: siteSettings?.IngredientSystemPrompt,
+            CategorySystemPrompt: siteSettings?.CategorySystemPrompt,
+            TagSystemPrompt: siteSettings?.TagSystemPrompt);
 
         return config.ProviderType switch
         {
