@@ -20,8 +20,132 @@ special_redirects:
   - path: /r/create/url
     behavior: PWA/share-target shortcut to the current user's group recipe-import route
 
+coexistence_controls:
+  default_release_variant: react-default
+  gateway_env:
+    release_variant: MEALIE_FRONTEND_RELEASE_VARIANT
+    route_slice_flags:
+      auth: MEALIE_ROUTE_SLICE_AUTH
+      public-recipes: MEALIE_ROUTE_SLICE_PUBLIC_RECIPES
+      group-home: MEALIE_ROUTE_SLICE_GROUP_HOME
+      recipe-create-import: MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT
+      recipes: MEALIE_ROUTE_SLICE_RECIPES
+      cookbooks: MEALIE_ROUTE_SLICE_COOKBOOKS
+      household: MEALIE_ROUTE_SLICE_HOUSEHOLD
+      shopping-lists: MEALIE_ROUTE_SLICE_SHOPPING_LISTS
+      user-profile: MEALIE_ROUTE_SLICE_USER_PROFILE
+      group-data: MEALIE_ROUTE_SLICE_GROUP_DATA
+      admin: MEALIE_ROUTE_SLICE_ADMIN
+  status_endpoints:
+    legacy_gateway: /__release-variant
+    react_sidecar: http://localhost:8080/__release-variant
+
+route_slices:
+  auth:
+    promoted_phase: phase-2
+    approved_paths:
+      - /
+      - /login
+      - /register
+      - /forgot-password
+      - /reset-password
+  public-recipes:
+    promoted_phase: phase-2
+    approved_paths:
+      - /g/:groupSlug/shared/r/:id
+  group-home:
+    promoted_phase: phase-2
+    approved_paths:
+      - /g/:groupSlug
+  recipe-create-import:
+    promoted_phase: phase-2
+    approved_paths:
+      - /r/create/url
+      - /g/:groupSlug/r/create
+      - /g/:groupSlug/r/create/new
+      - /g/:groupSlug/r/create/url
+      - /g/:groupSlug/r/create/zip
+      - /g/:groupSlug/r/create/html
+      - /g/:groupSlug/r/create/image
+      - /g/:groupSlug/r/create/bulk
+      - /g/:groupSlug/r/create/debug
+  recipes:
+    promoted_phase: phase-2
+    approved_paths:
+      - /g/:groupSlug/r/:slug
+      - /g/:groupSlug/recipes/timeline
+      - /g/:groupSlug/recipes/categories
+      - /g/:groupSlug/recipes/tags
+      - /g/:groupSlug/recipes/tools
+      - /g/:groupSlug/recipes/finder
+  cookbooks:
+    promoted_phase: phase-2
+    approved_paths:
+      - /g/:groupSlug/cookbooks
+      - /g/:groupSlug/cookbooks/:slug
+  household:
+    promoted_phase: phase-2
+    approved_paths:
+      - /household
+      - /household/members
+      - /household/notifiers
+      - /household/webhooks
+      - /household/mealplan/planner
+      - /household/mealplan/planner/view
+      - /household/mealplan/planner/edit
+      - /household/mealplan/settings
+  shopping-lists:
+    promoted_phase: phase-2
+    approved_paths:
+      - /shopping-lists
+      - /shopping-lists/:id
+  user-profile:
+    promoted_phase: phase-3
+    approved_paths:
+      - /user/:id/favorites
+      - /user/profile
+      - /user/profile/edit
+      - /user/profile/api-tokens
+  group-data:
+    promoted_phase: phase-3
+    approved_paths:
+      - /group
+      - /group/data
+      - /group/data/recipes
+      - /group/data/categories
+      - /group/data/tags
+      - /group/data/tools
+      - /group/data/foods
+      - /group/data/units
+      - /group/data/labels
+      - /group/data/recipe-actions
+      - /group/reports/:id
+      - /group/migrations
+  admin:
+    promoted_phase: phase-4
+    approved_paths:
+      - /admin
+      - /admin/setup
+      - /admin/site-settings
+      - /admin/backups
+      - /admin/ai-configurations
+      - /admin/debug/indexes
+      - /admin/debug/openai
+      - /admin/debug/parser
+      - /admin/manage/users
+      - /admin/manage/users/create
+      - /admin/manage/users/:id
+      - /admin/manage/groups
+      - /admin/manage/groups/:id
+      - /admin/manage/households
+      - /admin/manage/households/:id
+      - /admin/manage/ingredient-aliases
+      - /admin/maintenance
 surfaces:
   auth:
+    owner: frontend-react
+    phase_id: phase-2
+    release_slice: auth
     access: mixed
     routes:
       - /
@@ -29,6 +153,17 @@ surfaces:
       - /register
       - /forgot-password
       - /reset-password
+    react_outcomes:
+      - route: /
+        outcome: native-route
+      - route: /login
+        outcome: native-route
+      - route: /register
+        outcome: native-route
+      - route: /forgot-password
+        outcome: native-route
+      - route: /reset-password
+        outcome: native-route
     must_preserve:
       - password login when enabled
       - self registration when enabled
@@ -38,6 +173,7 @@ surfaces:
 
   public-recipes:
     access: public
+    release_slice: public-recipes
     routes:
       - /g/:groupSlug/shared/r/:id
     must_preserve:
@@ -46,15 +182,22 @@ surfaces:
       - no forced authentication
 
   group-home:
+    owner: frontend-react
+    phase_id: phase-2
+    release_slice: group-home
     access: authenticated
     routes:
       - /g/:groupSlug
+    react_outcomes:
+      - route: /g/:groupSlug
+        outcome: native-route
     must_preserve:
       - default post-login landing behavior
       - group-scoped navigation shell
 
   recipe-create-import:
     access: authenticated
+    release_slice: recipe-create-import
     routes:
       - /g/:groupSlug/r/create
       - /g/:groupSlug/r/create/new
@@ -71,6 +214,7 @@ surfaces:
 
   recipes:
     access: authenticated
+    release_slice: recipes
     routes:
       - /g/:groupSlug/r/:slug
       - /g/:groupSlug/recipes/timeline
@@ -86,12 +230,14 @@ surfaces:
 
   cookbooks:
     access: authenticated
+    release_slice: cookbooks
     routes:
       - /g/:groupSlug/cookbooks
       - /g/:groupSlug/cookbooks/:slug
 
   group-data:
     access: authenticated
+    release_slice: group-data
     routes:
       - /group
       - /group/data
@@ -108,6 +254,7 @@ surfaces:
 
   household:
     access: authenticated
+    release_slice: household
     routes:
       - /household
       - /household/members
@@ -125,6 +272,7 @@ surfaces:
 
   shopping-lists:
     access: authenticated
+    release_slice: shopping-lists
     routes:
       - /shopping-lists
       - /shopping-lists/:id
@@ -134,6 +282,7 @@ surfaces:
 
   user-profile:
     access: authenticated
+    release_slice: user-profile
     routes:
       - /user/:id/favorites
       - /user/profile
@@ -146,6 +295,7 @@ surfaces:
 
   admin:
     access: admin-only
+    release_slice: admin
     routes:
       - /admin
       - /admin/setup
@@ -168,9 +318,48 @@ surfaces:
       - admin-only guard behavior
       - first-time setup redirect
       - maintenance/backups/debug/manage tools
+    react_outcomes:
+      - route: /admin
+        outcome: redirect
+      - route: /admin/setup
+        outcome: native-route
+      - route: /admin/site-settings
+        outcome: native-route
+      - route: /admin/backups
+        outcome: native-route
+      - route: /admin/ai-configurations
+        outcome: native-route
+      - route: /admin/debug/indexes
+        outcome: native-route
+      - route: /admin/debug/openai
+        outcome: native-route
+      - route: /admin/debug/parser
+        outcome: native-route
+      - route: /admin/manage/users
+        outcome: native-route
+      - route: /admin/manage/users/create
+        outcome: native-route
+      - route: /admin/manage/users/:id
+        outcome: native-route
+      - route: /admin/manage/groups
+        outcome: native-route
+      - route: /admin/manage/groups/:id
+        outcome: native-route
+      - route: /admin/manage/households
+        outcome: native-route
+      - route: /admin/manage/households/:id
+        outcome: native-route
+      - route: /admin/manage/ingredient-aliases
+        outcome: native-route
+      - route: /admin/maintenance
+        outcome: native-route
 
 release_expectations:
   - every route above must end as native-route, approved redirect, or explicit retirement decision
   - public routes must remain public
   - admin routes must preserve admin-only protection
   - deep-link-critical routes require direct-navigation smoke coverage before cutover
+  - auth and group-home are the first React-native slice and establish the initial migration baseline
+  - hybrid rollout must be controllable through release-variant and route-slice flags without rebuilding backend data or user accounts
+  - react-default remains the shipped baseline while `MEALIE_FRONTEND_RELEASE_VARIANT=legacy-only` preserves the documented rollback path
+  - legacy frontend retirement stays blocked until the rollback window is explicitly closed and the `legacy-only` release variant is no longer required

@@ -19,10 +19,10 @@
 
 **Purpose**: Freeze the legacy inventory, capture release gates, and create the parallel React workspace before shared runtime work begins.
 
-- [ ] T001 Create the parallel React workspace manifest and bootstrap entry files in `frontend-react/package.json`, `frontend-react/tsconfig.json`, `frontend-react/vite.config.ts`, `frontend-react/index.html`, and `frontend-react/src/main.tsx`
-- [ ] T002 Add React migration development/build tasks and dual-frontend operator entry points in `Taskfile.yml`
-- [ ] T003 [P] Update the route/workflow inventory, surface ownership, and migration outcomes in `specs/003-react-frontend-migration/contracts/route-parity.yaml`
-- [ ] T004 [P] Update phase gates, required evidence, and runtime guardrails for implementation in `specs/003-react-frontend-migration/contracts/release-gates.yaml` and `specs/003-react-frontend-migration/contracts/runtime-invariants.md`
+- [X] T001 Create the parallel React workspace manifest and bootstrap entry files in `frontend-react/package.json`, `frontend-react/tsconfig.json`, `frontend-react/vite.config.ts`, `frontend-react/index.html`, and `frontend-react/src/main.tsx`
+- [X] T002 Add React migration development/build tasks and dual-frontend operator entry points in `Taskfile.yml`
+- [X] T003 [P] Update the route/workflow inventory, surface ownership, and migration outcomes in `specs/003-react-frontend-migration/contracts/route-parity.yaml`
+- [X] T004 [P] Update phase gates, required evidence, and runtime guardrails for implementation in `specs/003-react-frontend-migration/contracts/release-gates.yaml` and `specs/003-react-frontend-migration/contracts/runtime-invariants.md`
 
 **Checkpoint**: The React workspace exists, operator entry points are defined, and the inventory/gate contracts are current enough to drive implementation.
 
@@ -34,14 +34,14 @@
 
 **⚠️ CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T005 Create the typed React app entry, root route, and route-tree bootstrap in `frontend-react/src/main.tsx`, `frontend-react/src/router.tsx`, and `frontend-react/src/routes/__root.tsx`
-- [ ] T006 [P] Implement the shared backend API client, query client, and contract adapters in `frontend-react/src/lib/api/client.ts`, `frontend-react/src/lib/api/contracts.ts`, and `frontend-react/src/lib/query/queryClient.ts`
-- [ ] T007 [P] Implement shared auth/session hydration, logout, 401 recovery, and intended-destination persistence in `frontend-react/src/features/auth/session.ts`, `frontend-react/src/features/auth/routeGuards.ts`, and `frontend-react/src/features/auth/redirectStore.ts`
-- [ ] T008 [P] Implement locale loading, persisted locale preference, date/time formatting, and `Accept-Language` propagation in `frontend-react/src/lib/i18n/i18n.ts`, `frontend-react/src/lib/i18n/locales.ts`, `frontend-react/src/lib/i18n/dateTime.ts`, and `frontend-react/src/lib/i18n/persistedLocale.ts`
-- [ ] T009 [P] Implement Material UI theming, RTL cache support, and shared shell/navigation primitives in `frontend-react/src/theme/index.ts`, `frontend-react/src/theme/rtlCache.ts`, `frontend-react/src/components/layout/AppShell.tsx`, and `frontend-react/src/components/navigation/MainNav.tsx`
-- [ ] T010 [P] Implement shared form, validation, and route error-boundary primitives in `frontend-react/src/lib/forms/useZodForm.ts`, `frontend-react/src/lib/validation/index.ts`, `frontend-react/src/components/forms/`, and `frontend-react/src/components/errors/RouteErrorBoundary.tsx`
-- [ ] T011 [P] Configure the React Vitest and Playwright parity harnesses in `frontend-react/vitest.config.ts`, `frontend-react/src/test/setup.ts`, `tests/e2e/playwright.config.ts`, and `tests/e2e/react-migration/fixtures.ts`
-- [ ] T012 Implement static SPA serving, nginx `try_files`, and `SUB_PATH` build plumbing for the React workspace in `frontend-react/Dockerfile`, `frontend-react/nginx.conf`, `frontend-react/vite.config.ts`, and `docker-compose.dotnet.yml`
+- [X] T005 Create the typed React app entry, root route, and route-tree bootstrap in `frontend-react/src/main.tsx`, `frontend-react/src/router.tsx`, and `frontend-react/src/routes/__root.tsx`
+- [X] T006 [P] Implement the shared backend API client, query client, and contract adapters in `frontend-react/src/lib/api/client.ts`, `frontend-react/src/lib/api/contracts.ts`, and `frontend-react/src/lib/query/queryClient.ts`
+- [X] T007 [P] Implement shared auth/session hydration, logout, 401 recovery, and intended-destination persistence in `frontend-react/src/features/auth/session.ts`, `frontend-react/src/features/auth/routeGuards.ts`, and `frontend-react/src/features/auth/redirectStore.ts`
+- [X] T008 [P] Implement locale loading, persisted locale preference, date/time formatting, and `Accept-Language` propagation in `frontend-react/src/lib/i18n/i18n.ts`, `frontend-react/src/lib/i18n/locales.ts`, `frontend-react/src/lib/i18n/dateTime.ts`, and `frontend-react/src/lib/i18n/persistedLocale.ts`
+- [X] T009 [P] Implement Material UI theming, RTL cache support, and shared shell/navigation primitives in `frontend-react/src/theme/index.ts`, `frontend-react/src/theme/rtlCache.ts`, `frontend-react/src/components/layout/AppShell.tsx`, and `frontend-react/src/components/navigation/MainNav.tsx`
+- [X] T010 [P] Implement shared form, validation, and route error-boundary primitives in `frontend-react/src/lib/forms/useZodForm.ts`, `frontend-react/src/lib/validation/index.ts`, `frontend-react/src/components/forms/`, and `frontend-react/src/components/errors/RouteErrorBoundary.tsx`
+- [X] T011 [P] Configure the React Vitest and Playwright parity harnesses in `frontend-react/vitest.config.ts`, `frontend-react/src/test/setup.ts`, `tests/e2e/playwright.config.ts`, and `tests/e2e/react-migration/fixtures.ts`
+- [X] T012 Implement static SPA serving, nginx `try_files`, and `SUB_PATH` build plumbing for the React workspace in `frontend-react/Dockerfile`, `frontend-react/nginx.conf`, `frontend-react/vite.config.ts`, and `docker-compose.dotnet.yml`
 
 **Checkpoint**: The replacement SPA can boot under the existing deployment assumptions, shares the backend contract safely, and has the common infrastructure needed for all user stories.
 
@@ -57,16 +57,16 @@
 
 > Write these tests first and confirm they fail before implementing the React access/navigation slice.
 
-- [ ] T013 [P] [US1] Add auth entry-point and session continuity coverage in `tests/e2e/react-migration/auth-parity.spec.ts`
-- [ ] T014 [P] [US1] Add root redirect, protected deep-link, and post-login return coverage in `tests/e2e/react-migration/navigation-parity.spec.ts`
+- [X] T013 [P] [US1] Add auth entry-point and session continuity coverage in `tests/e2e/react-migration/auth-parity.spec.ts`
+- [X] T014 [P] [US1] Add root redirect, protected deep-link, and post-login return coverage in `tests/e2e/react-migration/navigation-parity.spec.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T015 [US1] Implement the login, register, forgot-password, and reset-password routes in `frontend-react/src/routes/login.tsx`, `frontend-react/src/routes/register/index.tsx`, `frontend-react/src/routes/forgot-password.tsx`, and `frontend-react/src/routes/reset-password.tsx`
-- [ ] T016 [US1] Implement auth-aware `/` redirect behavior, public/protected/admin route guards, and intended-destination restoration in `frontend-react/src/routes/index.tsx`, `frontend-react/src/features/auth/routeGuards.ts`, and `frontend-react/src/features/auth/defaultLanding.ts`
-- [ ] T017 [P] [US1] Implement the authenticated navigation shell and group landing route parity in `frontend-react/src/components/layout/AppShell.tsx`, `frontend-react/src/components/navigation/MainNav.tsx`, and `frontend-react/src/routes/g/$groupSlug/index.tsx`
-- [ ] T018 [US1] Implement session hydration, logout, session refresh, and cross-surface cookie continuity in `frontend-react/src/features/auth/session.ts`, `frontend-react/src/features/auth/useCurrentUser.ts`, and `frontend-react/src/components/auth/LogoutButton.tsx`
-- [ ] T019 [US1] Implement route-level titles and meaningful metadata for auth and landing routes in `frontend-react/src/routes/login.tsx`, `frontend-react/src/routes/forgot-password.tsx`, `frontend-react/src/routes/register/index.tsx`, `frontend-react/src/routes/reset-password.tsx`, and `frontend-react/src/routes/index.tsx`
+- [X] T015 [US1] Implement the login, register, forgot-password, and reset-password routes in `frontend-react/src/routes/login.tsx`, `frontend-react/src/routes/register/index.tsx`, `frontend-react/src/routes/forgot-password.tsx`, and `frontend-react/src/routes/reset-password.tsx`
+- [X] T016 [US1] Implement auth-aware `/` redirect behavior, public/protected/admin route guards, and intended-destination restoration in `frontend-react/src/routes/index.tsx`, `frontend-react/src/features/auth/routeGuards.ts`, and `frontend-react/src/features/auth/defaultLanding.ts`
+- [X] T017 [P] [US1] Implement the authenticated navigation shell and group landing route parity in `frontend-react/src/components/layout/AppShell.tsx`, `frontend-react/src/components/navigation/MainNav.tsx`, and `frontend-react/src/routes/g/$groupSlug/index.tsx`
+- [X] T018 [US1] Implement session hydration, logout, session refresh, and cross-surface cookie continuity in `frontend-react/src/features/auth/session.ts`, `frontend-react/src/features/auth/useCurrentUser.ts`, and `frontend-react/src/components/auth/LogoutButton.tsx`
+- [X] T019 [US1] Implement route-level titles and meaningful metadata for auth and landing routes in `frontend-react/src/routes/login.tsx`, `frontend-react/src/routes/forgot-password.tsx`, `frontend-react/src/routes/register/index.tsx`, `frontend-react/src/routes/reset-password.tsx`, and `frontend-react/src/routes/index.tsx`
 
 **Checkpoint**: Access and navigation parity is independently testable and provides the MVP slice for the migration.
 
@@ -82,16 +82,16 @@
 
 > Write these tests first and confirm they fail before implementing the React recipe slice.
 
-- [ ] T020 [P] [US2] Add recipe browse, detail, edit, and import journey coverage in `tests/e2e/react-migration/recipe-workflows.spec.ts`
-- [ ] T021 [P] [US2] Add public/shared recipe and metadata parity coverage in `tests/e2e/react-migration/recipe-public.spec.ts`
+- [X] T020 [P] [US2] Add recipe browse, detail, edit, and import journey coverage in `tests/e2e/react-migration/recipe-workflows.spec.ts`
+- [X] T021 [P] [US2] Add public/shared recipe and metadata parity coverage in `tests/e2e/react-migration/recipe-public.spec.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Implement recipe detail, timeline, and finder routes with TanStack Query data loading in `frontend-react/src/routes/g/$groupSlug/r/$slug/index.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/timeline.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/finder/index.tsx`, and `frontend-react/src/features/recipes/api.ts`
-- [ ] T023 [P] [US2] Implement recipe create/edit forms plus image, asset, comment, rating, and favorite interactions in `frontend-react/src/routes/g/$groupSlug/r/create.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/new.tsx`, `frontend-react/src/components/recipes/RecipeEditor.tsx`, and `frontend-react/src/components/recipes/RecipeInteractions.tsx`
-- [ ] T024 [P] [US2] Implement recipe import entry points and share-target redirect handling in `frontend-react/src/routes/g/$groupSlug/r/create/url.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/zip.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/html.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/image.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/bulk.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/debug.tsx`, and `frontend-react/src/routes/r/create/url.tsx`
-- [ ] T025 [P] [US2] Implement recipe organization and cookbook routes in `frontend-react/src/routes/g/$groupSlug/recipes/categories/index.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/tags/index.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/tools/index.tsx`, `frontend-react/src/routes/g/$groupSlug/cookbooks/index.tsx`, and `frontend-react/src/routes/g/$groupSlug/cookbooks/$slug.tsx`
-- [ ] T026 [US2] Implement the public/shared recipe route and meaningful share metadata parity in `frontend-react/src/routes/g/$groupSlug/shared/r/$id.tsx`, `frontend-react/src/lib/seo/recipeMeta.ts`, and `frontend-react/src/components/recipes/PublicRecipePage.tsx`
+- [X] T022 [US2] Implement recipe detail, timeline, and finder routes with TanStack Query data loading in `frontend-react/src/routes/g/$groupSlug/r/$slug/index.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/timeline.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/finder/index.tsx`, and `frontend-react/src/features/recipes/api.ts`
+- [X] T023 [P] [US2] Implement recipe create/edit forms plus image, asset, comment, rating, and favorite interactions in `frontend-react/src/routes/g/$groupSlug/r/create.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/new.tsx`, `frontend-react/src/components/recipes/RecipeEditor.tsx`, and `frontend-react/src/components/recipes/RecipeInteractions.tsx`
+- [X] T024 [P] [US2] Implement recipe import entry points and share-target redirect handling in `frontend-react/src/routes/g/$groupSlug/r/create/url.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/zip.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/html.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/image.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/bulk.tsx`, `frontend-react/src/routes/g/$groupSlug/r/create/debug.tsx`, and `frontend-react/src/routes/r/create/url.tsx`
+- [X] T025 [P] [US2] Implement recipe organization and cookbook routes in `frontend-react/src/routes/g/$groupSlug/recipes/categories/index.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/tags/index.tsx`, `frontend-react/src/routes/g/$groupSlug/recipes/tools/index.tsx`, `frontend-react/src/routes/g/$groupSlug/cookbooks/index.tsx`, and `frontend-react/src/routes/g/$groupSlug/cookbooks/$slug.tsx`
+- [X] T026 [US2] Implement the public/shared recipe route and meaningful share metadata parity in `frontend-react/src/routes/g/$groupSlug/shared/r/$id.tsx`, `frontend-react/src/lib/seo/recipeMeta.ts`, and `frontend-react/src/components/recipes/PublicRecipePage.tsx`
 
 **Checkpoint**: Core recipe creation, discovery, interaction, import, and public sharing are independently functional in React.
 
@@ -107,15 +107,15 @@
 
 > Write these tests first and confirm they fail before implementing the React planning/shopping slice.
 
-- [ ] T027 [P] [US3] Add meal planner parity coverage in `tests/e2e/react-migration/meal-planner.spec.ts`
-- [ ] T028 [P] [US3] Add shopping list parity coverage in `tests/e2e/react-migration/shopping-lists.spec.ts`
+- [X] T027 [P] [US3] Add meal planner parity coverage in `tests/e2e/react-migration/meal-planner.spec.ts`
+- [X] T028 [P] [US3] Add shopping list parity coverage in `tests/e2e/react-migration/shopping-lists.spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Implement meal planner view/edit routes and planner interactions in `frontend-react/src/routes/household/mealplan/planner.tsx`, `frontend-react/src/routes/household/mealplan/planner/view.tsx`, `frontend-react/src/routes/household/mealplan/planner/edit.tsx`, and `frontend-react/src/components/mealplan/MealPlanner.tsx`
-- [ ] T030 [P] [US3] Implement meal planning rules, settings, and assisted planning actions in `frontend-react/src/routes/household/mealplan/settings.tsx`, `frontend-react/src/components/mealplan/PlanningRulesForm.tsx`, and `frontend-react/src/features/mealplan/actions.ts`
-- [ ] T031 [US3] Implement shopping list index/detail/item mutation flows in `frontend-react/src/routes/shopping-lists/index.tsx`, `frontend-react/src/routes/shopping-lists/$id.tsx`, and `frontend-react/src/components/shopping/ShoppingListEditor.tsx`
-- [ ] T032 [US3] Implement cross-links between recipe, meal-plan, and shopping-list workflows in `frontend-react/src/features/shopping/fromRecipe.ts`, `frontend-react/src/features/mealplan/toShoppingList.ts`, and `frontend-react/src/components/navigation/WorkflowLinks.tsx`
+- [X] T029 [US3] Implement meal planner view/edit routes and planner interactions in `frontend-react/src/routes/household/mealplan/planner.tsx`, `frontend-react/src/routes/household/mealplan/planner/view.tsx`, `frontend-react/src/routes/household/mealplan/planner/edit.tsx`, and `frontend-react/src/components/mealplan/MealPlanner.tsx`
+- [X] T030 [P] [US3] Implement meal planning rules, settings, and assisted planning actions in `frontend-react/src/routes/household/mealplan/settings.tsx`, `frontend-react/src/components/mealplan/PlanningRulesForm.tsx`, and `frontend-react/src/features/mealplan/actions.ts`
+- [X] T031 [US3] Implement shopping list index/detail/item mutation flows in `frontend-react/src/routes/shopping-lists/index.tsx`, `frontend-react/src/routes/shopping-lists/$id.tsx`, and `frontend-react/src/components/shopping/ShoppingListEditor.tsx`
+- [X] T032 [US3] Implement cross-links between recipe, meal-plan, and shopping-list workflows in `frontend-react/src/features/shopping/fromRecipe.ts`, `frontend-react/src/features/mealplan/toShoppingList.ts`, and `frontend-react/src/components/navigation/WorkflowLinks.tsx`
 
 **Checkpoint**: Meal planning and shopping list workflows are independently functional and stable under refresh and collaboration scenarios.
 
@@ -131,17 +131,17 @@
 
 > Write these tests first and confirm they fail before implementing the React profile/admin/localization slice.
 
-- [ ] T033 [P] [US4] Add profile, household-management, and group-data parity coverage in `tests/e2e/react-migration/profile-household-group.spec.ts`
-- [ ] T034 [P] [US4] Add admin authorization, locale-switching, and RTL smoke coverage in `tests/e2e/react-migration/admin-localization.spec.ts`
+- [X] T033 [P] [US4] Add profile, household-management, and group-data parity coverage in `tests/e2e/react-migration/profile-household-group.spec.ts`
+- [X] T034 [P] [US4] Add admin authorization, locale-switching, and RTL smoke coverage in `tests/e2e/react-migration/admin-localization.spec.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T035 [US4] Implement profile, favorites, API token, and personal-preference routes in `frontend-react/src/routes/user/$id/favorites.tsx`, `frontend-react/src/routes/user/profile/index.tsx`, `frontend-react/src/routes/user/profile/edit.tsx`, and `frontend-react/src/routes/user/profile/api-tokens.tsx`
-- [ ] T036 [P] [US4] Implement household member, notifier, and webhook management surfaces in `frontend-react/src/routes/household/index.tsx`, `frontend-react/src/routes/household/members.tsx`, `frontend-react/src/routes/household/notifiers.tsx`, and `frontend-react/src/routes/household/webhooks.tsx`
-- [ ] T037 [P] [US4] Implement group-data, organizer, reports, and migration-helper surfaces in `frontend-react/src/routes/group/index.tsx`, `frontend-react/src/routes/group/data.tsx`, `frontend-react/src/routes/group/data/recipes.tsx`, `frontend-react/src/routes/group/data/categories.tsx`, `frontend-react/src/routes/group/data/tags.tsx`, `frontend-react/src/routes/group/data/tools.tsx`, `frontend-react/src/routes/group/data/foods.tsx`, `frontend-react/src/routes/group/data/units.tsx`, `frontend-react/src/routes/group/data/labels.tsx`, `frontend-react/src/routes/group/data/recipe-actions.tsx`, `frontend-react/src/routes/group/reports/$id.tsx`, and `frontend-react/src/routes/group/migrations.tsx`
-- [ ] T038 [US4] Implement admin setup, site settings, backups, AI configuration, debug, and maintenance surfaces in `frontend-react/src/routes/admin/setup.tsx`, `frontend-react/src/routes/admin/site-settings.tsx`, `frontend-react/src/routes/admin/backups.tsx`, `frontend-react/src/routes/admin/ai-configurations.tsx`, `frontend-react/src/routes/admin/debug/indexes.tsx`, `frontend-react/src/routes/admin/debug/openai.tsx`, `frontend-react/src/routes/admin/debug/parser.tsx`, and `frontend-react/src/routes/admin/maintenance/index.tsx`
-- [ ] T039 [US4] Implement admin manage users/groups/households/ingredient-aliases routes with admin-only guard parity in `frontend-react/src/routes/admin/manage/users/index.tsx`, `frontend-react/src/routes/admin/manage/users/create.tsx`, `frontend-react/src/routes/admin/manage/users/$id.tsx`, `frontend-react/src/routes/admin/manage/groups/index.tsx`, `frontend-react/src/routes/admin/manage/groups/$id.tsx`, `frontend-react/src/routes/admin/manage/households/index.tsx`, `frontend-react/src/routes/admin/manage/households/$id.tsx`, and `frontend-react/src/routes/admin/manage/ingredient-aliases.tsx`
-- [ ] T040 [US4] Implement locale selection, persisted preference handling, and RTL-safe layout adjustments across `frontend-react/src/components/settings/LocaleSelector.tsx`, `frontend-react/src/lib/i18n/persistedLocale.ts`, `frontend-react/src/theme/index.ts`, and `frontend-react/src/components/layout/AppShell.tsx`
+- [X] T035 [US4] Implement profile, favorites, API token, and personal-preference routes in `frontend-react/src/routes/user/$id/favorites.tsx`, `frontend-react/src/routes/user/profile/index.tsx`, `frontend-react/src/routes/user/profile/edit.tsx`, and `frontend-react/src/routes/user/profile/api-tokens.tsx`
+- [X] T036 [P] [US4] Implement household member, notifier, and webhook management surfaces in `frontend-react/src/routes/household/index.tsx`, `frontend-react/src/routes/household/members.tsx`, `frontend-react/src/routes/household/notifiers.tsx`, and `frontend-react/src/routes/household/webhooks.tsx`
+- [X] T037 [P] [US4] Implement group-data, organizer, reports, and migration-helper surfaces in `frontend-react/src/routes/group/index.tsx`, `frontend-react/src/routes/group/data.tsx`, `frontend-react/src/routes/group/data/recipes.tsx`, `frontend-react/src/routes/group/data/categories.tsx`, `frontend-react/src/routes/group/data/tags.tsx`, `frontend-react/src/routes/group/data/tools.tsx`, `frontend-react/src/routes/group/data/foods.tsx`, `frontend-react/src/routes/group/data/units.tsx`, `frontend-react/src/routes/group/data/labels.tsx`, `frontend-react/src/routes/group/data/recipe-actions.tsx`, `frontend-react/src/routes/group/reports/$id.tsx`, and `frontend-react/src/routes/group/migrations.tsx`
+- [X] T038 [US4] Implement admin setup, site settings, backups, AI configuration, debug, and maintenance surfaces in `frontend-react/src/routes/admin/setup.tsx`, `frontend-react/src/routes/admin/site-settings.tsx`, `frontend-react/src/routes/admin/backups.tsx`, `frontend-react/src/routes/admin/ai-configurations.tsx`, `frontend-react/src/routes/admin/debug/indexes.tsx`, `frontend-react/src/routes/admin/debug/openai.tsx`, `frontend-react/src/routes/admin/debug/parser.tsx`, and `frontend-react/src/routes/admin/maintenance/index.tsx`
+- [X] T039 [US4] Implement admin manage users/groups/households/ingredient-aliases routes with admin-only guard parity in `frontend-react/src/routes/admin/manage/users/index.tsx`, `frontend-react/src/routes/admin/manage/users/create.tsx`, `frontend-react/src/routes/admin/manage/users/$id.tsx`, `frontend-react/src/routes/admin/manage/groups/index.tsx`, `frontend-react/src/routes/admin/manage/groups/$id.tsx`, `frontend-react/src/routes/admin/manage/households/index.tsx`, `frontend-react/src/routes/admin/manage/households/$id.tsx`, and `frontend-react/src/routes/admin/manage/ingredient-aliases.tsx`
+- [X] T040 [US4] Implement locale selection, persisted preference handling, and RTL-safe layout adjustments across `frontend-react/src/components/settings/LocaleSelector.tsx`, `frontend-react/src/lib/i18n/persistedLocale.ts`, `frontend-react/src/theme/index.ts`, and `frontend-react/src/components/layout/AppShell.tsx`
 
 **Checkpoint**: Power-user, household-management, profile, admin, and localization surfaces are independently functional with preserved permission boundaries.
 
@@ -157,15 +157,15 @@
 
 > Write these tests first and confirm they fail before implementing coexistence and cutover controls.
 
-- [ ] T041 [P] [US5] Add coexistence routing and legacy-fallback smoke coverage in `tests/e2e/react-migration/coexistence-routing.spec.ts`
-- [ ] T042 [P] [US5] Add cutover and rollback drill coverage in `tests/e2e/react-migration/cutover-rollback.spec.ts`
+- [X] T041 [P] [US5] Add coexistence routing and legacy-fallback smoke coverage in `tests/e2e/react-migration/coexistence-routing.spec.ts`
+- [X] T042 [P] [US5] Add cutover and rollback drill coverage in `tests/e2e/react-migration/cutover-rollback.spec.ts`
 
 ### Implementation for User Story 5
 
-- [ ] T043 [US5] Implement release-variant routing config, approved route-slice flags, and fallback mapping in `frontend-react/src/config/releaseVariant.ts`, `frontend-react/src/router/fallbackRoutes.ts`, and `specs/003-react-frontend-migration/contracts/route-parity.yaml`
-- [ ] T044 [US5] Wire nginx and compose cutover controls so React serves approved subtrees and legacy remains the fallback in `frontend-react/nginx.conf`, `frontend/nginx.conf`, `docker-compose.dotnet.yml`, and `Taskfile.yml`
-- [ ] T045 [US5] Implement parity-gap reporting and phase evidence output in `specs/003-react-frontend-migration/contracts/release-gates.yaml`, `specs/003-react-frontend-migration/checklists/phase-parity.md`, and `tests/e2e/react-migration/reporters/parityReport.ts`
-- [ ] T046 [US5] Document the operator rollout, rollback, and phased-release workflow in `specs/003-react-frontend-migration/quickstart.md` and `docs/frontend/react-migration-rollout.md`
+- [X] T043 [US5] Implement release-variant routing config, approved route-slice flags, and fallback mapping in `frontend-react/src/config/releaseVariant.ts`, `frontend-react/src/router/fallbackRoutes.ts`, and `specs/003-react-frontend-migration/contracts/route-parity.yaml`
+- [X] T044 [US5] Wire nginx and compose cutover controls so React serves approved subtrees and legacy remains the fallback in `frontend-react/nginx.conf`, `frontend/nginx.conf`, `docker-compose.dotnet.yml`, and `Taskfile.yml`
+- [X] T045 [US5] Implement parity-gap reporting and phase evidence output in `specs/003-react-frontend-migration/contracts/release-gates.yaml`, `specs/003-react-frontend-migration/checklists/phase-parity.md`, and `tests/e2e/react-migration/reporters/parityReport.ts`
+- [X] T046 [US5] Document the operator rollout, rollback, and phased-release workflow in `specs/003-react-frontend-migration/quickstart.md` and `docs/frontend/react-migration-rollout.md`
 
 **Checkpoint**: Coexistence, cutover, and rollback are independently testable and controlled by documented release gates.
 
@@ -175,10 +175,11 @@
 
 **Purpose**: Close the final parity gaps, validate the full migration, cut over permanently, and retire the legacy frontend safely.
 
-- [ ] T047 [P] Run the full route-coverage, locale-matrix, and public-metadata validation suite in `tests/e2e/react-migration/route-coverage.spec.ts`, `tests/e2e/react-migration/locale-matrix.spec.ts`, `tests/e2e/react-migration/public-metadata.spec.ts`, and `specs/003-react-frontend-migration/contracts/release-gates.yaml`
-- [ ] T048 [P] Add accessibility and top-workflow performance regression checks in `tests/e2e/react-migration/performance.spec.ts`, `frontend-react/src/test/accessibility/navigation.a11y.test.tsx`, and `frontend-react/src/test/accessibility/forms.a11y.test.tsx`
-- [ ] T049 Switch the default shipped SPA to the React workspace while preserving explicit rollback controls in `docker-compose.dotnet.yml`, `Taskfile.yml`, `frontend-react/Dockerfile`, and `frontend/nginx.conf`
+- [X] T047 [P] Run the full route-coverage, locale-matrix, and public-metadata validation suite in `tests/e2e/react-migration/route-coverage.spec.ts`, `tests/e2e/react-migration/locale-matrix.spec.ts`, `tests/e2e/react-migration/public-metadata.spec.ts`, and `specs/003-react-frontend-migration/contracts/release-gates.yaml`
+- [X] T048 [P] Add accessibility and top-workflow performance regression checks in `tests/e2e/react-migration/performance.spec.ts`, `frontend-react/src/test/accessibility/navigation.a11y.test.tsx`, and `frontend-react/src/test/accessibility/forms.a11y.test.tsx`
+- [X] T049 Switch the default shipped SPA to the React workspace while preserving explicit rollback controls in `docker-compose.dotnet.yml`, `Taskfile.yml`, `frontend-react/Dockerfile`, and `frontend/nginx.conf`
 - [ ] T050 Retire the legacy Nuxt frontend and consolidate the final single-SPA deployment shape in `frontend/`, `frontend-react/`, `docs/frontend/react-migration-rollout.md`, and `specs/003-react-frontend-migration/contracts/route-parity.yaml`
+- Note: T047 and T049 are now validated against the live Docker stack. T050 remains open because the `legacy-only` rollback contract is still active and depends on the Nuxt gateway/frontend assets in `frontend/`; removing them in this pass would break the documented rollback expectation before the retirement window is formally closed.
 
 **Final Checkpoint**: All release gates pass, React is the default and only supported SPA, rollback windows are closed, and the legacy frontend is retired.
 

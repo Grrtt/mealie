@@ -10,6 +10,10 @@ frontend/dist/
 frontend/.output/*
 frontend/.yarn/*
 frontend/.yarnrc.yml
+frontend-react/dist/
+frontend-react/node_modules/
+frontend-react/coverage/
+frontend-react/.yarn/*
 
 dev/data/mealie.db-journal
 dev/data/backups/*
@@ -58,6 +62,7 @@ pnpm-debug.log*
 
 # Node Modules
 node_modules/
+coverage/
 *.db
 *.sqlite
 

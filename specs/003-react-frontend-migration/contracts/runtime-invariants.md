@@ -16,6 +16,7 @@ This contract lists the behaviors that the React migration must preserve unless 
 - The frontend continues to use the `mealie.access_token` cookie as the active session token.
 - Session hydration continues to rely on the existing `/api/users/self` behavior.
 - A 401 response still clears the active session and returns the user to `/login`.
+- Intended destinations for protected deep links remain persisted until the user completes a successful login.
 - Public routes stay public, including shared/public recipe pages.
 - Admin routes continue to require the same admin-only protection behavior.
 - Moving between legacy and React surfaces must not itself cause a logout.
@@ -32,6 +33,7 @@ This contract lists the behaviors that the React migration must preserve unless 
 
 - The current supported locale set remains in scope.
 - Locale detection, stored preference behavior, fallback to `en-US`, and date/time formatting remain intact.
+- The React workspace must continue to propagate `Accept-Language` from the active UI locale on every API request.
 - RTL locales must remain usable across migrated surfaces.
 - New translation work continues to treat `en-US` as the editable source locale.
 
@@ -41,6 +43,7 @@ This contract lists the behaviors that the React migration must preserve unless 
 - The frontend image still exposes port 80.
 - The frontend and backend remain compatible with `docker-compose.dotnet.yml`.
 - Operator workflows in `Taskfile.yml` remain the baseline development and validation entry points.
+- The React migration workspace remains parallel to the legacy Nuxt frontend until later cutover tasks explicitly change the deployment default.
 
 ## Public Metadata
 

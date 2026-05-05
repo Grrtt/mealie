@@ -29,7 +29,7 @@ public class MealPlanRuleConfiguration : IEntityTypeConfiguration<MealPlanRule>
             .WithMany()
             .UsingEntity<Dictionary<string, object>>(
                 "plan_rules_to_tags",
-                j => j.HasOne<Tag>().WithMany().HasForeignKey("tag_id").OnDelete(DeleteBehavior.Cascade),
+                j => j.HasOne<Tag>().WithMany().HasForeignKey("tag_id").OnDelete(DeleteBehavior.NoAction),
                 j => j.HasOne<MealPlanRule>().WithMany().HasForeignKey("plan_rule_id").OnDelete(DeleteBehavior.Cascade),
                 j => j.HasKey("plan_rule_id", "tag_id"));
 
@@ -38,7 +38,7 @@ public class MealPlanRuleConfiguration : IEntityTypeConfiguration<MealPlanRule>
             .WithMany()
             .UsingEntity<Dictionary<string, object>>(
                 "plan_rules_to_categories",
-                j => j.HasOne<Category>().WithMany().HasForeignKey("category_id").OnDelete(DeleteBehavior.Cascade),
+                j => j.HasOne<Category>().WithMany().HasForeignKey("category_id").OnDelete(DeleteBehavior.NoAction),
                 j => j.HasOne<MealPlanRule>().WithMany().HasForeignKey("group_plan_rule_id")
                     .OnDelete(DeleteBehavior.Cascade),
                 j => j.HasKey("group_plan_rule_id", "category_id"));
@@ -48,7 +48,7 @@ public class MealPlanRuleConfiguration : IEntityTypeConfiguration<MealPlanRule>
             .WithMany()
             .UsingEntity<Dictionary<string, object>>(
                 "plan_rules_to_households",
-                j => j.HasOne<Household>().WithMany().HasForeignKey("household_id").OnDelete(DeleteBehavior.Cascade),
+                j => j.HasOne<Household>().WithMany().HasForeignKey("household_id").OnDelete(DeleteBehavior.NoAction),
                 j => j.HasOne<MealPlanRule>().WithMany().HasForeignKey("group_plan_rule_id")
                     .OnDelete(DeleteBehavior.Cascade),
                 j => j.HasKey("group_plan_rule_id", "household_id"));

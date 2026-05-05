@@ -9,13 +9,18 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     {
         // Read DATABASE_URL from env for design-time use (migrations)
         var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
-                          ?? "Data Source=./data/mealie.db";
-        var dbEngine = Environment.GetEnvironmentVariable("DB_ENGINE") ?? "sqlite";
+                          ?? "Server=localhost,14330;Database=mealie;User Id=sa;Password=MealieSqlServerDev123!;TrustServerCertificate=True;Encrypt=False";
+        var dbEngine = Environment.GetEnvironmentVariable("DB_ENGINE") ?? "sqlserver";
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-        if (dbEngine.Equals("postgres", StringComparison.OrdinalIgnoreCase) ||
-            dbEngine.Equals("postgresql", StringComparison.OrdinalIgnoreCase))
+        if (dbEngine.Equals("sqlserver", StringComparison.OrdinalIgnoreCase) ||
+            dbEngine.Equals("mssql", StringComparison.OrdinalIgnoreCase))
+        {
+            options.UseSqlServer(databaseUrl).UseSnakeCaseNamingConvention();
+        }
+        else if (dbEngine.Equals("postgres", StringComparison.OrdinalIgnoreCase) ||
+                 dbEngine.Equals("postgresql", StringComparison.OrdinalIgnoreCase))
         {
             options.UseNpgsql(databaseUrl).UseSnakeCaseNamingConvention();
         }

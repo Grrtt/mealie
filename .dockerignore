@@ -19,12 +19,28 @@ htmlcov/
 venv
 
 .DS_Store
+.env*
+*.log*
+coverage/
+*/coverage
+Thumbs.db
+*.tmp
+*.swp
 .AppleDouble
 .LSOverride
 ._*
 
 */node_modules
 */dist
+/backend-dotnet/**/bin/
+/backend-dotnet/**/obj/
+/backend-dotnet/TestResults/
+/backend-dotnet/.vs/
+/tests/e2e/node_modules/
+/tests/e2e/playwright-report/
+/tests/e2e/test-results/
+/frontend-react/node_modules/
+/frontend-react/dist/
 /dist/
 */build
 *.log*

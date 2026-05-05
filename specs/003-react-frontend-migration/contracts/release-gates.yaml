@@ -47,12 +47,20 @@ phases:
 
   - id: phase-4
     name: admin-and-cutover-readiness
-    release_variant: react-default
+    release_variant: hybrid
     exit_gates:
       - admin setup/settings/backups/debug/manage flows pass
+      - coexistence gateway reports the approved route slices and serves unsupported paths from legacy
+      - rollback drill succeeds within the documented operator workflow
+      - open parity gaps are tracked with disposition and severity before any react-default promotion
+
+  - id: phase-5
+    name: final-cutover-and-retirement
+    release_variant: react-default
+    exit_gates:
       - 100 percent of supported routes have replacement route, redirect, or retirement decision
       - no unresolved critical parity gaps remain
-      - rollback drill succeeds within the documented operator workflow
+      - react-default rollout is validated before legacy retirement
 
 validation_gates:
   route-coverage:
@@ -73,14 +81,33 @@ validation_gates:
   public-links:
     requirement: public/shared recipe links remain directly reachable with meaningful metadata
     threshold: 100 percent of release-candidate checks
+  accessibility:
+    requirement: primary navigation and high-traffic form workflows retain accessible landmarks, labels, and validation messaging
+    threshold: zero blocking regressions in automated accessibility checks
+  performance-top-workflows:
+    requirement: login, group landing, and shopping-list entry remain within the configured cold-start regression budget
+    threshold: all monitored workflows stay within their regression thresholds
   rollback:
     requirement: operators can return to the stable legacy experience quickly
     threshold: completed within 15 minutes
+  coexistence-routing:
+    requirement: the legacy gateway exposes the active release variant and route-slice decision for approved and fallback paths
+    threshold: 100 percent of coexistence smoke checks
+  parity-gap-register:
+    requirement: every open migration difference is recorded with severity and disposition before phase promotion
+    threshold: zero undocumented gaps for release candidates
 
 required_evidence:
   - route inventory status against contracts/route-parity.yaml
   - automated smoke/integration results for in-scope routes
   - locale and RTL verification notes
   - parity-gap register for known differences
+  - automated accessibility evidence from `frontend-react/src/test/accessibility/navigation.a11y.test.tsx` and `frontend-react/src/test/accessibility/forms.a11y.test.tsx`
+  - performance regression evidence from `tests/e2e/react-migration/performance.spec.ts`
+  - coexistence routing evidence from tests/e2e/react-migration/coexistence-routing.spec.ts
+  - rollout and rollback drill evidence from tests/e2e/react-migration/cutover-rollback.spec.ts
+  - parity report output from tests/e2e/react-migration/reporters/parityReport.ts
+  - phase checklist state from checklists/phase-parity.md
   - deployment notes showing current compose/task expectations still hold
   - rollback instructions tested against the active release shape
+  - React workspace evidence for `task ui:react:build` and `task ui:react:test`

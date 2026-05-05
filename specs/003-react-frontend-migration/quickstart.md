@@ -83,3 +83,49 @@ When task generation begins, create tasks in this order:
 - Public/shared routes keep working without auth
 - No new backend or deployment dependency is introduced unless explicitly approved
 - Rollback path remains documented and testable
+
+## 6. Release-variant coexistence workflow
+
+The migration gateway now exposes rollout state through `MEALIE_FRONTEND_RELEASE_VARIANT` plus the `MEALIE_ROUTE_SLICE_*` flags documented in `contracts/route-parity.yaml`.
+
+### Legacy-only baseline
+
+```bash
+task ui:release:rollback
+curl -sf http://localhost/__release-variant
+```
+
+Expected outcome:
+
+- `/__release-variant` reports `legacy-only`
+- unsupported or not-yet-approved paths continue to resolve through the Nuxt frontend
+
+### Hybrid cutover for approved React slices
+
+```bash
+task ui:release:hybrid
+curl -sf http://localhost/__release-variant
+curl -I http://localhost/login
+curl -I http://localhost/admin
+```
+
+Expected outcome:
+
+- `/__release-variant` reports `hybrid`
+- `/login` returns `X-Mealie-Frontend-Instance: react`
+- `/admin` remains `X-Mealie-Frontend-Instance: legacy` until the final cutover tasks retire that fallback
+
+### React sidecar validation
+
+The React sidecar continues to run on `http://localhost:8080` during coexistence. It exposes the same rollout metadata for direct smoke checks:
+
+```bash
+curl -sf http://localhost:8080/__release-variant
+```
+
+### Rollback drill
+
+1. Run `task ui:release:hybrid`.
+2. Verify an approved route such as `/login` is served from React.
+3. Run `task ui:release:rollback`.
+4. Re-run the same route checks and confirm the gateway returns to `legacy-only` without touching backend data, users, or auth cookies.

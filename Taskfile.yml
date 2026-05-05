@@ -52,6 +52,16 @@ tasks:
     deps:
       - setup:ui
 
+  setup:ui:react:
+    desc: setup React migration frontend dependencies
+    dir: frontend-react
+    run: once
+    cmds:
+      - yarn install
+    sources:
+      - package.json
+      - yarn.lock
+
   dev:services:
     desc: starts postgres and mailpit containers
     cmds:
@@ -124,11 +134,80 @@ tasks:
       - ui:lint
       - ui:test
 
+  ui:react:build:
+    desc: builds the React migration frontend in frontend-react/dist
+    dir: frontend-react
+    deps:
+      - setup:ui:react
+    cmds:
+      - yarn build
+
+  ui:react:generate:
+    desc: generates a static version of the React migration frontend in frontend-react/dist
+    deps:
+      - ui:react:build
+
+  ui:react:lint:
+    desc: runs the React migration frontend linter
+    dir: frontend-react
+    deps:
+      - setup:ui:react
+    cmds:
+      - yarn lint
+
+  ui:react:test:
+    desc: runs the React migration frontend tests
+    dir: frontend-react
+    deps:
+      - setup:ui:react
+    cmds:
+      - yarn test
+
+  ui:react:check:
+    desc: runs all React migration frontend checks
+    deps:
+      - ui:react:lint
+      - ui:react:test
+
   ui:
     desc: runs the frontend server
     dir: frontend
     cmds:
       - yarn run dev --no-fork
+
+  ui:legacy:
+    desc: runs the legacy Nuxt frontend server
+    deps:
+      - ui
+
+  ui:react:
+    desc: runs the React migration frontend server
+    dir: frontend-react
+    deps:
+      - setup:ui:react
+    cmds:
+      - yarn dev --host 0.0.0.0 --port 4173
+
+  ui:hybrid:
+    desc: runs both legacy and React frontends for migration work
+    deps:
+      - ui
+      - ui:react
+
+  ui:release:hybrid:
+    desc: runs the docker stack with the legacy gateway proxying approved React slices
+    cmds:
+      - MEALIE_FRONTEND_RELEASE_VARIANT=hybrid docker compose -f docker-compose.dotnet.yml up --build --detach
+
+  ui:release:react-default:
+    desc: runs the docker stack with React as the default shipped SPA while retaining explicit rollback controls
+    cmds:
+      - MEALIE_FRONTEND_RELEASE_VARIANT=react-default docker compose -f docker-compose.dotnet.yml up --build --detach
+
+  ui:release:rollback:
+    desc: returns the docker stack to the legacy-only gateway while keeping the React sidecar available for comparison
+    cmds:
+      - MEALIE_FRONTEND_RELEASE_VARIANT=legacy-only docker compose -f docker-compose.dotnet.yml up --build --detach
 
   dotnet:build:
     desc: builds the C# backend
