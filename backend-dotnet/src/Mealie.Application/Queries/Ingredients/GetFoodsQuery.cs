@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Ingredients;
+using Mealie.Application.Services.Ingredients;
 using Mealie.Domain.Entities.Ingredients;
 using Mealie.Shared.Pagination;
 using Microsoft.EntityFrameworkCore;
@@ -11,22 +12,7 @@ public record GetFoodsQuery(Guid GroupId, PaginationParams Pagination, string? S
     public async Task<PaginatedResponse<FoodResponse>> ExecuteAsync(IQueryServices services,
         CancellationToken ct = default)
     {
-        var db = services.Db;
-        var query = db.Foods.IgnoreQueryFilters().Include(f => f.Aliases).Include(f => f.Label)
-            .Where(f => f.GroupId == GroupId);
-        if (!string.IsNullOrWhiteSpace(Search))
-        {
-            query = query.Where(f => f.Name.Contains(Search));
-        }
-
-        var total = await query.CountAsync(ct);
-        var items = await query.OrderBy(f => f.Name).Skip(Pagination.Skip).Take(Pagination.PerPage).ToListAsync(ct);
-        return new PaginatedResponse<FoodResponse>
-        {
-            Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / Pagination.PerPage),
-            Items = items.Select(FoodMappings.MapToResponse).ToList()
-        };
+        return await IngredientCrudCore.GetFoodsAsync(services.Db, GroupId, Pagination, Search, ct);
     }
 }
 

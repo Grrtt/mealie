@@ -1,563 +1,277 @@
-# Data Model: Mealie C# Backend Migration
+# Data Model: Consolidation Refactor Design
 
 **Phase**: Phase 1 — Design  
-**Feature**: `001-csharp-backend-migration`  
-**Source**: SQLAlchemy models in `mealie/db/models/`
+**Feature**: `001-csharp-backend-migration`
 
 ---
 
 ## Overview
 
-The C# EF Core schema maps 1:1 to the Python SQLAlchemy schema with the following structural rules:
+This refactor plan does **not** change the persistent database schema or public API contracts. The "data model" for this effort is the set of internal abstractions that will own duplicated behavior after consolidation.
 
-- All table names are preserved exactly (EF Core `.ToTable("table_name")` explicit mapping).
-- All column names are preserved exactly (snake_case via `UseSnakeCaseNamingConvention()`).
-- All primary key values (UUIDs, integer PKs) are preserved verbatim by the migration tool.
-- UUID columns: `Guid` in C# → `TEXT` in SQLite / `uuid` in PostgreSQL.
-- Soft-delete is NOT used (Python backend uses hard deletes).
-- Timestamps: `created_at`, `updated_at` on all entities via `BaseMixins` equivalent.
+### Global invariants
 
----
-
-## Core Domain Entities
-
-### Group
-**Table**: `groups`  
-**Tenancy**: Top-level boundary.
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | UUID, preserved verbatim |
-| `name` | `string` | Not null, unique |
-| `slug` | `string?` | Unique index |
-| `created_at` | `DateTime` | UTC |
-| `update_at` | `DateTime` | UTC |
-
-**Relationships**:
-- Has many `Household`
-- Has many `User`
-- Has many `Recipe` (all recipes in group)
-- Has many `Tag`, `Category`, `Tool` (via junction tables)
-- Has many `IngredientUnit`, `IngredientFood`
-- Has one `GroupPreferences`
-- Has many `GroupInviteToken`, `GroupWebhook`, `Cookbook`, `MealPlan`, `ShoppingList`
-
-**Validation Rules**:
-- `name`: required, max 255 chars, globally unique
-- `slug`: auto-generated from name if not provided
+- Existing route paths, DTO types, and status codes remain unchanged.
+- Existing group/household tenant boundaries remain unchanged.
+- Existing database entities remain the source of truth.
+- Shared abstractions may centralize behavior, but they must not hide required tenant IDs or 404-masking decisions.
 
 ---
 
-### Household
-**Table**: `households`  
-**Tenancy**: Second-level boundary. Owns most content.
+## Refactor entities
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | UUID |
-| `name` | `string` | Not null |
-| `slug` | `string?` | |
-| `group_id` | `Guid` FK → `groups.id` | Not null, indexed |
-| `created_at` | `DateTime` | UTC |
-| `update_at` | `DateTime` | UTC |
+### 1. OrganizerCrudModule
 
-**Relationships**:
-- Belongs to `Group`
-- Has many `User`
-- Has many owned recipes via `HouseholdToRecipe` junction
-- Has many `Cookbook`, `MealPlan`, `ShoppingList`, `Webhook`, `EventNotifier`
-- Has one `HouseholdPreferences`
+**Purpose**: Shared CRUD execution path for tags, categories, and tools.
 
-**EF Core Query Filter**: none at household level (filter applied at resource level by `household_id`).
+| Field / Responsibility | Description |
+|---|---|
+| `OrganizerKind` | Identifies Tag, Category, or Tool behavior |
+| `QueryShape` | List/get/get-by-slug/get-recipes/get-empty flow for one organizer kind |
+| `CommandShape` | Create/update/delete flow for one organizer kind |
+| `RouteMetadata` | Keeps existing controller route prefix and action naming stable |
+| `ResponseMapper` | Preserves the current DTO per organizer type |
+| `SlugPolicy` | Shared create/update slug generation and uniqueness enforcement |
 
----
+**Relationships**
+- Uses `OrganizerSlugPolicy`
+- Invoked by organizer controllers and organizer commands/queries
 
-### User
-**Table**: `users`  
-**Auth Methods**: `Mealie`, `LDAP`, `OIDC` (enum).
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | UUID |
-| `full_name` | `string?` | Indexed |
-| `username` | `string?` | Unique, indexed |
-| `email` | `string?` | Unique, indexed |
-| `password` | `string?` | bcrypt hash |
-| `auth_method` | `AuthMethod` enum | |
-| `admin` | `bool` | default false |
-| `advanced` | `bool` | default false |
-| `group_id` | `Guid` FK → `groups.id` | Not null, indexed |
-| `household_id` | `Guid?` FK → `households.id` | Nullable, indexed |
-| `cache_key` | `string?` | Used to invalidate sessions |
-| `login_attempts` | `int` | default 0 |
-| `locked_at` | `DateTime?` | Account lockout |
-| `can_manage_household` | `bool` | Permission flag |
-| `can_manage` | `bool` | Permission flag |
-| `can_invite` | `bool` | Permission flag |
-| `can_organize` | `bool` | Permission flag |
-| `show_announcements` | `bool` | default true |
-| `last_read_announcement` | `string?` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
-
-**Validation Rules**:
-- `email`: required for local auth, valid email format
-- `username`: required, unique across the system
-- `password`: bcrypt-hashed on write, minimum length not re-validated on read
+**Validation rules**
+- Every execution path requires `GroupId`
+- Update must use the same uniqueness rules as create
+- Shared internals cannot change entity-specific DTO types
 
 ---
 
-### ApiKey (LongLiveToken)
-**Table**: `long_live_tokens`
+### 2. OrganizerSlugPolicy
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | UUID |
-| `name` | `string` | Human label |
-| `token` | `string` | Indexed; stored as bcrypt hash |
-| `user_id` | `Guid?` FK → `users.id` | Indexed |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Centralize slug normalization and uniqueness checks for organizer entities.
 
-**Association proxies** (computed at query time, not stored): `group_id`, `household_id` (via User).
+| Input | Output |
+|---|---|
+| `GroupId` | Tenant-safe slug scope |
+| `Name` | Generated base slug |
+| `ExistingEntityId?` | Allows update flow to exclude current record when checking uniqueness |
+| `EntitySet` | Tag/category/tool repository source |
 
----
-
-### Recipe
-**Table**: `recipes`  
-**Unique Constraint**: `(slug, group_id)`.
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | UUID |
-| `slug` | `string?` | Indexed |
-| `group_id` | `Guid` FK → `groups.id` | Not null, indexed |
-| `user_id` | `Guid?` FK → `users.id` | Creator, indexed |
-| `name` | `string` | Not null |
-| `description` | `string?` | |
-| `image` | `string?` | Filename of stored image |
-| `total_time` | `string?` | ISO 8601 duration or freeform |
-| `prep_time` | `string?` | |
-| `perform_time` | `string?` | |
-| `cook_time` | `string?` | |
-| `recipe_yield` | `string?` | Freeform text |
-| `recipe_yield_quantity` | `double` | Indexed, default 0 |
-| `recipe_servings` | `double` | Indexed, default 0 |
-| `rating` | `double?` | Indexed, nullable |
-| `date_added` | `DateOnly?` | |
-| `date_updated` | `DateTime?` | |
-| `last_made` | `DateTime?` | |
-| `public` | `bool` | Whether visible outside household |
-| `disable_amounts` | `bool` | |
-| `disable_comments` | `bool` | |
-| `is_ocr_recipe` | `bool` | |
-| `org_url` | `string?` | Source URL if scraped |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
-
-**EF Core Query Filter**: `r => r.GroupId == _tenantContext.GroupId` (household filter applied via `HouseholdToRecipe` join for non-admin, non-public queries).
-
-**Relationships**:
-- Has one `RecipeSettings`
-- Has one `Nutrition`
-- Has many `RecipeIngredient` (ordered by `position`)
-- Has many `RecipeInstruction` (ordered by `position`)
-- Has many `RecipeNote`
-- Has many `RecipeAsset`
-- Has many `RecipeComment`
-- Has many `RecipeTimelineEvent`
-- Has many `Tag` (via `recipes_to_tags`)
-- Has many `Category` (via `recipes_to_categories`)
-- Has many `Tool` (via `recipes_to_tools`)
-- Has many `User` (rated_by, favorited_by via `user_to_recipe`)
-- Has many `HouseholdToRecipe` (household ownership)
-- Belongs to `Group`, `User` (creator)
+**Validation rules**
+- Slug uniqueness is enforced within group scope
+- Update and create must follow identical collision rules
 
 ---
 
-### RecipeIngredient
-**Table**: `recipes_ingredients`  
-**Ordering**: `position` column, 0-based.
+### 3. MealPlanMappingHelper
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `recipe_id` | `Guid` FK → `recipes.id` | Indexed |
-| `referenced_recipe_id` | `Guid?` FK → `recipes.id` | For sub-recipe references |
-| `unit_id` | `Guid?` FK → `ingredient_units.id` | |
-| `food_id` | `Guid?` FK → `ingredient_foods.id` | |
-| `quantity` | `double?` | |
-| `note` | `string?` | |
-| `original_text` | `string?` | Raw input string |
-| `title` | `string?` | Section header if set |
-| `position` | `int` | Ordering within recipe |
-| `disable_amount` | `bool` | |
-| `display` | `string?` | Override display string |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Shared loading/mapping path for meal plan responses.
+
+| Field / Responsibility | Description |
+|---|---|
+| `MealPlanEntity` | Source meal plan record(s) |
+| `RecipeLoadContext` | Recipe/nav data needed for response hydration |
+| `ResponseProjection` | Shared DTO construction logic |
+| `DateScope` | Day/week/query date boundaries |
+
+**Relationships**
+- Consumed by meal plan commands and queries
+- Independent from recipe-selection decisions
+
+**Validation rules**
+- Must not choose recipes
+- Must preserve current response shape and ordering
 
 ---
 
-### RecipeInstruction
-**Table**: `recipe_instructions`  
-**Ordering**: `position` column.
+### 4. MealPlanRecipeSelectionService
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `recipe_id` | `Guid` FK | |
-| `title` | `string?` | Section header |
-| `text` | `string` | Instruction body, not null |
-| `ingredient_references` | JSON | List of `{id}` references |
-| `position` | `int` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Shared rule and recipe-selection logic for random/fill flows.
 
----
+| Field / Responsibility | Description |
+|---|---|
+| `GroupId` / `HouseholdId` | Tenant scope for candidate selection |
+| `DateScope` | Fill target date/day/week |
+| `RuleInputs` | Existing rule and planner inputs |
+| `SelectionResult` | Recipe IDs or selected meal plan candidates |
 
-### IngredientFood
-**Table**: `ingredient_foods`  
-**Scope**: Shared within a Group.
+**Relationships**
+- Produces selections consumed by meal plan commands
+- Feeds `MealPlanMappingHelper` after persistence
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `group_id` | `Guid` FK → `groups.id` | Not null, indexed |
-| `name` | `string?` | |
-| `plural_name` | `string?` | |
-| `description` | `string?` | |
-| `label_id` | `Guid?` FK → `multi_purpose_labels.id` | |
-| `aliases` | nav | via `IngredientFoodAlias` |
-| `on_hand` | `bool` | |
-| `name_normalized` | `string?` | Auto-indexed for fuzzy matching |
-| `plural_name_normalized` | `string?` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
-
-**Junction table** `households_to_ingredient_foods`: links Household → Food for "on hand" tracking.
+**Validation rules**
+- Preserve current fallback order
+- Keep tenant-scoped recipe selection explicit
 
 ---
 
-### IngredientUnit
-**Table**: `ingredient_units`  
-**Scope**: Shared within a Group.
+### 5. ShoppingListMappingHelper
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `group_id` | `Guid` FK | |
-| `name` | `string?` | |
-| `plural_name` | `string?` | |
-| `description` | `string?` | |
-| `abbreviation` | `string?` | |
-| `plural_abbreviation` | `string?` | |
-| `use_abbreviation` | `bool` | |
-| `fraction` | `bool` | |
-| `standard_quantity` | `double?` | For unit conversion |
-| `standard_unit` | `string?` | |
-| `name_normalized` | `string?` | Auto-indexed |
-| `plural_name_normalized` | `string?` | |
-| `abbreviation_normalized` | `string?` | |
-| `plural_abbreviation_normalized` | `string?` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Shared DTO mapping for shopping lists and shopping list items.
+
+| Field / Responsibility | Description |
+|---|---|
+| `ShoppingListEntity` | Source list entity |
+| `ItemEntities` | Source item entities |
+| `RelationLoadContext` | Food/unit/list relationships used by response DTOs |
+| `ResponseProjection` | Shared list/item response construction |
+
+**Validation rules**
+- Must be read-only
+- Must preserve current list/item JSON shape
 
 ---
 
-### Tag / Category / Tool
-**Tables**: `tags`, `categories`, `tools`  
-**Scope**: Scoped to a Group.
+### 6. ShoppingListItemMutationService
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `group_id` | `Guid` FK | |
-| `name` | `string` | Not null |
-| `slug` | `string?` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Shared mutation logic for item create/update/merge/standalone flows.
 
-**Junction tables** (many-to-many with recipes):
-- `recipes_to_tags(recipe_id, tag_id)`
-- `recipes_to_categories(recipe_id, category_id)`
-- `recipes_to_tools(recipe_id, tool_id)`
+| Field / Responsibility | Description |
+|---|---|
+| `ListId` | Owning shopping list |
+| `MutationMode` | Add, update, standalone create, standalone update, bulk update |
+| `MergeInputs` | Existing item matching/merge data |
+| `PersistenceResult` | Saved item(s) with timestamps/state ready for mapping |
 
----
+**Relationships**
+- Uses `ShoppingListMappingHelper` for output
+- May collaborate with `ShoppingListRecipeLinkService`
 
-### Cookbook
-**Table**: `cookbooks`  
-**Scope**: Belongs to Household.
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `name` | `string` | |
-| `slug` | `string?` | |
-| `description` | `string?` | |
-| `position` | `int` | Display ordering |
-| `public` | `bool` | Visible to other households in group |
-| `group_id` | `Guid` FK | |
-| `household_id` | `Guid` FK | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
-
-**Relationships**: Has many `Category` (filter categories), has many `Tag` (filter tags) via junction tables.
+**Validation rules**
+- Preserve existing merge semantics
+- Preserve household scoping
+- Keep recipe-linked and standalone flows distinguishable
 
 ---
 
-### MealPlan (GroupMealPlan)
-**Table**: `group_meal_plans`
+### 7. ShoppingListRecipeLinkService
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `date` | `DateOnly` | Indexed |
-| `entry_type` | `string` | `breakfast`, `lunch`, `dinner`, `side` |
-| `title` | `string` | |
-| `text` | `string?` | Free notes |
-| `recipe_id` | `Guid?` FK → `recipes.id` | Nullable (can be free-text entry) |
-| `group_id` | `Guid` FK | |
-| `household_id` | `Guid` FK | |
-| `user_id` | `Guid?` FK | Creator |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Encapsulate recipe-to-shopping-list item creation/linking behavior.
+
+| Field / Responsibility | Description |
+|---|---|
+| `RecipeId` | Source recipe |
+| `IngredientInputs` | Recipe ingredient rows used to create items |
+| `TargetListId` | Shopping list receiving items |
+| `LinkResult` | Added/linked items and references |
+
+**Validation rules**
+- Preserve existing recipe-link semantics
+- Must remain household-safe
 
 ---
 
-### ShoppingList
-**Table**: `shopping_lists`
+### 8. IngredientCrudCore
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `name` | `string` | |
-| `group_id` | `Guid` FK | |
-| `household_id` | `Guid` FK | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Shared CRUD core for foods and units.
 
-**Relationships**: Has many `ShoppingListItem`, has many `ShoppingListRecipeReference`.
+| Field / Responsibility | Description |
+|---|---|
+| `IngredientKind` | Food or Unit |
+| `ListQuery` | Paginated search behavior |
+| `AliasMutation` | Replace aliases during create/update |
+| `MergeBehavior` | Reassign ingredient references before delete |
+| `ResponseMapper` | Food/unit-specific response mapping |
+| `Hooks` | Optional behavior such as label loading or event publishing |
 
-### ShoppingListItem
-**Table**: `shopping_list_items`
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `shopping_list_id` | `Guid` FK | Indexed |
-| `checked` | `bool` | |
-| `is_food` | `bool` | |
-| `disable_amount` | `bool` | |
-| `position` | `int` | |
-| `food_id` | `Guid?` FK | |
-| `label_id` | `Guid?` FK | |
-| `unit_id` | `Guid?` FK | |
-| `quantity` | `double` | |
-| `note` | `string?` | |
-| `extras` | JSON | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
-
-**Junction**: `ShoppingListItemRecipeReference` — links item to recipe ingredient for quantity tracking.
+**Validation rules**
+- Requires explicit `GroupId`
+- Must preserve current entity-specific fields
+- Merge must not weaken existing tenant checks
 
 ---
 
-### Webhook (GroupWebhooksModel)
-**Table**: `group_webhooks`  
-**Scope**: Scoped to a Group.
+### 9. ParserProviderDescriptor
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `enabled` | `bool` | |
-| `name` | `string` | |
-| `url` | `string` | Target URL |
-| `webhook_type` | `string` | Event type filter |
-| `scheduled_time` | `TimeOnly?` | For time-based webhooks |
-| `group_id` | `Guid` FK | |
-| `household_id` | `Guid?` FK | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Provider-specific configuration for OpenAI-compatible parser clients.
 
----
+| Field | Description |
+|---|---|
+| `ProviderKind` | OpenAI, Azure OpenAI, Ollama, Custom |
+| `BaseUrlStrategy` | How base URL is derived |
+| `AuthStrategy` | Bearer, `api-key`, optional auth, or named client config |
+| `NamedClient?` | Optional `IHttpClientFactory` client name |
+| `HeaderSet` | Extra provider-specific headers |
 
-### Backup
-**Table**: `server_tasks` (used to record backup jobs)  
-**Storage**: Files on disk in `DATA_DIR/backups/`.
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `task_type` | `string` | `backup`, `restore`, etc. |
-| `status` | `string` | `running`, `completed`, `failed` |
-| `log` | `string?` | |
-| `group_id` | `Guid` FK | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Relationships**
+- Consumed by `ParserClientFactory`
+- Leaves request/response behavior in `OpenAiCompatibleParserStrategy`
 
 ---
 
-### GroupPreferences
-**Table**: `group_preferences`
+### 10. ParserClientFactory
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `group_id` | `Guid` FK | One-to-one |
-| `private_group` | `bool` | |
-| `first_day_of_week` | `int` | 0=Sunday |
-| `recipe_public` | `bool` | |
-| `recipe_show_nutrition` | `bool` | |
-| `recipe_show_assets` | `bool` | |
-| `recipe_landscape_images` | `bool` | |
-| `recipe_disable_comments` | `bool` | |
-| `recipe_disable_amount` | `bool` | |
+**Purpose**: Centralized builder for provider-specific `HttpClient` instances.
 
----
+| Input | Output |
+|---|---|
+| `AiParserConfig` | Provider runtime config |
+| `ParserProviderDescriptor` | Provider construction rules |
+| `IHttpClientFactory` | Underlying client creation |
+| `HttpClient` | Fully configured provider client |
 
-### HouseholdPreferences
-**Table**: `household_preferences`
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `household_id` | `Guid` FK | One-to-one |
-| `private_household` | `bool` | |
-| `first_day_of_week` | `int` | |
-| `recipe_public` | `bool` | |
+**Validation rules**
+- Must preserve provider-specific auth/header semantics
+- Must not change parser request/response payloads
 
 ---
 
-### MultiPurposeLabel
-**Table**: `multi_purpose_labels`
+### 11. SelfResourceControllerDescriptor
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `name` | `string` | |
-| `color` | `string?` | Hex color |
-| `group_id` | `Guid` FK | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Purpose**: Shared description of group/household self-resource controller behavior.
 
----
+| Field / Responsibility | Description |
+|---|---|
+| `TenantKind` | Group or Household |
+| `SelfGet` | `GET self` handler contract |
+| `SelfUpdate` | `PUT self` handler contract |
+| `PreferencesHandlers` | Preferences read/update behavior |
+| `MembersHandlers` | Members list/get behavior |
+| `InvitationHandlers?` | Invitation-related behavior where applicable |
+| `AliasRoutes` | Legacy shortcut paths that must remain supported |
 
-### RecipeTimelineEvent
-**Table**: `recipe_timeline_events`
+**Relationships**
+- Used by a shared base/helper for `GroupsController` and `HouseholdsController`
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `recipe_id` | `Guid` FK | |
-| `user_id` | `Guid?` FK | |
-| `subject` | `string` | |
-| `event_type` | `string` | `system`, `info`, `warning` |
-| `timestamp` | `DateTime` | |
-| `image` | `string?` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+**Validation rules**
+- Preserve route aliases
+- Preserve `NotFoundOrForbidden()` behavior
+- Keep non-shared endpoints controller-specific
 
 ---
 
-### GroupInviteToken
-**Table**: `group_invite_tokens`
+## Relationship summary
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `token` | `string` | |
-| `group_id` | `Guid` FK | |
-| `uses_left` | `int?` | Null = unlimited |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+```text
+Organizer controllers ──> OrganizerCrudModule ──> OrganizerSlugPolicy
 
----
+Meal plan commands/queries ──> MealPlanRecipeSelectionService
+Meal plan commands/queries ──> MealPlanMappingHelper
 
-### RecipeComment
-**Table**: `recipe_comments`
+Shopping list commands/queries ──> ShoppingListItemMutationService
+Shopping list commands/queries ──> ShoppingListRecipeLinkService
+Shopping list commands/queries ──> ShoppingListMappingHelper
 
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `recipe_id` | `Guid` FK | Indexed |
-| `user_id` | `Guid` FK | |
-| `text` | `string` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
+Foods/Units controllers/services ──> IngredientCrudCore
 
----
+Parser strategies ──> ParserClientFactory ──> ParserProviderDescriptor
 
-### RecipeShareToken
-**Table**: `recipe_share_tokens`
-
-| Column | C# Type | Notes |
-|--------|---------|-------|
-| `id` | `Guid` PK | |
-| `recipe_id` | `Guid` FK | |
-| `group_id` | `Guid` FK | |
-| `expires_at` | `DateTime?` | |
-| `created_at` | `DateTime` | |
-| `update_at` | `DateTime` | |
-
----
-
-## EF Core Configuration Highlights
-
-### Naming Convention
-```csharp
-optionsBuilder.UseSnakeCaseNamingConvention();
-```
-Maps `RecipeId` → `recipe_id`, `GroupId` → `group_id` etc., preserving the Python schema column names.
-
-### Global Query Filters
-```csharp
-// Applied in OnModelCreating via extension method:
-builder.ApplyTenantFilters(_tenantContextAccessor);
-```
-Entities with `HouseholdId`: filtered by current household.  
-Entities with only `GroupId`: filtered by current group.  
-Admin controllers call `.IgnoreQueryFilters()`.
-
-### Concurrency
-Last-write-wins on Recipe updates (matching Python behavior). No optimistic concurrency tokens in EF Core (`[ConcurrencyCheck]`) — consistent with Python `Base.update()` semantics.
-
-### State Transitions
-
-**Recipe Publication Flow**:
-```
-draft → public (when public=true set by user)
-public → household-private (when public=false)
-```
-
-**User Account States**:
-```
-active → locked (when login_attempts >= threshold and locked_at set)
-locked → active (when admin resets or lockout expires)
-```
-
-**Backup States**:
-```
-running → completed
-running → failed
+Groups/Households controllers ──> SelfResourceControllerDescriptor/shared helper
 ```
 
 ---
 
-## Migration Tool Entity Order (dependency-safe)
+## State transitions
 
-1. `groups`
-2. `households`
-3. `users`
-4. `multi_purpose_labels`
-5. `ingredient_units`
-6. `ingredient_foods`
-7. `tags`, `categories`, `tools`
-8. `cookbooks`
-9. `recipes`
-10. `recipe_ingredients`, `recipe_instructions`, `recipe_notes`, `recipe_assets`
-11. `recipe_timeline_events`, `recipe_comments`, `recipe_share_tokens`
-12. `group_meal_plans`, `shopping_lists`, `shopping_list_items`
-13. `group_webhooks`, `group_event_notifiers`
-14. `long_live_tokens`
-15. Junction tables (all `*_to_*` tables)
-16. `__mealie_migration_log` (written last to mark completion)
+### Organizer slug lifecycle
+`Name change` → `OrganizerSlugPolicy.Generate` → `Uniqueness check in group scope` → `Persist` → `Return unchanged DTO shape`
+
+### Meal plan bulk flow
+`Command input` → `Recipe selection` → `Persist meal plan rows` → `Shared mapping/load` → `Return response`
+
+### Shopping list mutation flow
+`Command input` → `Mutation/merge decision` → `Persist list/item rows` → `Optional recipe link update` → `Shared mapping` → `Return response`
+
+### Parser provider flow
+`AiParserConfig` → `Provider descriptor` → `Client factory` → `OpenAiCompatibleParserStrategy request` → `Parsed ingredient DTOs`
+
+### Self-resource controller flow
+`Tenant context` → `Shared self-resource helper` → `Entity-specific query/command` → `NotFoundOrForbidden()` or mapped response`

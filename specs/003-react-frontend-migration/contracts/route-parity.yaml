@@ -1,0 +1,176 @@
+version: 1
+feature: react-frontend-migration
+source_of_truth:
+  pages_glob: frontend/app/pages/**/*.vue
+  auth_middleware:
+    - frontend/app/middleware/auth-redirect.global.ts
+    - frontend/app/middleware/admin-only.ts
+  workflow_sources:
+    - frontend/app/composables/use-auth-backend.ts
+    - frontend/app/composables/use-mealie-auth.ts
+    - frontend/app/composables/api/api-client.ts
+    - frontend/app/pages/index.vue
+    - frontend/app/pages/login.vue
+
+special_redirects:
+  - path: /
+    behavior: auth-aware redirect to admin setup, default activity, default group, or login
+  - path: /login?code=...|error=...
+    behavior: OIDC callback handling on the login route
+  - path: /r/create/url
+    behavior: PWA/share-target shortcut to the current user's group recipe-import route
+
+surfaces:
+  auth:
+    access: mixed
+    routes:
+      - /
+      - /login
+      - /register
+      - /forgot-password
+      - /reset-password
+    must_preserve:
+      - password login when enabled
+      - self registration when enabled
+      - password reset
+      - OIDC redirect/callback behavior when enabled
+      - redirect-after-login to intended destination
+
+  public-recipes:
+    access: public
+    routes:
+      - /g/:groupSlug/shared/r/:id
+    must_preserve:
+      - cold-start direct navigation
+      - meaningful title/share metadata
+      - no forced authentication
+
+  group-home:
+    access: authenticated
+    routes:
+      - /g/:groupSlug
+    must_preserve:
+      - default post-login landing behavior
+      - group-scoped navigation shell
+
+  recipe-create-import:
+    access: authenticated
+    routes:
+      - /g/:groupSlug/r/create
+      - /g/:groupSlug/r/create/new
+      - /g/:groupSlug/r/create/url
+      - /g/:groupSlug/r/create/zip
+      - /g/:groupSlug/r/create/html
+      - /g/:groupSlug/r/create/image
+      - /g/:groupSlug/r/create/bulk
+      - /g/:groupSlug/r/create/debug
+    must_preserve:
+      - recipe creation
+      - import entry points
+      - debug/import helper paths used today
+
+  recipes:
+    access: authenticated
+    routes:
+      - /g/:groupSlug/r/:slug
+      - /g/:groupSlug/recipes/timeline
+      - /g/:groupSlug/recipes/categories
+      - /g/:groupSlug/recipes/tags
+      - /g/:groupSlug/recipes/tools
+      - /g/:groupSlug/recipes/finder
+    must_preserve:
+      - recipe deep links
+      - timeline interactions
+      - category/tag/tool browsing
+      - recipe finder behavior
+
+  cookbooks:
+    access: authenticated
+    routes:
+      - /g/:groupSlug/cookbooks
+      - /g/:groupSlug/cookbooks/:slug
+
+  group-data:
+    access: authenticated
+    routes:
+      - /group
+      - /group/data
+      - /group/data/recipes
+      - /group/data/categories
+      - /group/data/tags
+      - /group/data/tools
+      - /group/data/foods
+      - /group/data/units
+      - /group/data/labels
+      - /group/data/recipe-actions
+      - /group/reports/:id
+      - /group/migrations
+
+  household:
+    access: authenticated
+    routes:
+      - /household
+      - /household/members
+      - /household/notifiers
+      - /household/webhooks
+      - /household/mealplan/planner
+      - /household/mealplan/planner/view
+      - /household/mealplan/planner/edit
+      - /household/mealplan/settings
+    must_preserve:
+      - meal plan editing/viewing
+      - rules/settings
+      - notifications/webhooks
+      - member management
+
+  shopping-lists:
+    access: authenticated
+    routes:
+      - /shopping-lists
+      - /shopping-lists/:id
+    must_preserve:
+      - direct list deep links
+      - list creation/update/check-off flows
+
+  user-profile:
+    access: authenticated
+    routes:
+      - /user/:id/favorites
+      - /user/profile
+      - /user/profile/edit
+      - /user/profile/api-tokens
+    must_preserve:
+      - favorites
+      - profile editing
+      - API token management
+
+  admin:
+    access: admin-only
+    routes:
+      - /admin
+      - /admin/setup
+      - /admin/site-settings
+      - /admin/backups
+      - /admin/ai-configurations
+      - /admin/debug/indexes
+      - /admin/debug/openai
+      - /admin/debug/parser
+      - /admin/manage/users
+      - /admin/manage/users/create
+      - /admin/manage/users/:id
+      - /admin/manage/groups
+      - /admin/manage/groups/:id
+      - /admin/manage/households
+      - /admin/manage/households/:id
+      - /admin/manage/ingredient-aliases
+      - /admin/maintenance
+    must_preserve:
+      - admin-only guard behavior
+      - first-time setup redirect
+      - maintenance/backups/debug/manage tools
+
+release_expectations:
+  - every route above must end as native-route, approved redirect, or explicit retirement decision
+  - public routes must remain public
+  - admin routes must preserve admin-only protection
+  - deep-link-critical routes require direct-navigation smoke coverage before cutover

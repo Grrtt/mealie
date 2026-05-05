@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Ingredients;
+using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Ingredients;
 using Mealie.Domain.Events;
@@ -11,8 +12,7 @@ public record UpdateFoodCommand(Guid GroupId, Guid Id, UpdateFoodRequest Request
     public async Task<FoodResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
-        var food = await db.Foods.IgnoreQueryFilters()
-            .Include(f => f.Aliases).Include(f => f.Label)
+        var food = await IngredientCrudCore.WithFoodDetails(db.Foods.IgnoreQueryFilters())
             .FirstOrDefaultAsync(f => f.GroupId == GroupId && f.Id == Id, ct);
         if (food is null)
         {
@@ -51,11 +51,7 @@ public record UpdateFoodCommand(Guid GroupId, Guid Id, UpdateFoodRequest Request
 
         if (Request.Aliases is not null)
         {
-            food.Aliases.Clear();
-            foreach (var alias in Request.Aliases)
-            {
-                food.Aliases.Add(new IngredientFoodAlias { Id = Guid.NewGuid(), Name = alias, FoodId = food.Id });
-            }
+            IngredientCrudCore.ReplaceAliases(food, Request.Aliases);
         }
 
         food.UpdateAt = DateTime.UtcNow;
@@ -66,7 +62,7 @@ public record UpdateFoodCommand(Guid GroupId, Guid Id, UpdateFoodRequest Request
             await db.Entry(food).Reference(f => f.Label).LoadAsync(ct);
         }
 
-        return FoodMappings.MapToResponse(food);
+        return IngredientCrudCore.MapToResponse(food);
     }
 }
 

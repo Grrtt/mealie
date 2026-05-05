@@ -26,6 +26,11 @@ venv
 */node_modules
 */dist
 /dist/
+*/build
+*.log*
+.env
+.env.*
+coverage/
 */data/db
 */mealie/test
 */mealie/.temp

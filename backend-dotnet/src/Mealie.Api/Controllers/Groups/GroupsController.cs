@@ -3,6 +3,7 @@ using Mealie.Application.Dtos.Groups;
 using Mealie.Application.Dtos.Reports;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Groups;
+using Mealie.Api.Controllers.Shared;
 using Mealie.Application.Services.Migrations;
 using Mealie.Domain.Entities.Core;
 using Mealie.Infrastructure.Auth;
@@ -26,26 +27,22 @@ public class GroupsController(
     [HttpGet("self")]
     public async Task<ActionResult<GroupResponse>> GetSelf(CancellationToken ct = default)
     {
-        var group = await executor.ExecuteAsync(new GetGroupQuery(CurrentGroupId), ct);
-        if (group is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(group);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new GetGroupQuery(CurrentGroupId), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpPut("self")]
     public async Task<ActionResult<GroupResponse>> UpdateSelf([FromBody] UpdateGroupRequest request,
         CancellationToken ct = default)
     {
-        var group = await executor.ExecuteAsync(new UpdateGroupCommand(CurrentGroupId, request), ct);
-        if (group is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(group);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new UpdateGroupCommand(CurrentGroupId, request), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpGet("members")]
@@ -53,26 +50,24 @@ public class GroupsController(
     public async Task<ActionResult<object>> GetMembers(CancellationToken ct = default)
     {
         var members = await executor.ExecuteAsync(new GetGroupMembersQuery(CurrentGroupId), ct);
-        return Ok(new { items = members, total = members.Count, page = 1, perPage = -1 });
+        return SelfResourceControllerHelper.Envelope(this, members);
     }
 
     [HttpGet("members/{userId:guid}")]
     public async Task<ActionResult<UserSummaryDto>> GetMember(Guid userId, CancellationToken ct = default)
     {
-        var member = await executor.ExecuteAsync(new GetGroupMemberQuery(CurrentGroupId, userId), ct);
-        if (member is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(member);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new GetGroupMemberQuery(CurrentGroupId, userId), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpGet("households")]
     public async Task<ActionResult<object>> GetHouseholds(CancellationToken ct = default)
     {
         var households = await executor.ExecuteAsync(new GetGroupHouseholdsQuery(CurrentGroupId), ct);
-        return Ok(new { items = households, total = households.Count, page = 1, perPage = -1 });
+        return SelfResourceControllerHelper.Envelope(this, households);
     }
 
     [HttpGet("households/{householdId:guid}")]
@@ -117,26 +112,22 @@ public class GroupsController(
     [HttpGet("preferences")]
     public async Task<ActionResult<GroupPreferencesResponse>> GetPreferences(CancellationToken ct = default)
     {
-        var prefs = await executor.ExecuteAsync(new GetGroupPreferencesQuery(CurrentGroupId), ct);
-        if (prefs is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(prefs);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new GetGroupPreferencesQuery(CurrentGroupId), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpPut("preferences")]
     public async Task<ActionResult<GroupPreferencesResponse>> UpdatePreferences(
         [FromBody] UpdateGroupPreferencesRequest request, CancellationToken ct = default)
     {
-        var prefs = await executor.ExecuteAsync(new UpdateGroupPreferencesCommand(CurrentGroupId, request), ct);
-        if (prefs is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(prefs);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new UpdateGroupPreferencesCommand(CurrentGroupId, request), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpGet("storage")]

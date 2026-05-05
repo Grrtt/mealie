@@ -13,10 +13,7 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
     public async Task<PaginatedResponse<FoodResponse>> GetFoodsAsync(Guid groupId, PaginationParams pagination,
         string? search = null, CancellationToken ct = default)
     {
-        var query = db.Foods.IgnoreQueryFilters()
-            .Include(f => f.Aliases)
-            .Include(f => f.Label)
-            .Where(f => f.GroupId == groupId);
+        var query = IngredientCrudCore.WithFoodDetails(db.Foods.IgnoreQueryFilters()).Where(f => f.GroupId == groupId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -32,17 +29,15 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
         {
             Page = pagination.Page, PerPage = pagination.PerPage, Total = total,
             TotalPages = (int)Math.Ceiling((double)total / pagination.PerPage),
-            Items = items.Select(MapToResponse).ToList()
+            Items = items.Select(IngredientCrudCore.MapToResponse).ToList()
         };
     }
 
     public async Task<FoodResponse?> GetByIdAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
-        var f = await db.Foods.IgnoreQueryFilters()
-            .Include(f => f.Aliases)
-            .Include(f => f.Label)
+        var f = await IngredientCrudCore.WithFoodDetails(db.Foods.IgnoreQueryFilters())
             .FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == id, ct);
-        return f is null ? null : MapToResponse(f);
+        return f is null ? null : IngredientCrudCore.MapToResponse(f);
     }
 
     public async Task<FoodResponse> CreateAsync(Guid groupId, CreateFoodRequest request, CancellationToken ct = default)
@@ -55,10 +50,7 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
             CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
         };
 
-        foreach (var alias in request.Aliases)
-        {
-            food.Aliases.Add(new IngredientFoodAlias { Id = Guid.NewGuid(), Name = alias, FoodId = food.Id });
-        }
+        IngredientCrudCore.ReplaceAliases(food, request.Aliases);
 
         db.Foods.Add(food);
         await db.SaveChangesAsync(ct);
@@ -66,15 +58,13 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
 
         // Reload with nav properties for correct response
         await db.Entry(food).Reference(f => f.Label).LoadAsync(ct);
-        return MapToResponse(food);
+        return IngredientCrudCore.MapToResponse(food);
     }
 
     public async Task<FoodResponse?> UpdateAsync(Guid groupId, Guid id, UpdateFoodRequest request,
         CancellationToken ct = default)
     {
-        var food = await db.Foods.IgnoreQueryFilters()
-            .Include(f => f.Aliases)
-            .Include(f => f.Label)
+        var food = await IngredientCrudCore.WithFoodDetails(db.Foods.IgnoreQueryFilters())
             .FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == id, ct);
         if (food is null)
         {
@@ -113,11 +103,7 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
 
         if (request.Aliases is not null)
         {
-            food.Aliases.Clear();
-            foreach (var alias in request.Aliases)
-            {
-                food.Aliases.Add(new IngredientFoodAlias { Id = Guid.NewGuid(), Name = alias, FoodId = food.Id });
-            }
+            IngredientCrudCore.ReplaceAliases(food, request.Aliases);
         }
 
         food.UpdateAt = DateTime.UtcNow;
@@ -129,59 +115,17 @@ public class FoodService(ApplicationDbContext db, IMediator mediator) : IFoodSer
             await db.Entry(food).Reference(f => f.Label).LoadAsync(ct);
         }
 
-        return MapToResponse(food);
+        return IngredientCrudCore.MapToResponse(food);
     }
 
     public async Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
-        var food = await db.Foods.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == id, ct);
-        if (food is null)
-        {
-            return false;
-        }
-
-        db.Foods.Remove(food);
-        await db.SaveChangesAsync(ct);
-        await mediator.Publish(new FoodDeletedEvent(id), ct);
-        return true;
+        return await IngredientCrudCore.DeleteFoodAsync(db, mediator, groupId, id, ct);
     }
 
     public async Task<bool> MergeAsync(Guid groupId, Guid fromFoodId, Guid toFoodId, CancellationToken ct = default)
     {
-        var fromFood = await db.Foods.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == fromFoodId, ct);
-        var toFood = await db.Foods.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(f => f.GroupId == groupId && f.Id == toFoodId, ct);
-        if (fromFood is null || toFood is null)
-        {
-            return false;
-        }
-
-        await db.RecipeIngredients
-            .Where(i => i.FoodId == fromFoodId)
-            .ExecuteUpdateAsync(s => s.SetProperty(i => i.FoodId, toFoodId), ct);
-
-        db.Foods.Remove(fromFood);
-        await db.SaveChangesAsync(ct);
-        await mediator.Publish(new FoodDeletedEvent(fromFoodId), ct);
-        return true;
+        return await IngredientCrudCore.MergeFoodAsync(db, mediator, groupId, fromFoodId, toFoodId, ct);
     }
 
-    private static FoodResponse MapToResponse(IngredientFood f)
-    {
-        return new FoodResponse
-        {
-            Id = f.Id, Name = f.Name, Description = f.Description, PluralName = f.PluralName,
-            UnitId = f.UnitId, LabelId = f.LabelId,
-            Label = f.Label is null
-                ? null
-                : new LabelSummaryResponse
-                {
-                    Id = f.Label.Id, Name = f.Label.Name, Color = f.Label.Color
-                },
-            GroupId = f.GroupId, OnHand = f.OnHand,
-            Aliases = f.Aliases.Select(a => new AliasResponse { Id = a.Id, Name = a.Name }).ToList(),
-            CreatedAt = f.CreatedAt, UpdateAt = f.UpdateAt
-        };
-    }
 }

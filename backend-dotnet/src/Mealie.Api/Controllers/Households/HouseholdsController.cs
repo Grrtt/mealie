@@ -4,6 +4,7 @@ using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Groups;
 using Mealie.Application.Queries.Recipes;
+using Mealie.Api.Controllers.Shared;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Email;
@@ -23,26 +24,22 @@ public class HouseholdsController(
     [HttpGet("self")]
     public async Task<ActionResult<HouseholdResponse>> GetSelf(CancellationToken ct = default)
     {
-        var h = await executor.ExecuteAsync(new GetHouseholdQuery(CurrentHouseholdId), ct);
-        if (h is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(h);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new GetHouseholdQuery(CurrentHouseholdId), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpPut("self")]
     public async Task<ActionResult<HouseholdResponse>> UpdateSelf([FromBody] UpdateHouseholdRequest request,
         CancellationToken ct = default)
     {
-        var h = await executor.ExecuteAsync(new UpdateHouseholdCommand(CurrentHouseholdId, request), ct);
-        if (h is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(h);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new UpdateHouseholdCommand(CurrentHouseholdId, request), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpGet("self/members")]
@@ -74,26 +71,22 @@ public class HouseholdsController(
     [HttpGet("preferences")]
     public async Task<ActionResult<HouseholdPreferencesResponse>> GetPreferences(CancellationToken ct = default)
     {
-        var prefs = await executor.ExecuteAsync(new GetHouseholdPreferencesQuery(CurrentHouseholdId), ct);
-        if (prefs is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(prefs);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new GetHouseholdPreferencesQuery(CurrentHouseholdId), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpPut("preferences")]
     public async Task<ActionResult<HouseholdPreferencesResponse>> UpdatePreferences(
         [FromBody] UpdateHouseholdPreferencesRequest request, CancellationToken ct = default)
     {
-        var prefs = await executor.ExecuteAsync(new UpdateHouseholdPreferencesCommand(CurrentHouseholdId, request), ct);
-        if (prefs is null)
-        {
-            return NotFoundOrForbidden();
-        }
-
-        return Ok(prefs);
+        return await SelfResourceControllerHelper.OkOrNotFoundAsync(
+            token => executor.ExecuteAsync(new UpdateHouseholdPreferencesCommand(CurrentHouseholdId, request), token),
+            NotFoundOrForbidden,
+            value => Ok(value),
+            ct);
     }
 
     [HttpPost("invitations")]

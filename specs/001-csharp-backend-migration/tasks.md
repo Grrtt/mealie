@@ -1,328 +1,183 @@
-# Tasks: Mealie Backend Rewrite — C# .NET 10
+# Tasks: C# Backend Consolidation Refactors
 
-**Feature branch**: `001-csharp-backend-migration` — never merge to `main` during task execution  
-**Input**: Design documents from `specs/001-csharp-backend-migration/`  
-**Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅, contracts/api-contract.md ✅, quickstart.md ✅
+**Input**: Design documents from `/specs/001-csharp-backend-migration/`  
+**Prerequisites**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/api-contract.md`  
+**Tests**: Characterization-first validation is required for every scoped workstream in this backlog.  
+**Contracts**: `specs/001-csharp-backend-migration/contracts/api-contract.md` remains unchanged for this scope; no external contract change tasks are planned.  
+**Organization**: Tasks are grouped by the six scoped consolidation workstreams so each can land as a separate PR slice where practical.
 
-**Path constraint**: All C# code lives under `backend-dotnet/` at the repo root. The existing Python code in `mealie/` is **never touched or moved**.
+## Format: `[ID] [P?] [Story] Description`
 
-## Format: `[ID] [P?] [Story?] Description — file path`
+- **[P]**: Can run in parallel (different files, no dependency on incomplete tasks)
+- **[Story]**: Maps to one of the six scoped workstreams (`[US1]` ... `[US6]`)
+- Every task includes an exact file path and preserves API compatibility, tenant isolation, behavior-safe incremental delivery, and characterization-first validation
 
-- **[P]**: Can run in parallel (different files, no incomplete-task dependencies)
-- **[Story]**: Which user story this task belongs to ([US1]–[US8])
-- Exact file paths are included in every description
+## Phase 1: Setup (Scoped Refactor Prerequisites)
 
----
+**Purpose**: Establish only the shared validation harness needed for the six scoped refactors.
 
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Create the C# solution structure under `backend-dotnet/` on branch `001-csharp-backend-migration`.
-
-- [x] T001 Create `backend-dotnet/` directory at repo root and scaffold `Mealie.sln` solution file linking all projects
-- [x] T002 Create `Mealie.Api` ASP.NET Core web project in `backend-dotnet/src/Mealie.Api/` and add to `Mealie.sln`
-- [x] T003 [P] Create `Mealie.Application` class library in `backend-dotnet/src/Mealie.Application/` and add to `Mealie.sln`
-- [x] T004 [P] Create `Mealie.Domain` class library in `backend-dotnet/src/Mealie.Domain/` and add to `Mealie.sln`
-- [x] T005 [P] Create `Mealie.Infrastructure` class library in `backend-dotnet/src/Mealie.Infrastructure/` and add to `Mealie.sln`
-- [x] T006 [P] Create `Mealie.Shared` class library in `backend-dotnet/src/Mealie.Shared/` and add to `Mealie.sln`
-- [x] T007 [P] Create `Mealie.UnitTests` xUnit project in `backend-dotnet/tests/Mealie.UnitTests/` and add to `Mealie.sln`
-- [x] T008 [P] Create `Mealie.IntegrationTests` xUnit project in `backend-dotnet/tests/Mealie.IntegrationTests/` and add to `Mealie.sln`
-- [x] T009 [P] Create `Mealie.Migration` CLI project (`dotnet new console`) in `backend-dotnet/tools/Mealie.Migration/` and add to `Mealie.sln`
-- [x] T010 Add `Directory.Packages.props` and `Directory.Build.props` to `backend-dotnet/` declaring all NuGet packages with pinned versions (ASP.NET Core 10, EF Core 10 + Npgsql + SQLite, Mapperly, FluentValidation, Serilog, Swashbuckle.AspNetCore, MailKit, HtmlAgilityPack, AngleSharp, Dapper, NSubstitute, xUnit, WebApplicationFactory)
-- [x] T011 [P] Add `backend-dotnet/global.json` (pinning `dotnet-version` to `10.x`, `rollForward: latestFeature`), `.editorconfig` (C# coding style), and `.gitignore` additions for `bin/`, `obj/`, `*.user`
-- [x] T012 [P] Add a `C#-Build` stage to `azure-pipelines.yml` that runs `dotnet build backend-dotnet/Mealie.sln` and `dotnet test backend-dotnet/Mealie.sln` on branch `001-csharp-backend-migration` (no deployment step, no merge to main)
+- [ ] T001 Create a shared scoped-refactor test host in `backend-dotnet/tests/Mealie.IntegrationTests/ScopedRefactors/ScopedRefactorTestFactory.cs`
+- [ ] T002 Create shared parity and tenant-isolation assertions in `backend-dotnet/tests/Mealie.IntegrationTests/ScopedRefactors/ScopedRefactorAssertions.cs`
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Phase 2: Foundational (Blocking Guardrails)
 
-**Purpose**: Domain entities, EF Core, multi-tenant infrastructure, auth basics, middleware, and DI wiring. **No user-story work can begin until this phase is complete.**
+**Purpose**: Add the cross-workstream safety net that blocks all six refactors until it is in place.
 
-### Domain Entities
+**⚠️ CRITICAL**: No workstream implementation should begin until this phase is complete.
 
-- [x] T013 Create core tenancy domain entities `Group`, `Household`, `User`, and `ApiKey` (matching data-model.md column specs exactly) in `backend-dotnet/src/Mealie.Domain/Entities/Core/`
-- [x] T014 [P] Create recipe domain entity cluster: `Recipe`, `RecipeIngredient`, `RecipeInstruction`, `RecipeNote`, `RecipeAsset`, `RecipeComment`, `RecipeTimelineEvent`, `RecipeShareToken`, `Nutrition`, `RecipeSettings` in `backend-dotnet/src/Mealie.Domain/Entities/Recipes/`
-- [x] T015 [P] Create organizer domain entities: `Tag`, `Category`, `Tool`, `Cookbook`, `MultiPurposeLabel`, `GroupInviteToken` in `backend-dotnet/src/Mealie.Domain/Entities/Organizers/`
-- [x] T016 [P] Create food and unit domain entities: `IngredientFood`, `IngredientFoodAlias`, `IngredientUnit` in `backend-dotnet/src/Mealie.Domain/Entities/Ingredients/`
-- [x] T017 [P] Create planning and shopping domain entities: `MealPlan`, `ShoppingList`, `ShoppingListItem`, `ShoppingListItemRecipeReference`, `ShoppingListRecipeReference` in `backend-dotnet/src/Mealie.Domain/Entities/Planning/`
-- [x] T018 [P] Create preferences and notification domain entities: `GroupPreferences`, `HouseholdPreferences`, `Webhook`, `EventNotifier`, `ServerTask` in `backend-dotnet/src/Mealie.Domain/Entities/Settings/`
+- [ ] T003 [P] Add unchanged-contract regression coverage for the scoped endpoints in `backend-dotnet/tests/Mealie.IntegrationTests/ScopedRefactors/ScopedOpenApiParityTests.cs`
+- [ ] T004 [P] Add reusable tenant-safe seed/build helpers for organizer, meal plan, shopping list, ingredient, parser, group, and household scenarios in `backend-dotnet/tests/Mealie.IntegrationTests/ScopedRefactors/ScopedRefactorDataBuilder.cs`
 
-### EF Core Data Layer
-
-- [x] T019 Create `ApplicationDbContext` with `UseSnakeCaseNamingConvention()`, dual provider selection (`DB_ENGINE=sqlite` → `UseSqlite`, `DB_ENGINE=postgres` → `UseNpgsql`), and `DbSet<>` registrations for all 30+ entities in `backend-dotnet/src/Mealie.Infrastructure/Data/ApplicationDbContext.cs`
-- [x] T020 Create `IEntityTypeConfiguration` implementations for `Group`, `Household`, `User`, `ApiKey` (explicit table names, constraints, unique indexes, FK relationships matching Python schema) in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/`
-- [x] T021 [P] Create `IEntityTypeConfiguration` for `Recipe` (unique constraint `(slug, group_id)`, JSON column for `ingredient_references`, all FK relationships) and all recipe sub-entity configurations in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/Recipes/`
-- [x] T022 [P] Create `IEntityTypeConfiguration` for all remaining entities: organizers, foods, units, planning, shopping, preferences, junction tables (`recipes_to_tags`, `recipes_to_categories`, `recipes_to_tools`, `households_to_ingredient_foods`, `user_to_recipe`) in `backend-dotnet/src/Mealie.Infrastructure/Data/Configurations/`
-- [x] T023 Implement `ITenantContext` interface and `TenantContextAccessor` scoped service (resolves `GroupId` and `HouseholdId` from current HTTP context JWT claims) in `backend-dotnet/src/Mealie.Infrastructure/Auth/TenantContextAccessor.cs`
-- [x] T024 Implement `TenantContextMiddleware` that reads authenticated user claims and populates `ITenantContext` on every authenticated request in `backend-dotnet/src/Mealie.Api/Middleware/TenantContextMiddleware.cs`
-- [x] T025 Apply EF Core global query filters in `ApplicationDbContext.OnModelCreating`: household-scoped filter on all tenant-owned entities; group-scoped filter on group-level entities; document `IgnoreQueryFilters()` usage pattern for admin routes in `backend-dotnet/src/Mealie.Infrastructure/Data/ApplicationDbContext.cs`
-- [x] T026 Generate initial EF Core migration using PostgreSQL as canonical provider (`dotnet ef migrations add InitialSchema`) capturing the full schema; verify SQLite compatibility in `backend-dotnet/src/Mealie.Infrastructure/Data/Migrations/`
-
-### Authentication
-
-- [x] T027 Implement `JwtTokenService` (generate and validate JWT access tokens, issue refresh tokens, read signing key from `SECRET` env var) in `backend-dotnet/src/Mealie.Infrastructure/Auth/JwtTokenService.cs`
-- [x] T028 [P] Implement `ApiKeyAuthenticationHandler` (reads `Authorization: Bearer` header, queries `long_live_tokens` table, verifies bcrypt hash, resolves `HouseholdId`/`GroupId` from stored user) in `backend-dotnet/src/Mealie.Infrastructure/Auth/ApiKeyAuthenticationHandler.cs`
-
-### Middleware & Cross-Cutting
-
-- [x] T029 Configure Serilog: Console JSON sink in production, human-readable in development; `UseSerilogRequestLogging` with enrichment properties `{Method}`, `{Path}`, `{StatusCode}`, `{Elapsed}`, `{UserId}`, `{HouseholdId}`, `{GroupId}`, `{RequestId}`; log level from `LOG_LEVEL` env var in `backend-dotnet/src/Mealie.Api/Program.cs`
-- [x] T030 [P] Configure FluentValidation: assembly scanning of `Mealie.Application`, automatic DI registration, disable default DataAnnotations validation in `backend-dotnet/src/Mealie.Api/Program.cs`
-- [x] T031 Implement `ValidationExceptionMiddleware` catching `FluentValidation.ValidationException` and returning HTTP 422 with Pydantic-compatible body `{"detail":[{"loc":["body","field"],"msg":"...","type":"..."}]}` in `backend-dotnet/src/Mealie.Api/Middleware/ValidationExceptionMiddleware.cs`
-- [x] T032 [P] Implement `GlobalExceptionHandlerMiddleware` catching all unhandled exceptions, logging via Serilog at Error level, and returning `{"detail":"Internal server error"}` HTTP 500 in `backend-dotnet/src/Mealie.Api/Middleware/GlobalExceptionHandlerMiddleware.cs`
-- [x] T033 Implement `MealieControllerBase` (inherits `ControllerBase`): exposes `CurrentGroupId`, `CurrentHouseholdId`, `CurrentUserId` from `ITenantContext`; provides `NotFoundOrForbidden()` helper that returns HTTP 404 regardless of whether resource exists vs. belongs to different household in `backend-dotnet/src/Mealie.Api/Controllers/MealieControllerBase.cs`
-- [x] T034 [P] Implement `PaginatedResponse<T>` wrapper, `PaginationParams` (page, per_page), and `IQueryable<T>.ToPaginatedAsync()` extension method returning `{page, per_page, total, total_pages, items}` in `backend-dotnet/src/Mealie.Shared/Pagination/`
-- [x] T035 Implement `CorrelationIdMiddleware` (generate or pass-through `X-Correlation-Id` header; add to Serilog log context as `{RequestId}`) in `backend-dotnet/src/Mealie.Api/Middleware/CorrelationIdMiddleware.cs`
-
-### DI Wiring & Startup
-
-- [x] T036 Wire up `Program.cs`: middleware pipeline order (CorrelationId → Serilog → HTTPS → Auth → TenantContext → Validation → GlobalException → Controllers), DI registrations for all services, configure Swashbuckle (camelCase JSON naming policy, `SchemaId` override, serve spec at `/api/openapi.json`, Swagger UI at `/api/docs` in development only) in `backend-dotnet/src/Mealie.Api/Program.cs`
-- [x] T037 [P] Implement health check endpoints `GET /healthz` and `GET /readyz` returning `{"status":"ok","version":"2.0.0","database":"connected"}` (HTTP 200) or `{"status":"degraded"}` (HTTP 503) in `backend-dotnet/src/Mealie.Api/Controllers/Utility/HealthController.cs`
-- [x] T038 [P] Configure static file serving from `DATA_DIR` with SPA fallback: `app.UseStaticFiles(DATA_DIR/frontend)` + `app.MapFallbackToFile("index.html")`; bind all environment variable configuration (`DATABASE_URL`, `SECRET`, `BASE_URL`, `DATA_DIR`, `LOG_LEVEL`, `LDAP_*`, `OIDC_*`, `SMTP_*`, `OPENAI_API_KEY`, `ALLOW_SIGNUP`, `API_PORT`) in `backend-dotnet/src/Mealie.Api/Configuration/AppSettings.cs`
-
-**⚠️ Checkpoint**: Foundation complete — all user story phases can now begin in parallel.
+**Checkpoint**: Scoped characterization harness is ready; all six workstreams can now proceed with behavior-safe slices.
 
 ---
 
-## Phase 3: User Story 4 — Authentication Across All Methods (Priority: P1)
+## Phase 3: User Story 1 - Organizer CRUD Consolidation (Priority: P1) 🎯 MVP
 
-**Goal**: Every supported authentication method (local, API key, LDAP, OIDC) is fully operational. US1 depends on this phase.
+**Goal**: Consolidate tag/category/tool internals while preserving routes, DTOs, `CreatedAtAction`, slug behavior, and group-scoped 404 masking.
 
-**Independent Test**: For each auth method POST credentials or header to a protected endpoint and receive a valid session. Verify JWT 401 on expired/tampered tokens.
+**Independent Test**: Run organizer characterization coverage and confirm tags, categories, and tools still preserve CRUD, `recipes`, `empty`, slug lookup, and cross-group 404 behavior with no response-shape drift.
 
-- [x] T039 [US4] Implement `AuthController` with `POST /api/auth/token` (username/password → access token + refresh token) and `POST /api/auth/token/refresh` (validate refresh token → new access token) in `backend-dotnet/src/Mealie.Api/Controllers/Auth/AuthController.cs`
-- [x] T040 [P] [US4] Implement `IAuthService` and `AuthService` (bcrypt password verification, lockout check via `login_attempts`/`locked_at`, token issuance, bcrypt API key creation) in `backend-dotnet/src/Mealie.Application/Services/Auth/AuthService.cs`
-- [x] T041 [P] [US4] Implement user account lockout: increment `login_attempts` on failed auth, set `locked_at` when threshold exceeded, reset on successful login; expose unlock via admin endpoint in `backend-dotnet/src/Mealie.Application/Services/Auth/AuthService.cs`
-- [x] T042 [US4] Implement `LdapAuthenticationHandler` using `Novell.Directory.Ldap.NETStandard`: LDAP bind with user credentials, configurable timeout (`LDAP_QUERY_TIMEOUT`, default 5 s), auto-provision new user on first successful LDAP login, return `{"detail":"LDAP server unavailable"}` HTTP 401 on timeout in `backend-dotnet/src/Mealie.Infrastructure/Auth/LdapAuthenticationHandler.cs`
-- [x] T043 [US4] Implement OIDC authentication via `Microsoft.AspNetCore.Authentication.OpenIdConnect`: configure from `OIDC_*` env vars, add `GET /api/auth/oauth` (redirect to provider) and `GET /api/auth/oauth/callback` (exchange code, issue Mealie JWT) in `backend-dotnet/src/Mealie.Api/Controllers/Auth/AuthController.cs` and `backend-dotnet/src/Mealie.Infrastructure/Auth/OidcConfiguration.cs`
-- [x] T044 [P] [US4] Implement self-registration: `GET /api/users/registration` (returns `ALLOW_SIGNUP` policy), `POST /api/users/register` (create user in default group+household when allowed) in `backend-dotnet/src/Mealie.Api/Controllers/Users/UsersController.cs`
-- [x] T045 [P] [US4] Implement password reset flow: `POST /api/users/forgot-password` (generate signed reset token, send via `IEmailService`), `POST /api/users/reset-password` (validate token, update bcrypt hash) in `backend-dotnet/src/Mealie.Api/Controllers/Users/UsersController.cs` and `backend-dotnet/src/Mealie.Application/Services/Auth/PasswordResetService.cs`
-- [x] T046 [P] [US4] Implement FluentValidation validators for all auth DTOs: `LoginRequestValidator`, `RegisterRequestValidator`, `PasswordResetRequestValidator` in `backend-dotnet/src/Mealie.Application/Validators/Auth/`
-- [x] T047 [US4] Add xUnit integration tests for all four auth methods using `WebApplicationFactory<Program>` with in-memory SQLite: local login, API key header, LDAP mock (NSubstitute), OIDC mock in `backend-dotnet/tests/Mealie.IntegrationTests/Auth/AuthIntegrationTests.cs`
+### Tests for User Story 1 ⚠️
 
-**Checkpoint**: Auth fully functional — US1 can now be implemented.
+> Write these tests first and confirm they fail before refactoring shared internals.
 
----
+- [ ] T005 [US1] Add characterization coverage for organizer CRUD parity, slug collisions, `recipes`, `empty`, and 404 masking in `backend-dotnet/tests/Mealie.IntegrationTests/Organizers/OrganizerCrudIntegrationTests.cs`
 
-## Phase 4: User Story 1 — End Users Experience No Disruption (Priority: P1) 🎯 MVP
+### Implementation for User Story 1
 
-**Goal**: All ~150 API endpoints operational; frontend can run unmodified against new backend; multi-tenant isolation enforced.
+- [X] T006 [P] [US1] Create shared organizer slug normalization and uniqueness enforcement in `backend-dotnet/src/Mealie.Application/Services/Organizers/OrganizerSlugPolicy.cs`
+- [X] T007 [P] [US1] Create shared organizer CRUD execution internals in `backend-dotnet/src/Mealie.Application/Services/Organizers/OrganizerCrudModule.cs`
+- [X] T008 [US1] Refactor organizer create/update/delete commands to use the shared slug policy and CRUD module in `backend-dotnet/src/Mealie.Application/Commands/Organizers/CreateTagCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Organizers/CreateCategoryCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Organizers/CreateToolCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Organizers/UpdateTagCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Organizers/UpdateCategoryCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Organizers/UpdateToolCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Organizers/DeleteTagCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Organizers/DeleteCategoryCommand.cs`, and `backend-dotnet/src/Mealie.Application/Commands/Organizers/DeleteToolCommand.cs`
+- [ ] T009 [US1] Refactor organizer queries and controllers to use shared organizer internals without changing routes or DTOs in `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetTagsQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetCategoriesQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetToolsQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetTagBySlugQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetCategoryBySlugQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetToolBySlugQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetRecipesByTagQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetRecipesByCategoryQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetRecipesByToolQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetEmptyTagsQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Organizers/GetEmptyCategoriesQuery.cs`, `backend-dotnet/src/Mealie.Api/Controllers/Organizers/TagsController.cs`, `backend-dotnet/src/Mealie.Api/Controllers/Organizers/CategoriesController.cs`, and `backend-dotnet/src/Mealie.Api/Controllers/Organizers/ToolsController.cs`
 
-**Independent Test**: Point unmodified Mealie frontend at new backend; complete login → browse recipes → scrape URL → add to meal plan → generate shopping list without errors.
-
-### User & Profile Management
-
-- [x] T048 [P] [US1] Create User DTOs (`UserResponse`, `UserSummaryResponse`, `UpdateUserRequest`, `CreateApiKeyRequest`, `ApiKeyResponse`, `UserRatingResponse`) in `backend-dotnet/src/Mealie.Application/Dtos/Users/`
-- [x] T049 [P] [US1] Implement `UserMapper` (Mapperly `[Mapper]` partial class, `User → UserResponse`, `User → UserSummaryResponse`) in `backend-dotnet/src/Mealie.Application/Mappers/UserMapper.cs`
-- [x] T050 [P] [US1] Implement `IUserService` and `UserService` (profile CRUD, password change, API key create/list/delete with bcrypt hashing, ratings, favorites) in `backend-dotnet/src/Mealie.Application/Services/Users/UserService.cs`
-- [x] T051 [US1] Implement `UsersController` actions: `GET/PUT /api/users/self`, `PUT /api/users/self/password`, `GET/POST/DELETE /api/users/self/api-tokens`, `GET /api/users/{user_id}`, `PUT/DELETE /api/users/{user_id}/favorites/{slug}`, `GET/POST /api/users/{user_id}/ratings`, `POST /api/users/{user_id}/ratings/{slug}` in `backend-dotnet/src/Mealie.Api/Controllers/Users/UsersController.cs`
-
-### Groups & Households
-
-- [x] T052 [P] [US1] Create Group and Household DTOs (`GroupResponse`, `HouseholdResponse`, `UpdateGroupRequest`, `CreateInviteTokenRequest`, `HouseholdStatisticsResponse`) and FluentValidation validators in `backend-dotnet/src/Mealie.Application/Dtos/Groups/` and `backend-dotnet/src/Mealie.Application/Validators/Groups/`
-- [x] T053 [P] [US1] Implement `IGroupService` and `GroupService` (group profile CRUD, member list, invite token create/list/delete, labels CRUD, categories CRUD, report list/get/delete, foods/units seeding) in `backend-dotnet/src/Mealie.Application/Services/Groups/GroupService.cs`
-- [x] T054 [P] [US1] Implement `IHouseholdService` and `HouseholdService` (household profile CRUD, member list, statistics aggregation, preferences update) in `backend-dotnet/src/Mealie.Application/Services/Households/HouseholdService.cs`
-- [x] T055 [US1] Implement `GroupsController` with all `/api/groups/*` endpoints: `GET/PUT /groups/self`, `GET /groups/self/households`, `GET /groups/self/members`, `GET/POST/DELETE /groups/self/invitations`, `GET/POST/PUT/DELETE /groups/categories`, `GET/POST/PUT/DELETE /groups/labels`, `GET/GET/DELETE /groups/reports`, `POST /groups/seed/foods`, `POST /groups/seed/units` in `backend-dotnet/src/Mealie.Api/Controllers/Groups/GroupsController.cs`
-- [x] T056 [US1] Implement `HouseholdsController` with `/api/households/*` endpoints: `GET/PUT /households/self`, `GET /households/self/members`, `GET /households/self/statistics` in `backend-dotnet/src/Mealie.Api/Controllers/Households/HouseholdsController.cs`
-
-### Recipe CRUD (Core)
-
-- [x] T057 [P] [US1] Create Recipe DTOs: `RecipeDetailResponse`, `RecipeSummaryResponse`, `CreateRecipeRequest`, `UpdateRecipeRequest`, `PatchRecipeRequest` (with nested `RecipeIngredientDto`, `RecipeInstructionDto`, `RecipeNoteDto`, `RecipeAssetDto`, `NutritionDto`) in `backend-dotnet/src/Mealie.Application/Dtos/Recipes/`
-- [x] T058 [P] [US1] Implement `RecipeMapper` (Mapperly): `Recipe → RecipeDetailResponse`, `Recipe → RecipeSummaryResponse`, `CreateRecipeRequest → Recipe`; handle nested ingredient/instruction/tag/category/tool collections in `backend-dotnet/src/Mealie.Application/Mappers/RecipeMapper.cs`
-- [x] T059 [P] [US1] Implement FluentValidation validators: `CreateRecipeRequestValidator` (name required, max 255), `UpdateRecipeRequestValidator`, `PatchRecipeRequestValidator` in `backend-dotnet/src/Mealie.Application/Validators/Recipes/`
-- [x] T060 [US1] Implement `IRecipeService` and `RecipeService`: CRUD by slug, slug generation (unique within group), duplicate recipe, recipe filtering by tag/category/tool/food/cookbook (query DSL from API contract), full-text search, pagination, image file save/delete from `DATA_DIR` in `backend-dotnet/src/Mealie.Application/Services/Recipes/RecipeService.cs`
-- [x] T061 [US1] Implement `RecipesController` core actions: `GET /api/recipes` (paginated, filterable), `POST /api/recipes`, `GET /api/recipes/summary`, `GET/PUT/PATCH/DELETE /api/recipes/{slug}`, `POST /api/recipes/{slug}/duplicate`, `PUT /api/recipes/{slug}/image` in `backend-dotnet/src/Mealie.Api/Controllers/Recipes/RecipesController.cs`
-
-### Organizers (Tags, Categories, Tools, Cookbooks, Labels)
-
-- [x] T062 [P] [US1] Create Organizer DTOs (`TagResponse`, `CategoryResponse`, `ToolResponse`, `CookbookResponse`, `CookbookSummaryResponse`, `CreateOrganizerRequest`, `UpdateCookbookRequest`) and Mapperly mappers in `backend-dotnet/src/Mealie.Application/Dtos/Organizers/` and `backend-dotnet/src/Mealie.Application/Mappers/OrganizerMapper.cs`
-- [x] T063 [P] [US1] Implement `IOrganizerService` and `OrganizerService`: generic CRUD for tags, categories, and tools; slug-lookup; assignment to/from recipes in `backend-dotnet/src/Mealie.Application/Services/Organizers/OrganizerService.cs`
-- [x] T064 [US1] Implement `TagsController`, `CategoriesController`, `ToolsController`: full CRUD + `GET /organizers/{type}/slug/{slug}` in `backend-dotnet/src/Mealie.Api/Controllers/Organizers/`
-- [x] T065 [P] [US1] Implement `ICookbookService` and `CookbookService` (CRUD, position reordering, public/private toggle, filter by category/tag) in `backend-dotnet/src/Mealie.Application/Services/Cookbooks/CookbookService.cs`
-- [x] T066 [US1] Implement `CookbooksController`: `GET/POST/PUT /households/self/cookbooks`, `GET/PUT/DELETE /households/self/cookbooks/{item_id}` in `backend-dotnet/src/Mealie.Api/Controllers/Households/CookbooksController.cs`
-
-### Foods & Units
-
-- [x] T067 [P] [US1] Create Food and Unit DTOs (`IngredientFoodResponse`, `IngredientUnitResponse`, `CreateFoodRequest`, `CreateUnitRequest`, `MergeFoodRequest`, `MergeUnitRequest`) and Mapperly mappers in `backend-dotnet/src/Mealie.Application/Dtos/Ingredients/` and `backend-dotnet/src/Mealie.Application/Mappers/IngredientMapper.cs`
-- [x] T068 [P] [US1] Implement `IFoodService` and `FoodService` (CRUD, fuzzy name normalization index, merge: reassign all ingredient references from source → target, delete source) in `backend-dotnet/src/Mealie.Application/Services/Foods/FoodService.cs`
-- [x] T069 [P] [US1] Implement `IUnitService` and `UnitService` (CRUD, name/abbreviation normalization, merge: reassign all ingredient references, delete source) in `backend-dotnet/src/Mealie.Application/Services/Units/UnitService.cs`
-- [x] T070 [US1] Implement `FoodsController` (`GET/POST /api/foods`, `GET/PUT/DELETE /api/foods/{food_id}`, `POST /api/foods/{food_id}/merge`) and `UnitsController` (same pattern for `/api/units`) in `backend-dotnet/src/Mealie.Api/Controllers/`
-
-### Meal Planner
-
-- [x] T071 [P] [US1] Create MealPlan DTOs (`MealPlanResponse`, `CreateMealPlanRequest`, `UpdateMealPlanRequest`, `MealPlanRuleResponse`, `CreateMealPlanRuleRequest`) and validators in `backend-dotnet/src/Mealie.Application/Dtos/MealPlans/` and `backend-dotnet/src/Mealie.Application/Validators/MealPlans/`
-- [x] T072 [P] [US1] Implement `IMealPlanService` and `MealPlanService` (CRUD, date-range queries, today's plan, random recipe selection filtered by rules, plan rules CRUD) in `backend-dotnet/src/Mealie.Application/Services/MealPlans/MealPlanService.cs`
-- [x] T073 [US1] Implement `MealPlansController`: `GET/POST /households/self/meal-plans`, `GET /meal-plans/today`, `GET/PUT/DELETE /meal-plans/{item_id}`, `GET /meal-plans/random`, `GET/POST/PUT/DELETE /meal-plans/rules`, `GET/POST/PUT/DELETE /meal-plans/rules/{item_id}` in `backend-dotnet/src/Mealie.Api/Controllers/Households/MealPlansController.cs`
-
-### Shopping Lists
-
-- [x] T074 [P] [US1] Create Shopping DTOs (`ShoppingListResponse`, `CreateShoppingListRequest`, `ShoppingListItemResponse`, `CreateShoppingListItemRequest`, `UpdateShoppingListItemRequest`, `BulkDeleteRequest`) and Mapperly mappers in `backend-dotnet/src/Mealie.Application/Dtos/Shopping/` and `backend-dotnet/src/Mealie.Application/Mappers/ShoppingMapper.cs`
-- [x] T075 [P] [US1] Implement `IShoppingListService` and `ShoppingListService`: list CRUD, item CRUD, `AddRecipeToList` (expand recipe ingredients → list items with quantity scaling), `RemoveRecipeFromList`, `BulkDeleteItems` in `backend-dotnet/src/Mealie.Application/Services/Shopping/ShoppingListService.cs`
-- [x] T076 [US1] Implement `ShoppingListsController` and `ShoppingItemsController` with all `/api/households/self/shopping/*` endpoints from the API contract (lists, items, bulk-delete, recipe add/remove) in `backend-dotnet/src/Mealie.Api/Controllers/Households/`
-
-### Recipe Sub-Resources
-
-- [x] T077 [P] [US1] Implement recipe comments service (`IRecipeCommentService`, `RecipeCommentService`) and controller actions `GET/POST /recipes/{slug}/comments`, `PUT/DELETE /recipes/{slug}/comments/{comment_id}` in `backend-dotnet/src/Mealie.Application/Services/Recipes/RecipeCommentService.cs` and `backend-dotnet/src/Mealie.Api/Controllers/Recipes/RecipesController.cs`
-- [x] T078 [P] [US1] Implement recipe timeline service (`IRecipeTimelineService`, `RecipeTimelineService`) and controller actions `GET/POST /recipes/{slug}/timeline`, `PUT/DELETE /recipes/{slug}/timeline/{event_id}` in `backend-dotnet/src/Mealie.Application/Services/Recipes/RecipeTimelineService.cs`
-- [x] T079 [P] [US1] Implement recipe asset service (`IRecipeAssetService`): multipart form upload to `DATA_DIR/recipes/{recipe_id}/assets/`, delete, list; controller actions `GET/POST /recipes/{slug}/assets`, `DELETE /recipes/{slug}/assets/{file_name}` in `backend-dotnet/src/Mealie.Application/Services/Recipes/RecipeAssetService.cs`
-- [x] T080 [P] [US1] Implement recipe share token service (`IRecipeShareService`, `RecipeShareService`) and controller actions `GET/POST /recipes/{slug}/share`, `DELETE /recipes/{slug}/share/{token_id}`, `GET /recipes/shared/{token_id}` (public, no auth) in `backend-dotnet/src/Mealie.Application/Services/Recipes/RecipeShareService.cs`
-- [x] T081 [P] [US1] Implement recipe bulk actions: `POST /api/recipes/bulk-actions/delete`, `/tag`, `/categorize`, `/export`, `/undelete` (dispatches to `IRecipeService` and `IRecipeExportService`) in `backend-dotnet/src/Mealie.Api/Controllers/Recipes/RecipesController.cs`
-
-### Recipe Scraper
-
-- [x] T082 [P] [US1] Implement `JsonLdScraperStrategy`: extract `<script type="application/ld+json">` blocks, parse `@type: Recipe` schema.org JSON, map all fields (name, description, recipeIngredient, recipeInstructions, image, recipeYield, totalTime, etc.) to `ScrapedRecipeDto` in `backend-dotnet/src/Mealie.Infrastructure/Scraper/JsonLdScraperStrategy.cs`
-- [x] T083 [US1] Implement `MicrodataScraperStrategy`: parse `itemprop` attributes for schema.org/Recipe properties using HtmlAgilityPack as fallback when JSON-LD is absent in `backend-dotnet/src/Mealie.Infrastructure/Scraper/MicrodataScraperStrategy.cs`
-- [x] T084 [US1] Implement `HeuristicScraperStrategy`: common CSS selector patterns for recipe title, ingredient `<ul>`, instruction `<ol>` using AngleSharp as last-resort fallback (covers sites without schema.org markup) in `backend-dotnet/src/Mealie.Infrastructure/Scraper/HeuristicScraperStrategy.cs`
-- [x] T085 [US1] Implement `RecipeScraperService` orchestrating JSON-LD → Microdata → Heuristic strategies; detect JS-rendering sites and return `{"scraping_not_supported": true}` with an HTTP 200 (not 500); register `HttpClient` with timeout in `backend-dotnet/src/Mealie.Infrastructure/Scraper/RecipeScraperService.cs`
-- [x] T086 [US1] Implement scraper controller actions: `POST /api/recipes/create-url` (single URL scrape → create recipe), `POST /api/recipes/create-url/bulk` (bulk URL list, async per-URL processing) in `backend-dotnet/src/Mealie.Api/Controllers/Recipes/RecipesController.cs`
-
-### Recipe Export & ZIP Import
-
-- [x] T087 [P] [US1] Implement `IRecipeExportService` and `RecipeExportService` (serialize recipe to Mealie JSON format, compress to zip); controller actions `GET /api/recipes/exports` (list export types), `GET /api/recipes/{slug}/exports` in `backend-dotnet/src/Mealie.Application/Services/Recipes/RecipeExportService.cs`
-- [x] T088 [US1] Implement ZIP recipe import handler (`POST /api/recipes/create-zip`: extract zip, detect format, delegate to `RecipeImportService`) and OCR endpoint stub (`POST /api/recipes/create-image-ocr`: returns HTTP 501 if OCR library absent) in `backend-dotnet/src/Mealie.Api/Controllers/Recipes/RecipesController.cs`
-
-### Admin Endpoints
-
-- [x] T089 [P] [US1] Implement `IAdminUserService` (admin-level user CRUD bypassing household filter via `IgnoreQueryFilters()`) and `IAdminGroupService`, `IAdminHouseholdService` in `backend-dotnet/src/Mealie.Application/Services/Admin/`
-- [x] T090 [US1] Implement `AdminController`: `GET/POST/PUT/DELETE /api/admin/users`, `GET/POST/PUT/DELETE /api/admin/groups`, `GET/POST/PUT/DELETE /api/admin/households`, `GET /admin/about`, `GET /admin/statistics`, `GET /admin/email`, `POST /admin/email` (test email), `GET/GET/DELETE/POST /admin/debug/*` in `backend-dotnet/src/Mealie.Api/Controllers/Admin/AdminController.cs`
-- [x] T091 [P] [US1] Implement `BackupsController`: `GET/POST /api/admin/backups`, `GET/DELETE /api/admin/backups/{file_name}`, `POST /api/admin/backups/restore` wired to `IBackupService` in `backend-dotnet/src/Mealie.Api/Controllers/Admin/BackupsController.cs`
-
-### Explore (Public) Endpoints
-
-- [x] T092 [P] [US1] Implement `ExploreController` with all public (no-auth) endpoints: `GET /api/explore/groups/{group_slug}`, `/recipes`, `/recipes/{recipe_slug}`, `/cookbooks`, `/cookbooks/{item_id}`, `/foods`, `/tags`, `/categories`, `/tools`; use `IgnoreQueryFilters()` + explicit `IsPublic = true` predicate; scoped to group by slug in `backend-dotnet/src/Mealie.Api/Controllers/Explore/ExploreController.cs`
-
-### App Info & Media
-
-- [x] T093 [P] [US1] Implement `AppInfoController` (`GET /api/app/about`, `GET /api/app/about/oidc`) and `DebugController` (`GET /api/debug/version`) in `backend-dotnet/src/Mealie.Api/Controllers/Utility/`
-- [x] T094 [US1] Configure media file serving routes: `GET /api/media/recipes/{recipe_id}/images/{file_name}`, `GET /api/media/recipes/{recipe_id}/assets/{file_name}`, `GET /api/media/users/{user_id}/images/{file_name}`, `GET /api/media/groups/{group_id}/images/{file_name}` mapped to `DATA_DIR` via `PhysicalFileProvider` in `backend-dotnet/src/Mealie.Api/Program.cs`
-
-### OpenAI Integration
-
-- [x] T095 [P] [US1] Implement `OpenAiController` (`POST /api/openai/parse-ingredient`, `POST /api/openai/parse-recipe`) returning HTTP 424 `{"detail":"OpenAI is not configured"}` when `OPENAI_API_KEY` is absent; implement `IOpenAiService` with GPT-4o structured output call when key is present in `backend-dotnet/src/Mealie.Api/Controllers/Parser/OpenAiController.cs` and `backend-dotnet/src/Mealie.Infrastructure/Parser/OpenAiParserService.cs`
-
-**Checkpoint**: US1 fully functional — frontend can operate against the new backend end-to-end.
+**Checkpoint**: Organizer CRUD consolidation is shippable as the first PR slice and validates the shared CRUD pattern for later work.
 
 ---
 
-## Phase 5: User Story 3 — API Compatibility Is Verifiable (Priority: P1)
+## Phase 4: User Story 2 - Meal Plan Helper Consolidation (Priority: P1)
 
-**Goal**: C# OpenAPI spec is provably identical to Python spec; TypeScript codegen compiles without errors.
+**Goal**: Split meal plan mapping/loading from recipe-selection logic while preserving date-range behavior, ordering, random/fill behavior, and tenant scoping.
 
-**Independent Test**: `scripts/validate-openapi-compat.sh` exits 0 showing zero path or schema differences.
+**Independent Test**: Run meal plan characterization coverage and confirm create, update, random, fill-day, fill-week, get-by-id, and today flows still match existing response shapes and 404 behavior.
 
-- [x] T096 [US3] Configure Swashbuckle `SchemaGeneratorOptions.SchemaIdSelector` to produce component names matching Python Pydantic model names exactly (e.g., `RecipeResponse` not `RecipeDetailResponseDto`) in `backend-dotnet/src/Mealie.Api/Program.cs`
-- [x] T097 [P] [US3] Implement `PydanticValidationOperationFilter` (Swashbuckle `IOperationFilter`): add HTTP 422 `ValidationError` response schema to all `POST`/`PUT`/`PATCH` operations automatically in `backend-dotnet/src/Mealie.Api/Filters/PydanticValidationOperationFilter.cs`
-- [x] T098 [US3] Create `backend-dotnet/scripts/validate-openapi-compat.sh`: start both backends, fetch each `/api/openapi.json`, run `swagger-diff` (or `openapi-diff`), fail if any path missing, required field removed, or response type changed; document how to run locally in `backend-dotnet/scripts/validate-openapi-compat.sh`
-- [x] T099 [P] [US3] Add OpenAPI diff CI step to `azure-pipelines.yml` for branch `001-csharp-backend-migration`: run `validate-openapi-compat.sh` as a gating check (fails the pipeline on schema divergence)
-- [x] T100 [US3] Document TypeScript API client regeneration in `backend-dotnet/README.md`: how to re-run frontend codegen from `/api/openapi.json` after any schema change; add it as a required step in the PR checklist
+### Tests for User Story 2 ⚠️
 
-**Checkpoint**: US3 verifiable — schema divergence is caught automatically in CI.
+> Write these tests first and confirm they fail before refactoring shared internals.
 
----
+- [ ] T010 [US2] Expand characterization coverage for meal plan create/update/query/random/fill parity in `backend-dotnet/tests/Mealie.IntegrationTests/Households/MealPlanIntegrationTests.cs`
 
-## Phase 6: User Story 2 — Administrators Migrate Existing Data Without Loss (Priority: P1)
+### Implementation for User Story 2
 
-**Goal**: Standalone migration CLI transfers all data from Python SQLite/PostgreSQL → C# schema with zero data loss, preserved IDs, and per-record error tolerance.
+- [X] T011 [P] [US2] Create shared meal plan response mapping and navigation loading logic in `backend-dotnet/src/Mealie.Application/Services/MealPlans/MealPlanMappingHelper.cs`
+- [X] T012 [P] [US2] Create shared meal plan recipe-selection logic for random and fill flows in `backend-dotnet/src/Mealie.Application/Services/MealPlans/MealPlanRecipeSelectionService.cs`
+- [X] T013 [US2] Refactor meal plan commands to consume the split helper services in `backend-dotnet/src/Mealie.Application/Commands/MealPlans/CreateMealPlanCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/MealPlans/UpdateMealPlanCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/MealPlans/CreateRandomMealPlanCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/MealPlans/FillDayCommand.cs`, and `backend-dotnet/src/Mealie.Application/Commands/MealPlans/FillWeekCommand.cs`
+- [ ] T014 [US2] Refactor meal plan queries and controller flow to use shared mapping without contract drift in `backend-dotnet/src/Mealie.Application/Queries/MealPlans/GetMealPlansQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/MealPlans/GetMealPlanByIdQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/MealPlans/GetTodayMealPlansQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/MealPlans/GetRandomRecipeIdQuery.cs`, and `backend-dotnet/src/Mealie.Api/Controllers/Households/MealPlansController.cs`
 
-**Independent Test**: Run tool against a known-good Python SQLite dump; verify API returns identical record counts; migration is idempotent on second run.
-
-- [x] T101 [US2] Create `Mealie.Migration` CLI entry point: argument parsing (`--source`, `--target`, `--source-engine sqlite|postgres`, `--target-engine sqlite|postgres`), configuration validation, and exit codes (0 = success, 1 = already migrated or fatal error) in `backend-dotnet/tools/Mealie.Migration/Program.cs`
-- [x] T102 [US2] Implement idempotency guard: create `__mealie_migration_log` table on first run, write completion record; detect existing record on subsequent runs and exit with code 1 and message `"Database has already been migrated. Aborting to prevent data duplication."` in `backend-dotnet/tools/Mealie.Migration/MigrationRunner.cs`
-- [x] T103 [US2] Implement Dapper source readers for Tier 1 entities (read-only, no writes to source): `groups`, `households`, `users`, `multi_purpose_labels`, `group_preferences`, `household_preferences` in `backend-dotnet/tools/Mealie.Migration/SourceReaders/Tier1Reader.cs`
-- [x] T104 [P] [US2] Implement Dapper source readers for Tier 2 entities: `ingredient_units`, `ingredient_foods`, `ingredient_food_aliases`, `tags`, `categories`, `tools`, `cookbooks` in `backend-dotnet/tools/Mealie.Migration/SourceReaders/Tier2Reader.cs`
-- [x] T105 [P] [US2] Implement Dapper source readers for Tier 3 entities: `recipes`, `recipe_ingredients`, `recipe_instructions`, `recipe_notes`, `recipe_assets`, `recipe_comments`, `recipe_timeline_events`, `recipe_share_tokens` in `backend-dotnet/tools/Mealie.Migration/SourceReaders/Tier3Reader.cs`
-- [x] T106 [P] [US2] Implement Dapper source readers for Tier 4 entities: `group_meal_plans`, `shopping_lists`, `shopping_list_items`, `group_webhooks`, `group_event_notifiers`, `long_live_tokens`, and all junction tables (`recipes_to_tags`, `recipes_to_categories`, `recipes_to_tools`, `user_to_recipe`, `households_to_ingredient_foods`) in `backend-dotnet/tools/Mealie.Migration/SourceReaders/Tier4Reader.cs`
-- [x] T107 [US2] Implement EF Core target writers with identity insert enabled for all entity tiers: preserve all UUID and integer PKs verbatim, preserve `recipe.slug` verbatim (skip on unique constraint violation with log), disable EF Core ID generation for migration context in `backend-dotnet/tools/Mealie.Migration/TargetWriters/`
-- [x] T108 [US2] Implement per-record error handling in `MigrationRunner`: wrap each entity row insert in try/catch; log skipped records with full detail (`EntityType`, `SourceId`, `ErrorMessage`) to Serilog; continue processing remaining records after any single-record failure in `backend-dotnet/tools/Mealie.Migration/MigrationRunner.cs`
-- [x] T109 [P] [US2] Implement `ReportGenerator` printing a stdout migration summary table (`Entity | Migrated | Skipped | Errors`) and a Serilog-written JSON report file for post-migration audit in `backend-dotnet/tools/Mealie.Migration/ReportGenerator.cs`
-- [x] T110 [P] [US2] Implement source-to-target entity mappers (source schema `string` UUIDs → `Guid`, source `snake_case` column names → C# property names, nullable coercion) in `backend-dotnet/tools/Mealie.Migration/Mappers/`
-- [x] T111 [US2] Implement `MigrationRunner` orchestrator invoking tier readers in dependency-safe order (T1 → T2 → T3 → T4 → junctions → mark complete) with transaction per tier for atomicity in `backend-dotnet/tools/Mealie.Migration/MigrationRunner.cs`
-- [x] T112 [P] [US2] Write xUnit integration test: run `MigrationRunner` against a SQLite fixture database, assert row counts match expected, assert `__mealie_migration_log` exists, assert second run exits with code 1 in `backend-dotnet/tests/Mealie.IntegrationTests/Migration/MigrationRunnerTests.cs`
-
-**Checkpoint**: US2 complete — migration tool produces a fully operational C# database from a Python source.
+**Checkpoint**: Meal plan helper consolidation is independently releasable with characterization coverage protecting mapping and recipe-selection parity.
 
 ---
 
-## Phase 7: User Story 5 — Background Services Continue to Operate (Priority: P2)
+## Phase 5: User Story 3 - Shopping List Helper Consolidation (Priority: P1)
 
-**Goal**: Scheduler, webhooks, backup, and email notifications fire on schedule without user action.
+**Goal**: Split shopping list mapping, item mutation/merge behavior, and recipe-link behavior while preserving household scoping and response parity.
 
-**Independent Test**: Configure a webhook; trigger a recipe create event; observe webhook delivery logged by Serilog.
+**Independent Test**: Run shopping list characterization coverage and confirm list, item, bulk, standalone, and recipe-linked flows still preserve current merge semantics, timestamps, and 404 masking.
 
-- [x] T113 [US5] Implement `IWebhookDeliveryService` and `WebhookDeliveryService`: fire-and-forget `HttpClient.PostAsJsonAsync`, log `Warning` with `{WebhookId}`, `{Url}`, `{StatusCode}`, `{Exception}` on any failure (no retry, no dead-letter queue per research.md §7) in `backend-dotnet/src/Mealie.Infrastructure/Webhooks/WebhookDeliveryService.cs`
-- [x] T114 [P] [US5] Implement in-process `IEventBus` and `EventBus` (in-memory publish/subscribe): publish domain events from service layer; subscribe `WebhookDeliveryService` and notification handlers; fire-and-forget dispatch in `backend-dotnet/src/Mealie.Infrastructure/Webhooks/EventBus.cs`
-- [x] T115 [US5] Implement `SchedulerHostedService` (`BackgroundService` subclass): 1-minute tick loop, reads enabled job schedules from DB/config at startup, computes next-run from "now" on restart (no job state migrated), dispatches due jobs in `backend-dotnet/src/Mealie.Infrastructure/Scheduler/SchedulerHostedService.cs`
-- [x] T116 [P] [US5] Implement `ScheduledBackupJob`: create timestamped zip archive of all data in `DATA_DIR/backups/`, log result; wire to admin on-demand `POST /api/admin/backups` as well as scheduler trigger in `backend-dotnet/src/Mealie.Infrastructure/Scheduler/Jobs/ScheduledBackupJob.cs`
-- [x] T117 [P] [US5] Implement `MealPlanNotificationJob`: query today's meal plans with notification settings, fire webhook or email notification for each configured action in `backend-dotnet/src/Mealie.Infrastructure/Scheduler/Jobs/MealPlanNotificationJob.cs`
-- [x] T118 [P] [US5] Implement `WebhooksController`: `GET/POST /api/households/self/webhooks`, `PUT/DELETE /api/households/self/webhooks/{item_id}`, `POST /api/households/self/webhooks/test` (synchronous test delivery) in `backend-dotnet/src/Mealie.Api/Controllers/Households/WebhooksController.cs`
-- [x] T119 [P] [US5] Implement `EventNotifiersController`: `GET/POST/PUT/DELETE /api/households/self/event-notifications`, `POST /api/households/self/event-notifications/{item_id}/test` in `backend-dotnet/src/Mealie.Api/Controllers/Households/EventNotifiersController.cs`
-- [x] T120 [US5] Implement `IBackupService` and `BackupService` (create zip archive with all recipe images + DB dump, restore from archive, list existing backups with metadata); wire to `BackupsController` and `ScheduledBackupJob` in `backend-dotnet/src/Mealie.Application/Services/Admin/BackupService.cs`
-- [x] T121 [P] [US5] Implement `IEmailService` and `EmailService` using MailKit: SMTP connection from `SMTP_*` env vars, disabled gracefully when `SMTP_HOST` is absent; Razor email templates for invitation and password reset emails in `backend-dotnet/src/Mealie.Infrastructure/Email/EmailService.cs` and `backend-dotnet/src/Mealie.Infrastructure/Email/Templates/`
+### Tests for User Story 3 ⚠️
 
-**Checkpoint**: US5 complete — all scheduled and event-driven background services operational.
+> Write these tests first and confirm they fail before refactoring shared internals.
 
----
+- [ ] T015 [US3] Add characterization coverage for shopping list list/item/bulk/recipe-link parity in `backend-dotnet/tests/Mealie.IntegrationTests/Households/ShoppingListIntegrationTests.cs`
 
-## Phase 8: User Story 8 — Ingredient Parsing at Equivalent Quality (Priority: P2)
+### Implementation for User Story 3
 
-**Goal**: Freeform ingredient strings are parsed to structured `{quantity, unit, food, note}` at equivalent quality to the Python brute-force parser.
+- [X] T016 [P] [US3] Create shared shopping list and item DTO projection helpers in `backend-dotnet/src/Mealie.Application/Services/ShoppingLists/ShoppingListMappingHelper.cs`
+- [X] T017 [P] [US3] Create shared shopping list item mutation and merge behavior in `backend-dotnet/src/Mealie.Application/Services/ShoppingLists/ShoppingListItemMutationService.cs`
+- [X] T018 [P] [US3] Create shared recipe-to-shopping-list linking behavior in `backend-dotnet/src/Mealie.Application/Services/ShoppingLists/ShoppingListRecipeLinkService.cs`
+- [X] T019 [US3] Refactor shopping list commands and queries to use the shared mapping, mutation, and recipe-link helpers in `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/CreateShoppingListCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/CreateShoppingListWithRecipeCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/AddRecipeToShoppingListCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/AddShoppingListItemCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/UpdateShoppingListItemCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/CreateStandaloneItemCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/UpdateStandaloneItemCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/CreateBulkShoppingListItemsCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/UpdateBulkShoppingListItemsCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/UpdateShoppingListCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/ShoppingLists/UpdateShoppingListLabelSettingsCommand.cs`, `backend-dotnet/src/Mealie.Application/Queries/ShoppingLists/GetShoppingListsQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/ShoppingLists/GetShoppingListByIdQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/ShoppingLists/GetShoppingListItemsQuery.cs`, and `backend-dotnet/src/Mealie.Application/Queries/ShoppingLists/GetShoppingListItemByIdQuery.cs`
+- [ ] T020 [US3] Refactor shopping list controllers to preserve current routes and response shapes in `backend-dotnet/src/Mealie.Api/Controllers/Households/ShoppingListsController.cs` and `backend-dotnet/src/Mealie.Api/Controllers/Households/ShoppingItemsController.cs`
 
-**Independent Test**: Submit 50 representative ingredient strings from the Python test corpus; verify ≥95% match on quantity, unit, and food extraction.
-
-- [x] T122 [US8] Implement `QuantityTokenizer`: regex patterns for integers, decimals, fractions (`1/2`), Unicode vulgar fractions (`½ ¼ ¾`), and ranges (`1-2`); return `(decimal quantity, string remainingText)` in `backend-dotnet/src/Mealie.Infrastructure/Parser/QuantityTokenizer.cs`
-- [x] T123 [P] [US8] Implement `UnitMatcher`: normalize candidate unit string against `IngredientUnit` table (name, plural name, abbreviation, plural abbreviation, all normalized); return matched `IngredientUnit` or null in `backend-dotnet/src/Mealie.Infrastructure/Parser/UnitMatcher.cs`
-- [x] T124 [P] [US8] Implement `FoodMatcher`: extract food name from remaining text after quantity and unit removal; match against `IngredientFood` table by `name_normalized`; preserve unmatched text as `note` in `backend-dotnet/src/Mealie.Infrastructure/Parser/FoodMatcher.cs`
-- [x] T125 [US8] Implement `IngredientParserService` orchestrating `QuantityTokenizer → UnitMatcher → FoodMatcher`; when `OPENAI_API_KEY` is set and parser confidence is low, delegate to `IOpenAiService` for GPT-4o structured output; return `ParsedIngredientDto` with confidence level in `backend-dotnet/src/Mealie.Infrastructure/Parser/IngredientParserService.cs`
-- [x] T126 [US8] Implement `ParserController`: `POST /api/parser/ingredient` (single string), `POST /api/parser/ingredients` (batch list) returning `ParsedIngredientResponse` shape matching API contract in `backend-dotnet/src/Mealie.Api/Controllers/Parser/ParserController.cs`
-- [x] T127 [P] [US8] Write xUnit unit tests for `QuantityTokenizer`, `UnitMatcher`, and `FoodMatcher` using a fixed test corpus of 50 ingredient strings with known expected outputs in `backend-dotnet/tests/Mealie.UnitTests/Parser/`
-
-**Checkpoint**: US8 complete — ingredient parser matches Python backend quality on standard test corpus.
+**Checkpoint**: Shopping list helper consolidation is independently releasable with merge-safe and recipe-link characterization coverage.
 
 ---
 
-## Phase 9: User Story 7 — Recipe Import from External Sources (Priority: P2)
+## Phase 6: User Story 4 - Food/Unit CRUD Consolidation (Priority: P2)
 
-**Goal**: Chowdown, Paprika, Nextcloud Cookbook, Tandoor, and Mealie own-format imports all produce correctly populated recipes.
+**Goal**: Reuse the organizer-style consolidation pattern for foods and units while preserving paginated list behavior, alias replacement, merge semantics, and group isolation.
 
-**Independent Test**: Submit each supported format's sample file to `POST /api/groups/migrations`; verify recipe title, ingredients, and instructions are populated.
+**Independent Test**: Run food/unit characterization coverage and confirm paginated CRUD, patch parity, merge behavior, alias updates, and cross-group 404 masking still match the existing implementation.
 
-- [x] T128 [US7] Define `IMigrationParser` interface (`bool CanParse(Stream input)`, `IEnumerable<ScrapedRecipeDto> Parse(Stream input)`) and `MigrationParserBase` abstract class with common field-mapping helpers in `backend-dotnet/src/Mealie.Infrastructure/Scraper/Importers/MigrationParserBase.cs`
-- [x] T129 [P] [US7] Implement `ChowdownMigrationParser`: extract from Chowdown zip (YAML front matter + markdown instructions per file), map to `ScrapedRecipeDto` in `backend-dotnet/src/Mealie.Infrastructure/Scraper/Importers/ChowdownMigrationParser.cs`
-- [x] T130 [P] [US7] Implement `PaprikaMigrationParser`: extract from `.paprikarecipes` zip (gzip-compressed JSON per recipe), map all supported Paprika fields to `ScrapedRecipeDto` in `backend-dotnet/src/Mealie.Infrastructure/Scraper/Importers/PaprikaMigrationParser.cs`
-- [x] T131 [P] [US7] Implement `NextcloudCookbookMigrationParser`: parse Nextcloud Cookbook JSON export (schema.org/Recipe format), map to `ScrapedRecipeDto` in `backend-dotnet/src/Mealie.Infrastructure/Scraper/Importers/NextcloudCookbookMigrationParser.cs`
-- [x] T132 [P] [US7] Implement `TandoorMigrationParser`: parse Tandoor JSON export format, map recipe fields including steps, ingredients, and keywords in `backend-dotnet/src/Mealie.Infrastructure/Scraper/Importers/TandoorMigrationParser.cs`
-- [x] T133 [P] [US7] Implement `MealieBackupImportParser`: restore from Mealie own JSON format (preserves original UUIDs and slugs for idempotent re-import) in `backend-dotnet/src/Mealie.Infrastructure/Scraper/Importers/MealieBackupImportParser.cs`
-- [x] T134 [US7] Implement `RecipeImportService`: auto-detect format via `IMigrationParser.CanParse()`, create recipes via `IRecipeService`, return import report (count created, skipped, errors); return HTTP 400 with actionable message for unsupported formats (not 500) in `backend-dotnet/src/Mealie.Application/Services/Recipes/RecipeImportService.cs`
-- [x] T135 [US7] Wire `RecipeImportService` to `POST /api/groups/migrations` in `GroupsController` (multipart form upload); handle malformed zip/JSON with structured error response in `backend-dotnet/src/Mealie.Api/Controllers/Groups/GroupsController.cs`
+### Tests for User Story 4 ⚠️
 
-**Checkpoint**: US7 complete — all supported import formats produce well-formed recipe records.
+> Write these tests first and confirm they fail before refactoring shared internals.
 
----
+- [ ] T021 [US4] Add characterization coverage for food/unit CRUD, alias replacement, merge behavior, and group-scoped 404 masking in `backend-dotnet/tests/Mealie.IntegrationTests/Ingredients/FoodUnitCrudIntegrationTests.cs`
 
-## Phase 10: User Story 6 — Developers Can Extend and Maintain the Backend (Priority: P2)
+### Implementation for User Story 4
 
-**Goal**: Any developer with .NET 10 SDK installed can build, test, and extend the backend within 15 minutes by following the README alone.
+- [X] T022 [P] [US4] Create a shared ingredient CRUD core with explicit entity hooks in `backend-dotnet/src/Mealie.Application/Services/Ingredients/IngredientCrudCore.cs`
+- [X] T023 [US4] Refactor ingredient services to use the shared CRUD core in `backend-dotnet/src/Mealie.Application/Services/Ingredients/FoodService.cs` and `backend-dotnet/src/Mealie.Application/Services/Ingredients/UnitService.cs`
+- [X] T024 [US4] Refactor food/unit commands and queries to use the shared CRUD core in `backend-dotnet/src/Mealie.Application/Commands/Ingredients/CreateFoodCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Ingredients/UpdateFoodCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Ingredients/DeleteFoodCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Ingredients/MergeFoodCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Ingredients/CreateUnitCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Ingredients/UpdateUnitCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Ingredients/DeleteUnitCommand.cs`, `backend-dotnet/src/Mealie.Application/Commands/Ingredients/MergeUnitCommand.cs`, `backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetFoodsQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetFoodByIdQuery.cs`, `backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetUnitsQuery.cs`, and `backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetUnitByIdQuery.cs`
+- [ ] T025 [US4] Refactor ingredient controllers to preserve paginated and merge responses in `backend-dotnet/src/Mealie.Api/Controllers/Ingredients/FoodsController.cs` and `backend-dotnet/src/Mealie.Api/Controllers/Ingredients/UnitsController.cs`
 
-**Independent Test**: A timed first-run with a developer unfamiliar with the codebase: build ✅, seed ✅, run ✅, test ✅ all within 15 minutes.
-
-- [x] T136 [US6] Create `backend-dotnet/README.md` with the full 15-minute onboarding guide from `quickstart.md`: prerequisites, clone+build, `.env` configuration, `dotnet ef database update`, `dotnet run -- seed`, API URL, `dotnet test`, hot reload, PostgreSQL variant, project structure overview, common issues table
-- [x] T137 [P] [US6] Create `backend-dotnet/.env.example` listing all supported environment variables (`DB_ENGINE`, `DATABASE_URL`, `SECRET`, `BASE_URL`, `DATA_DIR`, `LOG_LEVEL`, `API_PORT`, `ALLOW_SIGNUP`, `LDAP_*`, `OIDC_*`, `SMTP_*`, `OPENAI_API_KEY`) with inline comments and safe defaults
-- [x] T138 [US6] Implement `seed` startup verb (`dotnet run --project src/Mealie.Api -- seed`): creates default `"Home"` group, `"Family"` household, admin user `admin@example.com`/`admin`, and 20 sample recipes using `IRecipeService` in `backend-dotnet/src/Mealie.Api/Commands/SeedCommand.cs`
-- [x] T139 [P] [US6] Create `IDesignTimeDbContextFactory<ApplicationDbContext>` reading `DATABASE_URL` env var to support `dotnet ef migrations` commands without running the full application in `backend-dotnet/src/Mealie.Infrastructure/Data/ApplicationDbContextFactory.cs`
-- [x] T140 [P] [US6] Create `Dockerfile` using multi-stage build: `mcr.microsoft.com/dotnet/sdk:10.0` for build, `mcr.microsoft.com/dotnet/aspnet:10.0` for runtime; expose port 9000; use same image naming convention as Python backend in `backend-dotnet/docker/Dockerfile`
-- [x] T141 [P] [US6] Configure `launchSettings.json` with `Development` profile (hot reload via `dotnet watch`, environment variables, port 9000) and a `Docker` profile in `backend-dotnet/src/Mealie.Api/Properties/launchSettings.json`
-
-**Checkpoint**: US6 complete — developer onboarding is verified end-to-end within 15-minute target.
+**Checkpoint**: Food/unit CRUD consolidation is independently releasable and reuses the safest organizer-style shared CRUD pattern.
 
 ---
 
-## Phase 11: Polish & Cross-Cutting Concerns
+## Phase 7: User Story 5 - Parser Provider Consolidation (Priority: P2)
 
-**Purpose**: Final hardening across all stories; validate the complete solution before declaring the branch ready for review.
+**Goal**: Centralize provider-specific `HttpClient` construction for OpenAI-compatible parser strategies without changing parser request or response contracts.
 
-- [x] T142 [P] Audit all controllers for missing `[Authorize]` attributes or incorrect role checks; verify `ExploreController` and health/app-info endpoints are correctly unauthenticated; verify admin endpoints require admin role in `backend-dotnet/src/Mealie.Api/Controllers/`
-- [x] T143 [P] Verify `openapi-compat` diff produces zero differences by running `backend-dotnet/scripts/validate-openapi-compat.sh` locally; fix any remaining field name, type, or path mismatches surfaced by the diff
-- [x] T144 Run `dotnet test backend-dotnet/Mealie.sln` with `--logger trx` and confirm all unit and integration tests pass within the 10-minute CI time budget; fix any failures in `backend-dotnet/tests/`
-- [x] T145 Validate quickstart onboarding steps against the final project state (build, seed, run, test all succeed following `backend-dotnet/README.md` exactly); update any stale commands, ports, or paths
-- [x] T146 [P] Verify `mealie/` Python directory is untouched (`git diff origin/main -- mealie/` shows no changes); confirm all commits on `001-csharp-backend-migration` only touch `backend-dotnet/`, `specs/001-csharp-backend-migration/`, and CI config
+**Independent Test**: Run parser provider matrix coverage and confirm each provider still applies the correct base URL, auth/header behavior, named client configuration, and request payload shape.
+
+### Tests for User Story 5 ⚠️
+
+> Write these tests first and confirm they fail before refactoring shared internals.
+
+- [X] T026 [US5] Add provider matrix characterization coverage for parser client configuration in `backend-dotnet/tests/Mealie.UnitTests/Parser/ParserClientFactoryTests.cs`
+
+### Implementation for User Story 5
+
+- [X] T027 [P] [US5] Create provider-specific parser configuration descriptors in `backend-dotnet/src/Mealie.Application/Services/Parser/ParserProviderDescriptor.cs`
+- [X] T028 [P] [US5] Create a shared provider-aware parser client builder in `backend-dotnet/src/Mealie.Application/Services/Parser/ParserClientFactory.cs`
+- [X] T029 [US5] Refactor OpenAI-compatible provider strategies to use the shared client builder in `backend-dotnet/src/Mealie.Application/Services/Parser/OpenAiCompatibleParserStrategy.cs`, `backend-dotnet/src/Mealie.Application/Services/Parser/OpenAiParserStrategy.cs`, `backend-dotnet/src/Mealie.Application/Services/Parser/AzureOpenAiParserStrategy.cs`, `backend-dotnet/src/Mealie.Application/Services/Parser/OllamaParserStrategy.cs`, and `backend-dotnet/src/Mealie.Application/Services/Parser/CustomAiParserStrategy.cs`
+- [X] T030 [US5] Refactor parser strategy resolution to construct provider descriptors without external contract changes in `backend-dotnet/src/Mealie.Application/Services/Parser/ParserStrategyResolver.cs`
+
+**Checkpoint**: Parser provider consolidation is independently releasable and can be reviewed as a narrow infrastructure-focused PR slice.
+
+---
+
+## Phase 8: User Story 6 - Tenant Self-Resource Controller Consolidation (Priority: P2)
+
+**Goal**: Consolidate group and household self-resource controller flow while preserving route aliases, 404 masking, and controller-specific non-shared endpoints.
+
+**Independent Test**: Run tenant self-resource characterization coverage and confirm self, preferences, members, invitations, and alias routes still behave the same for both groups and households.
+
+### Tests for User Story 6 ⚠️
+
+> Write these tests first and confirm they fail before refactoring shared internals.
+
+- [ ] T031 [US6] Add characterization coverage for group/household self-resource aliases and 404 masking in `backend-dotnet/tests/Mealie.IntegrationTests/Groups/TenantSelfResourceIntegrationTests.cs`
+
+### Implementation for User Story 6
+
+- [X] T032 [US6] Create a shared tenant self-resource controller helper in `backend-dotnet/src/Mealie.Api/Controllers/Shared/SelfResourceControllerHelper.cs`
+- [X] T033 [US6] Refactor shared group self-resource actions to use the helper while keeping migration/report endpoints local in `backend-dotnet/src/Mealie.Api/Controllers/Groups/GroupsController.cs`
+- [X] T034 [US6] Refactor shared household self-resource actions to use the helper while keeping statistics, recipe, email, and permissions endpoints local in `backend-dotnet/src/Mealie.Api/Controllers/Households/HouseholdsController.cs`
+
+**Checkpoint**: Tenant self-resource consolidation is independently releasable and preserves the current controller surface without broad controller rewrites.
+
+---
+
+## Phase 9: Polish & Cross-Cutting Concerns
+
+**Purpose**: Final validation across the six scoped PR slices only.
+
+- [ ] T035 Verify the scoped no-contract-change guardrail against the targeted endpoints in `backend-dotnet/tests/Mealie.IntegrationTests/ScopedRefactors/ScopedOpenApiParityTests.cs`
+- [ ] T036 Run the full scoped build and regression gate from `backend-dotnet/Mealie.sln` before merging each workstream PR slice
 
 ---
 
@@ -330,96 +185,118 @@
 
 ### Phase Dependencies
 
-| Phase | Depends On | Blocks |
-|-------|------------|--------|
-| **Phase 1 — Setup** | Nothing | Phase 2 |
-| **Phase 2 — Foundational** | Phase 1 complete | All user story phases |
-| **Phase 3 — US4 (Auth)** | Phase 2 complete | Phase 4 (US1 needs auth to be testable) |
-| **Phase 4 — US1 (Core API)** | Phase 3 complete | Phase 5 (US3 needs running API to diff) |
-| **Phase 5 — US3 (OpenAPI compat)** | Phase 4 complete | Nothing |
-| **Phase 6 — US2 (Migration tool)** | Phase 2 complete | Nothing (independent of US1–US3) |
-| **Phase 7 — US5 (Background services)** | Phase 2 complete | Nothing (can run in parallel with US1–US3) |
-| **Phase 8 — US8 (Parser)** | Phase 2 complete | Nothing (independent) |
-| **Phase 9 — US7 (Imports)** | Phase 4 (needs `IRecipeService`) | Nothing |
-| **Phase 10 — US6 (Dev experience)** | Phase 4 complete (needs working app to document) | Nothing |
-| **Phase 11 — Polish** | All desired phases complete | — |
+- **Setup (Phase 1)**: Start immediately.
+- **Foundational (Phase 2)**: Depends on T001-T002 and blocks every workstream until complete.
+- **User Stories (Phases 3-8)**: Depend on T001-T004.
+- **Polish (Phase 9)**: Depends on the workstreams selected for the current delivery train.
 
 ### User Story Dependencies
 
-- **US4 (Auth)** [Phase 3]: Depends on Foundational (Phase 2) only.
-- **US1 (Core API)** [Phase 4]: Depends on US4. The auth handlers must work before US1 is independently testable.
-- **US3 (OpenAPI compat)** [Phase 5]: Depends on US1 (needs all ~150 endpoints serving their spec shapes).
-- **US2 (Migration tool)** [Phase 6]: Depends on Foundational only (domain entities + EF Core). Can proceed in parallel with US4 and US1.
-- **US5 (Background services)** [Phase 7]: Depends on Foundational and US1 (needs `IRecipeService`, `IBackupService`). Can start in parallel with later US1 tasks.
-- **US8 (Parser)** [Phase 8]: Depends on Foundational only. `IngredientFood` and `IngredientUnit` entities must exist.
-- **US7 (Imports)** [Phase 9]: Depends on US1 (needs `IRecipeService` to create imported recipes).
-- **US6 (Dev experience)** [Phase 10]: Depends on US1 being working so the documented commands actually succeed.
+- **US1 — Organizer CRUD**: Starts immediately after T001-T004; preferred first PR because it proves the shared CRUD pattern.
+- **US2 — Meal plan helpers**: Starts after T001-T004; independent of US1 for delivery, but follows the same characterization-first discipline.
+- **US3 — Shopping list helpers**: Starts after T001-T004; preferred after US2 because both rely on a mapping-vs-behavior split pattern.
+- **US4 — Food/unit CRUD**: Starts after T001-T004; preferred after US1 because it reuses the shared CRUD lessons from organizer consolidation.
+- **US5 — Parser providers**: Starts after T001-T004; can proceed in parallel with US4 because contracts stay unchanged and the refactor is isolated to parser services.
+- **US6 — Tenant self-resource controllers**: Starts after T001-T004; preferred after US1 because controller-sharing lessons should be proven first.
 
-### Parallel Opportunities Within Each Phase
+### Within Each User Story
 
-**Phase 1** — T002–T009 can all run in parallel after T001 (sln creation).  
-**Phase 2** — T013–T018 (entity cluster) can run in parallel; T019 (DbContext) needs T013–T018; T020–T022 (configs) can run in parallel after T019; T027–T028 (auth) can run in parallel after T019; T029–T035 (middleware) can run in parallel.  
-**Phase 3** — T040–T046 can run in parallel; T039 (controller) and T047 (integration tests) depend on T040.  
-**Phase 4** — Within each sub-group, DTO+Mapper+Validator tasks ([P]-marked) can run in parallel; Service depends on DTOs; Controller depends on Service.  
-**Phase 6** — T103–T106 (tier readers) can all run in parallel after T102.
+- Characterization tests MUST be written and failing before implementation starts.
+- Shared helper/descriptor/core files come before command/query/controller rewiring.
+- Controller changes must preserve route paths, alias behavior, DTOs, status codes, and tenant-safe 404 masking.
+- Each workstream should stop at its checkpoint and be validated before starting the next preferred dependency.
+
+### Parallel Opportunities
+
+- T003 and T004 can run in parallel after T001-T002.
+- US1: T006 and T007 can run in parallel after T005.
+- US2: T011 and T012 can run in parallel after T010.
+- US3: T016, T017, and T018 can run in parallel after T015.
+- US4: T023 and T024 can run in parallel after T021 and T022 are complete.
+- US5: T027 and T028 can run in parallel after T026.
+- Cross-story: US2 and US5 can run in parallel after T001-T004; US4 and US5 can also overlap once the foundational guardrails are green.
 
 ---
 
-## Parallel Execution Example: Phase 4, US1 Recipe Group
+## Parallel Example: User Story 1
 
+```bash
+Task: "T006 Create shared organizer slug normalization and uniqueness enforcement in backend-dotnet/src/Mealie.Application/Services/Organizers/OrganizerSlugPolicy.cs"
+Task: "T007 Create shared organizer CRUD execution internals in backend-dotnet/src/Mealie.Application/Services/Organizers/OrganizerCrudModule.cs"
 ```
-# In parallel (different files, no shared dependencies):
-Task T057: Create Recipe DTOs in Mealie.Application/Dtos/Recipes/
-Task T058: Create RecipeMapper in Mealie.Application/Mappers/RecipeMapper.cs
-Task T059: Create recipe FluentValidation validators in Mealie.Application/Validators/Recipes/
 
-# After T057 + T058 complete:
-Task T060: Implement RecipeService in Mealie.Application/Services/Recipes/RecipeService.cs
+## Parallel Example: User Story 2
 
-# After T060 completes:
-Task T061: Implement RecipesController in Mealie.Api/Controllers/Recipes/RecipesController.cs
+```bash
+Task: "T011 Create shared meal plan response mapping and navigation loading logic in backend-dotnet/src/Mealie.Application/Services/MealPlans/MealPlanMappingHelper.cs"
+Task: "T012 Create shared meal plan recipe-selection logic for random and fill flows in backend-dotnet/src/Mealie.Application/Services/MealPlans/MealPlanRecipeSelectionService.cs"
+```
+
+## Parallel Example: User Story 3
+
+```bash
+Task: "T016 Create shared shopping list and item DTO projection helpers in backend-dotnet/src/Mealie.Application/Services/ShoppingLists/ShoppingListMappingHelper.cs"
+Task: "T017 Create shared shopping list item mutation and merge behavior in backend-dotnet/src/Mealie.Application/Services/ShoppingLists/ShoppingListItemMutationService.cs"
+Task: "T018 Create shared recipe-to-shopping-list linking behavior in backend-dotnet/src/Mealie.Application/Services/ShoppingLists/ShoppingListRecipeLinkService.cs"
+```
+
+## Parallel Example: User Story 4
+
+```bash
+# After T021 and T022 complete:
+Task: "T023 Refactor ingredient services to use the shared CRUD core in backend-dotnet/src/Mealie.Application/Services/Ingredients/FoodService.cs and backend-dotnet/src/Mealie.Application/Services/Ingredients/UnitService.cs"
+Task: "T024 Refactor food/unit commands and queries to use the shared CRUD core in backend-dotnet/src/Mealie.Application/Commands/Ingredients/CreateFoodCommand.cs, backend-dotnet/src/Mealie.Application/Commands/Ingredients/UpdateFoodCommand.cs, backend-dotnet/src/Mealie.Application/Commands/Ingredients/DeleteFoodCommand.cs, backend-dotnet/src/Mealie.Application/Commands/Ingredients/MergeFoodCommand.cs, backend-dotnet/src/Mealie.Application/Commands/Ingredients/CreateUnitCommand.cs, backend-dotnet/src/Mealie.Application/Commands/Ingredients/UpdateUnitCommand.cs, backend-dotnet/src/Mealie.Application/Commands/Ingredients/DeleteUnitCommand.cs, backend-dotnet/src/Mealie.Application/Commands/Ingredients/MergeUnitCommand.cs, backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetFoodsQuery.cs, backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetFoodByIdQuery.cs, backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetUnitsQuery.cs, and backend-dotnet/src/Mealie.Application/Queries/Ingredients/GetUnitByIdQuery.cs"
+```
+
+## Parallel Example: User Story 5
+
+```bash
+Task: "T027 Create provider-specific parser configuration descriptors in backend-dotnet/src/Mealie.Application/Services/Parser/ParserProviderDescriptor.cs"
+Task: "T028 Create a shared provider-aware parser client builder in backend-dotnet/src/Mealie.Application/Services/Parser/ParserClientFactory.cs"
+```
+
+## Parallel Example: User Story 6
+
+```bash
+# No safe parallel implementation tasks are planned for US6 until T031 characterization coverage and T032 helper extraction are complete.
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (US4 + US1 Only)
+### MVP First (User Story 1 Only)
 
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL — blocks everything)
-3. Complete Phase 3: US4 — Auth working
-4. Complete Phase 4: US1 — Core API working
-5. **STOP and VALIDATE**: Point the Mealie frontend at the new backend; run end-to-end session
-6. Demo if ready; gather feedback before proceeding to P2 stories
+1. Complete T001-T004.
+2. Deliver US1 (T005-T009) as the first, lowest-risk PR slice.
+3. Run T035-T036 for the organizer slice before merge.
+4. Stop and validate that organizer routes, DTOs, slug behavior, and 404 masking remain unchanged.
 
-### Incremental Delivery (After MVP)
+### Incremental Delivery
 
-- Add **Phase 5 (US3)** → automated OpenAPI compat CI gate — prevents regressions
-- Add **Phase 6 (US2)** → migration tool → enables real-world production migration
-- Add remaining P2 phases in any order (they are independent):
-  - Phase 7 (US5): Background jobs
-  - Phase 8 (US8): Ingredient parser quality
-  - Phase 9 (US7): External format imports
-  - Phase 10 (US6): Polish developer experience
+1. **PR Slice 1**: Setup + Foundational + US1.
+2. **PR Slice 2**: US2 meal plan helper consolidation.
+3. **PR Slice 3**: US3 shopping list helper consolidation.
+4. **PR Slice 4**: US4 food/unit CRUD consolidation.
+5. **PR Slice 5**: US5 parser provider consolidation.
+6. **PR Slice 6**: US6 tenant self-resource controller consolidation.
+7. Run T035-T036 after every slice to keep compatibility and tenant isolation continuously verified.
 
 ### Parallel Team Strategy
 
-With multiple developers after Phase 2 completes:
+With multiple engineers after T001-T004:
 
-| Developer | Phase |
-|-----------|-------|
-| A (lead) | Phase 3 (US4 Auth) → Phase 4 (US1 Core API) |
-| B | Phase 6 (US2 Migration tool) — independent |
-| C | Phase 8 (US8 Parser) → Phase 7 (US5 Background) |
+1. Engineer A: US1, then US4.
+2. Engineer B: US2, then US3.
+3. Engineer C: US5 in parallel with US4, then US6 after the controller-sharing pattern is proven.
+
+This keeps changes small, behavior-safe, and reviewable without reopening the broader migration backlog.
 
 ---
 
 ## Notes
 
-- `backend-dotnet/` is the root of all C# work. **No file under `mealie/` is ever modified.**
-- Branch `001-csharp-backend-migration` is active for all tasks. **Never merge to `main`** as part of task execution.
-- `[P]` tasks = different files, no dependency on incomplete tasks in the same phase — safe to parallelize.
-- `[Story]` label maps each task to a specific user story for independent testing and delivery traceability.
-- Commit after each logical group of tasks; include task ID(s) in commit message (e.g., `feat: T057-T061 Recipe CRUD`).
-- Stop at each **Checkpoint** to validate the story independently before proceeding.
+- Contracts stay unchanged for this scope; do not add OpenAPI or external API redesign tasks.
+- Exclude low-priority cleanup and unrelated migration backlog items from these slices.
+- Prefer separate PRs per workstream unless two adjacent tasks are required to keep characterization coverage passing.
+- Preserve explicit tenant IDs and 404 masking in every extracted abstraction.

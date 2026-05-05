@@ -11,9 +11,7 @@ public class UnitService(ApplicationDbContext db) : IUnitService
     public async Task<PaginatedResponse<UnitResponse>> GetUnitsAsync(Guid groupId, PaginationParams pagination,
         string? search = null, CancellationToken ct = default)
     {
-        var query = db.Units.IgnoreQueryFilters()
-            .Include(u => u.Aliases)
-            .Where(u => u.GroupId == groupId);
+        var query = IngredientCrudCore.WithUnitDetails(db.Units.IgnoreQueryFilters()).Where(u => u.GroupId == groupId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -29,16 +27,15 @@ public class UnitService(ApplicationDbContext db) : IUnitService
         {
             Page = pagination.Page, PerPage = pagination.PerPage, Total = total,
             TotalPages = (int)Math.Ceiling((double)total / pagination.PerPage),
-            Items = items.Select(MapToResponse).ToList()
+            Items = items.Select(IngredientCrudCore.MapToResponse).ToList()
         };
     }
 
     public async Task<UnitResponse?> GetByIdAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
-        var u = await db.Units.IgnoreQueryFilters()
-            .Include(u => u.Aliases)
+        var u = await IngredientCrudCore.WithUnitDetails(db.Units.IgnoreQueryFilters())
             .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
-        return u is null ? null : MapToResponse(u);
+        return u is null ? null : IngredientCrudCore.MapToResponse(u);
     }
 
     public async Task<UnitResponse> CreateAsync(Guid groupId, CreateUnitRequest request, CancellationToken ct = default)
@@ -52,21 +49,17 @@ public class UnitService(ApplicationDbContext db) : IUnitService
             GroupId = groupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
         };
 
-        foreach (var alias in request.Aliases)
-        {
-            unit.Aliases.Add(new IngredientUnitAlias { Id = Guid.NewGuid(), Name = alias, UnitId = unit.Id });
-        }
+        IngredientCrudCore.ReplaceAliases(unit, request.Aliases);
 
         db.Units.Add(unit);
         await db.SaveChangesAsync(ct);
-        return MapToResponse(unit);
+        return IngredientCrudCore.MapToResponse(unit);
     }
 
     public async Task<UnitResponse?> UpdateAsync(Guid groupId, Guid id, UpdateUnitRequest request,
         CancellationToken ct = default)
     {
-        var unit = await db.Units.IgnoreQueryFilters()
-            .Include(u => u.Aliases)
+        var unit = await IngredientCrudCore.WithUnitDetails(db.Units.IgnoreQueryFilters())
             .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
         if (unit is null)
         {
@@ -110,60 +103,22 @@ public class UnitService(ApplicationDbContext db) : IUnitService
 
         if (request.Aliases is not null)
         {
-            unit.Aliases.Clear();
-            foreach (var alias in request.Aliases)
-            {
-                unit.Aliases.Add(new IngredientUnitAlias { Id = Guid.NewGuid(), Name = alias, UnitId = unit.Id });
-            }
+            IngredientCrudCore.ReplaceAliases(unit, request.Aliases);
         }
 
         unit.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return MapToResponse(unit);
+        return IngredientCrudCore.MapToResponse(unit);
     }
 
     public async Task<bool> DeleteAsync(Guid groupId, Guid id, CancellationToken ct = default)
     {
-        var unit = await db.Units.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == id, ct);
-        if (unit is null)
-        {
-            return false;
-        }
-
-        db.Units.Remove(unit);
-        await db.SaveChangesAsync(ct);
-        return true;
+        return await IngredientCrudCore.DeleteUnitAsync(db, groupId, id, ct);
     }
 
     public async Task<bool> MergeAsync(Guid groupId, Guid fromUnitId, Guid toUnitId, CancellationToken ct = default)
     {
-        var fromUnit = await db.Units.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == fromUnitId, ct);
-        var toUnit = await db.Units.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.GroupId == groupId && u.Id == toUnitId, ct);
-        if (fromUnit is null || toUnit is null)
-        {
-            return false;
-        }
-
-        await db.RecipeIngredients
-            .Where(i => i.UnitId == fromUnitId)
-            .ExecuteUpdateAsync(s => s.SetProperty(i => i.UnitId, toUnitId), ct);
-
-        db.Units.Remove(fromUnit);
-        await db.SaveChangesAsync(ct);
-        return true;
+        return await IngredientCrudCore.MergeUnitAsync(db, groupId, fromUnitId, toUnitId, ct);
     }
 
-    private static UnitResponse MapToResponse(IngredientUnit u)
-    {
-        return new UnitResponse
-        {
-            Id = u.Id, Name = u.Name, Description = u.Description, Abbreviation = u.Abbreviation,
-            PluralName = u.PluralName, PluralAbbreviation = u.PluralAbbreviation,
-            UseAbbreviation = u.UseAbbreviation, Fraction = u.Fraction,
-            GroupId = u.GroupId, CreatedAt = u.CreatedAt, UpdateAt = u.UpdateAt,
-            Aliases = u.Aliases.Select(a => new AliasResponse { Id = a.Id, Name = a.Name }).ToList()
-        };
-    }
 }

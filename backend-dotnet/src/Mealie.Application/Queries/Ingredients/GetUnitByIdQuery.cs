@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Ingredients;
+using Mealie.Application.Services.Ingredients;
 using Mealie.Domain.Entities.Ingredients;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,9 @@ public record GetUnitByIdQuery(Guid GroupId, Guid Id) : IQuery<UnitResponse?>
 {
     public async Task<UnitResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
-        var u = await services.Db.Units.IgnoreQueryFilters()
-            .Include(u => u.Aliases)
+        var u = await IngredientCrudCore.WithUnitDetails(services.Db.Units.IgnoreQueryFilters())
             .FirstOrDefaultAsync(u => u.GroupId == GroupId && u.Id == Id, ct);
-        return u is null ? null : UnitMappings.MapToResponse(u);
+        return u is null ? null : IngredientCrudCore.MapToResponse(u);
     }
 }
 

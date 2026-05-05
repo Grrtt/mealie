@@ -12,7 +12,8 @@ namespace Mealie.Application.Services.Parser;
 /// </summary>
 public abstract class OpenAiCompatibleParserStrategy(
     AiParserConfig config,
-    IHttpClientFactory httpClientFactory,
+    ParserClientFactory clientFactory,
+    ParserProviderDescriptor providerDescriptor,
     ILogger logger) : IIngredientParserStrategy, IOrganizerAiStrategy
 {
     public async Task<IList<ParsedIngredientDto>?> ParseBatchAsync(
@@ -26,7 +27,7 @@ public abstract class OpenAiCompatibleParserStrategy(
 
         try
         {
-            var client = BuildClient();
+            var client = clientFactory.CreateClient(config, providerDescriptor);
             var numbered = string.Join("\n", ingredients.Select((s, i) => $"{i + 1}. {s}"));
 
             var systemPrompt = config.IngredientSystemPrompt ?? """
@@ -117,9 +118,6 @@ public abstract class OpenAiCompatibleParserStrategy(
         }
     }
 
-    /// <summary>Builds and configures the HttpClient for this provider.</summary>
-    protected abstract HttpClient BuildClient();
-
     public async Task<RecipeOrganizerSuggestions?> SuggestOrganizersAsync(
         RecipeOrganizerContext context, CancellationToken ct = default)
     {
@@ -131,7 +129,7 @@ public abstract class OpenAiCompatibleParserStrategy(
 
         try
         {
-            var client = BuildClient();
+            var client = clientFactory.CreateClient(config, providerDescriptor);
 
             var categoryInstructions = config.CategorySystemPrompt ?? """
                 Classify this recipe into the appropriate meal categories.

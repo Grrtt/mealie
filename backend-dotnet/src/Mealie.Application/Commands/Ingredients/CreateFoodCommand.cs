@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Ingredients;
+using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Ingredients;
 using Mealie.Domain.Events;
@@ -16,16 +17,13 @@ public record CreateFoodCommand(Guid GroupId, CreateFoodRequest Request) : IQuer
             PluralName = Request.PluralName, UnitId = Request.UnitId, LabelId = Request.LabelId,
             GroupId = GroupId, OnHand = Request.OnHand, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
         };
-        foreach (var alias in Request.Aliases)
-        {
-            food.Aliases.Add(new IngredientFoodAlias { Id = Guid.NewGuid(), Name = alias, FoodId = food.Id });
-        }
+        IngredientCrudCore.ReplaceAliases(food, Request.Aliases);
 
         db.Foods.Add(food);
         await db.SaveChangesAsync(ct);
         await services.Mediator.Publish(new FoodCreatedEvent(food.Id, GroupId), ct);
         await db.Entry(food).Reference(f => f.Label).LoadAsync(ct);
-        return FoodMappings.MapToResponse(food);
+        return IngredientCrudCore.MapToResponse(food);
     }
 }
 

@@ -64,18 +64,27 @@ public class ParserStrategyResolver(
             IngredientSystemPrompt: siteSettings?.IngredientSystemPrompt,
             CategorySystemPrompt: siteSettings?.CategorySystemPrompt,
             TagSystemPrompt: siteSettings?.TagSystemPrompt);
-
-        return config.ProviderType switch
+        var clientFactory = new ParserClientFactory(httpClientFactory);
+        var descriptor = config.ProviderType switch
         {
-            "openAi" => new OpenAiParserStrategy(aiConfig, httpClientFactory,
+            "openAi" => ParserProviderDescriptor.OpenAi,
+            "azureOpenAi" => ParserProviderDescriptor.AzureOpenAi,
+            "ollama" => ParserProviderDescriptor.Ollama,
+            "custom" => ParserProviderDescriptor.Custom,
+            _ => ParserProviderDescriptor.Custom
+        };
+
+        return descriptor.ProviderType switch
+        {
+            "openAi" => new OpenAiParserStrategy(aiConfig, clientFactory,
                 loggerFactory.CreateLogger<OpenAiParserStrategy>()),
-            "azureOpenAi" => new AzureOpenAiParserStrategy(aiConfig, httpClientFactory,
+            "azureOpenAi" => new AzureOpenAiParserStrategy(aiConfig, clientFactory,
                 loggerFactory.CreateLogger<AzureOpenAiParserStrategy>()),
-            "ollama" => new OllamaParserStrategy(aiConfig, httpClientFactory,
+            "ollama" => new OllamaParserStrategy(aiConfig, clientFactory,
                 loggerFactory.CreateLogger<OllamaParserStrategy>()),
-            "custom" => new CustomAiParserStrategy(aiConfig, httpClientFactory,
+            "custom" => new CustomAiParserStrategy(aiConfig, clientFactory,
                 loggerFactory.CreateLogger<CustomAiParserStrategy>()),
-            _ => new CustomAiParserStrategy(aiConfig, httpClientFactory,
+            _ => new CustomAiParserStrategy(aiConfig, clientFactory,
                 loggerFactory.CreateLogger<CustomAiParserStrategy>())
         };
     }

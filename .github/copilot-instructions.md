@@ -242,5 +242,5 @@ task docker:prod        # Build and run production Docker compose
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at `specs/001-csharp-backend-migration/plan.md`.
+at `specs/003-react-frontend-migration/plan.md`.
 <!-- SPECKIT END -->

@@ -1,0 +1,86 @@
+version: 1
+feature: react-frontend-migration
+
+global_invariants:
+  - existing backend API contracts remain the default source of truth
+  - nginx continues to proxy /api, /docs, /healthz, /swagger, and /mcp to the backend
+  - base-path deployment via SUB_PATH must keep working
+  - users must not be forced to reauthenticate solely because a route moved between legacy and React
+  - rollback must not require backend schema changes, data migration, or account repair
+
+phases:
+  - id: phase-0
+    name: inventory-and-baseline
+    release_variant: legacy-only
+    exit_gates:
+      - complete route inventory captured from current frontend
+      - workflow inventory defined for auth, recipes, planning, shopping, profile, admin
+      - locale inventory captured including RTL locales
+      - baseline verification approach documented
+
+  - id: phase-1
+    name: react-foundation
+    release_variant: hybrid
+    exit_gates:
+      - replacement SPA can boot under the same nginx/static assumptions
+      - auth/session adapter preserves current cookie and session hydration behavior
+      - locale selection, fallback, and RTL handling are wired
+      - route shell can represent in-scope paths without dead ends
+
+  - id: phase-2
+    name: core-user-workflows
+    release_variant: hybrid
+    exit_gates:
+      - auth flows pass
+      - recipe browse/detail/create/import flows pass
+      - meal planner and shopping list flows pass
+      - deep-link and redirect-after-login checks pass for migrated routes
+
+  - id: phase-3
+    name: profile-household-group-data
+    release_variant: hybrid
+    exit_gates:
+      - profile/favorites/API token flows pass
+      - household members/notifiers/webhooks pass
+      - group data and reports/import-helper surfaces pass
+      - open parity gaps are non-critical or explicitly routed to legacy
+
+  - id: phase-4
+    name: admin-and-cutover-readiness
+    release_variant: react-default
+    exit_gates:
+      - admin setup/settings/backups/debug/manage flows pass
+      - 100 percent of supported routes have replacement route, redirect, or retirement decision
+      - no unresolved critical parity gaps remain
+      - rollback drill succeeds within the documented operator workflow
+
+validation_gates:
+  route-coverage:
+    requirement: all current routes resolve to a functioning page or approved redirect
+    threshold: 100 percent
+  p1-scenarios:
+    requirement: user stories 1 through 3 acceptance scenarios pass
+    threshold: 100 percent
+  overall-scenarios:
+    requirement: all acceptance scenarios pass
+    threshold: at least 95 percent before legacy retirement
+  locale-smoke:
+    requirement: sign-in, navigation, recipe view, and settings smoke coverage across supported locales
+    threshold: 100 percent locales; zero blocking RTL defects
+  navigation-stability:
+    requirement: navigation attempts land on a functioning page or approved redirect
+    threshold: at least 99 percent
+  public-links:
+    requirement: public/shared recipe links remain directly reachable with meaningful metadata
+    threshold: 100 percent of release-candidate checks
+  rollback:
+    requirement: operators can return to the stable legacy experience quickly
+    threshold: completed within 15 minutes
+
+required_evidence:
+  - route inventory status against contracts/route-parity.yaml
+  - automated smoke/integration results for in-scope routes
+  - locale and RTL verification notes
+  - parity-gap register for known differences
+  - deployment notes showing current compose/task expectations still hold
+  - rollback instructions tested against the active release shape

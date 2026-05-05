@@ -1,5 +1,5 @@
 using Mealie.Application.Queries;
-using Microsoft.EntityFrameworkCore;
+using Mealie.Application.Services.Organizers;
 
 namespace Mealie.Application.Commands.Organizers;
 
@@ -7,16 +7,6 @@ public record DeleteCategoryCommand(Guid GroupId, Guid Id) : IQuery<bool>
 {
     public async Task<bool> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
-        var db = services.Db;
-        var cat = await db.Categories.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(c => c.GroupId == GroupId && c.Id == Id, ct);
-        if (cat is null)
-        {
-            return false;
-        }
-
-        db.Categories.Remove(cat);
-        await db.SaveChangesAsync(ct);
-        return true;
+        return await OrganizerCrudModule.DeleteCategoryAsync(services.Db, GroupId, Id, ct);
     }
 }

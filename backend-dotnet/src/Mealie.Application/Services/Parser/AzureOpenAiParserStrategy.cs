@@ -9,15 +9,6 @@ namespace Mealie.Application.Services.Parser;
 /// </summary>
 public class AzureOpenAiParserStrategy(
     AiParserConfig config,
-    IHttpClientFactory httpClientFactory,
+    ParserClientFactory clientFactory,
     ILogger<AzureOpenAiParserStrategy> logger)
-    : OpenAiCompatibleParserStrategy(config, httpClientFactory, logger)
-{
-    protected override HttpClient BuildClient()
-    {
-        var client = httpClientFactory.CreateClient();
-        client.BaseAddress = new Uri(config.BaseUrl!.TrimEnd('/') + "/");
-        client.DefaultRequestHeaders.Add("api-key", config.ApiKey);
-        return client;
-    }
-}
+    : OpenAiCompatibleParserStrategy(config, clientFactory, ParserProviderDescriptor.AzureOpenAi, logger);

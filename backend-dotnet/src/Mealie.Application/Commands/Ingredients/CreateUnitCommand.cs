@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Ingredients;
+using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Ingredients;
 
@@ -17,14 +18,11 @@ public record CreateUnitCommand(Guid GroupId, CreateUnitRequest Request) : IQuer
             UseAbbreviation = Request.UseAbbreviation, Fraction = Request.Fraction,
             GroupId = GroupId, CreatedAt = DateTime.UtcNow, UpdateAt = DateTime.UtcNow
         };
-        foreach (var alias in Request.Aliases)
-        {
-            unit.Aliases.Add(new IngredientUnitAlias { Id = Guid.NewGuid(), Name = alias, UnitId = unit.Id });
-        }
+        IngredientCrudCore.ReplaceAliases(unit, Request.Aliases);
 
         db.Units.Add(unit);
         await db.SaveChangesAsync(ct);
-        return UnitMappings.MapToResponse(unit);
+        return IngredientCrudCore.MapToResponse(unit);
     }
 }
 

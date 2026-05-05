@@ -1,5 +1,5 @@
 using Mealie.Application.Dtos.Organizers;
-using Microsoft.EntityFrameworkCore;
+using Mealie.Application.Services.Organizers;
 
 namespace Mealie.Application.Queries.Organizers;
 
@@ -7,14 +7,6 @@ public record GetEmptyCategoriesQuery(Guid GroupId) : IQuery<IList<CategoryRespo
 {
     public async Task<IList<CategoryResponse>> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
-        return await services.Db.Categories.IgnoreQueryFilters()
-            .Where(c => c.GroupId == GroupId && !c.Recipes.Any())
-            .OrderBy(c => c.Name)
-            .Select(c => new CategoryResponse
-            {
-                Id = c.Id, Name = c.Name, Slug = c.Slug, GroupId = c.GroupId, CreatedAt = c.CreatedAt,
-                UpdateAt = c.UpdateAt
-            })
-            .ToListAsync(ct);
+        return await OrganizerCrudModule.GetEmptyCategoriesAsync(services.Db, GroupId, ct);
     }
 }

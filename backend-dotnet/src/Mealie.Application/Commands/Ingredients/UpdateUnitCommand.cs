@@ -1,4 +1,5 @@
 using Mealie.Application.Dtos.Ingredients;
+using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Queries;
 using Mealie.Domain.Entities.Ingredients;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +11,7 @@ public record UpdateUnitCommand(Guid GroupId, Guid Id, UpdateUnitRequest Request
     public async Task<UnitResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
     {
         var db = services.Db;
-        var unit = await db.Units.IgnoreQueryFilters()
-            .Include(u => u.Aliases)
+        var unit = await IngredientCrudCore.WithUnitDetails(db.Units.IgnoreQueryFilters())
             .FirstOrDefaultAsync(u => u.GroupId == GroupId && u.Id == Id, ct);
         if (unit is null)
         {
@@ -55,16 +55,12 @@ public record UpdateUnitCommand(Guid GroupId, Guid Id, UpdateUnitRequest Request
 
         if (Request.Aliases is not null)
         {
-            unit.Aliases.Clear();
-            foreach (var alias in Request.Aliases)
-            {
-                unit.Aliases.Add(new IngredientUnitAlias { Id = Guid.NewGuid(), Name = alias, UnitId = unit.Id });
-            }
+            IngredientCrudCore.ReplaceAliases(unit, Request.Aliases);
         }
 
         unit.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return UnitMappings.MapToResponse(unit);
+        return IngredientCrudCore.MapToResponse(unit);
     }
 }
 
