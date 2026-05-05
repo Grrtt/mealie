@@ -76,12 +76,39 @@ public class ApplicationDbContext : DbContext
     {
         configurationBuilder.Properties<Guid>().HaveConversion<UppercaseGuidConverter>();
         configurationBuilder.Properties<Guid?>().HaveConversion<UppercaseGuidConverter>();
+        configurationBuilder.Properties<bool>().HaveConversion<int>();
+        configurationBuilder.Properties<bool?>().HaveConversion<int?>();
+        configurationBuilder.Properties<DateTime>().HaveConversion<TextDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableTextDateTimeConverter>();
+        configurationBuilder.Properties<DateOnly>().HaveConversion<TextDateOnlyConverter>();
+        configurationBuilder.Properties<DateOnly?>().HaveConversion<NullableTextDateOnlyConverter>();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        if (Database.ProviderName?.Contains("SqlServer", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var foreignKey in entityType.GetForeignKeys())
+                {
+                    if (foreignKey.IsOwnership)
+                    {
+                        continue;
+                    }
+
+                    foreignKey.DeleteBehavior = foreignKey.DeleteBehavior switch
+                    {
+                        DeleteBehavior.Cascade => DeleteBehavior.ClientCascade,
+                        DeleteBehavior.SetNull => DeleteBehavior.ClientSetNull,
+                        _ => foreignKey.DeleteBehavior
+                    };
+                }
+            }
+        }
 
         // Household-scoped query filters — pass Guid.Empty to bypass (admin)
         modelBuilder.Entity<Recipe>().HasQueryFilter(r =>

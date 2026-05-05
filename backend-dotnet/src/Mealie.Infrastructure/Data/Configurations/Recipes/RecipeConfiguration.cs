@@ -45,22 +45,22 @@ public class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
             .WithMany(t => t.Recipes)
             .UsingEntity<Dictionary<string, object>>(
                 "recipes_to_tags",
-                j => j.HasOne<Tag>().WithMany().HasForeignKey("tag_id"),
-                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                j => j.HasOne<Tag>().WithMany().HasForeignKey("tag_id").OnDelete(DeleteBehavior.NoAction),
+                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id").OnDelete(DeleteBehavior.Cascade),
                 j => j.HasKey("recipe_id", "tag_id"));
         builder.HasMany(r => r.Categories)
             .WithMany(c => c.Recipes)
             .UsingEntity<Dictionary<string, object>>(
                 "recipes_to_categories",
-                j => j.HasOne<Category>().WithMany().HasForeignKey("category_id"),
-                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                j => j.HasOne<Category>().WithMany().HasForeignKey("category_id").OnDelete(DeleteBehavior.NoAction),
+                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id").OnDelete(DeleteBehavior.Cascade),
                 j => j.HasKey("category_id", "recipe_id"));
         builder.HasMany(r => r.Tools)
             .WithMany(t => t.Recipes)
             .UsingEntity<Dictionary<string, object>>(
                 "recipes_to_tools",
-                j => j.HasOne<Tool>().WithMany().HasForeignKey("tool_id"),
-                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id"),
+                j => j.HasOne<Tool>().WithMany().HasForeignKey("tool_id").OnDelete(DeleteBehavior.NoAction),
+                j => j.HasOne<Recipe>().WithMany().HasForeignKey("recipe_id").OnDelete(DeleteBehavior.Cascade),
                 j => j.HasKey("recipe_id", "tool_id"));
 
         builder.HasOne(r => r.Group)

@@ -6,8 +6,8 @@ namespace Mealie.Api.Configuration;
 /// </summary>
 public static class AppSettingsConfig
 {
-    // DB_ENGINE: "sqlite" (default) or "postgres"
-    // DATABASE_URL: SQLite path or PostgreSQL connection string
+    // DB_ENGINE: "sqlserver" (default), "postgres", or "sqlite"
+    // DATABASE_URL: SQL Server / PostgreSQL connection string or SQLite path override
     // SECRET: JWT signing key (min 32 chars)
     // BASE_URL: public-facing URL of the API
     // DATA_DIR: directory for recipe images, backups, etc.

@@ -1,0 +1,113 @@
+version: 1
+feature: react-frontend-migration
+
+global_invariants:
+  - existing backend API contracts remain the default source of truth
+  - nginx continues to proxy /api, /docs, /healthz, /swagger, and /mcp to the backend
+  - base-path deployment via SUB_PATH must keep working
+  - users must not be forced to reauthenticate solely because a route moved between legacy and React
+  - rollback must not require backend schema changes, data migration, or account repair
+
+phases:
+  - id: phase-0
+    name: inventory-and-baseline
+    release_variant: legacy-only
+    exit_gates:
+      - complete route inventory captured from current frontend
+      - workflow inventory defined for auth, recipes, planning, shopping, profile, admin
+      - locale inventory captured including RTL locales
+      - baseline verification approach documented
+
+  - id: phase-1
+    name: react-foundation
+    release_variant: hybrid
+    exit_gates:
+      - replacement SPA can boot under the same nginx/static assumptions
+      - auth/session adapter preserves current cookie and session hydration behavior
+      - locale selection, fallback, and RTL handling are wired
+      - route shell can represent in-scope paths without dead ends
+
+  - id: phase-2
+    name: core-user-workflows
+    release_variant: hybrid
+    exit_gates:
+      - auth flows pass
+      - recipe browse/detail/create/import flows pass
+      - meal planner and shopping list flows pass
+      - deep-link and redirect-after-login checks pass for migrated routes
+
+  - id: phase-3
+    name: profile-household-group-data
+    release_variant: hybrid
+    exit_gates:
+      - profile/favorites/API token flows pass
+      - household members/notifiers/webhooks pass
+      - group data and reports/import-helper surfaces pass
+      - open parity gaps are non-critical or explicitly routed to legacy
+
+  - id: phase-4
+    name: admin-and-cutover-readiness
+    release_variant: hybrid
+    exit_gates:
+      - admin setup/settings/backups/debug/manage flows pass
+      - coexistence gateway reports the approved route slices and serves unsupported paths from legacy
+      - rollback drill succeeds within the documented operator workflow
+      - open parity gaps are tracked with disposition and severity before any react-default promotion
+
+  - id: phase-5
+    name: final-cutover-and-retirement
+    release_variant: react-default
+    exit_gates:
+      - 100 percent of supported routes have replacement route, redirect, or retirement decision
+      - no unresolved critical parity gaps remain
+      - react-default rollout is validated before legacy retirement
+
+validation_gates:
+  route-coverage:
+    requirement: all current routes resolve to a functioning page or approved redirect
+    threshold: 100 percent
+  p1-scenarios:
+    requirement: user stories 1 through 3 acceptance scenarios pass
+    threshold: 100 percent
+  overall-scenarios:
+    requirement: all acceptance scenarios pass
+    threshold: at least 95 percent before legacy retirement
+  locale-smoke:
+    requirement: sign-in, navigation, recipe view, and settings smoke coverage across supported locales
+    threshold: 100 percent locales; zero blocking RTL defects
+  navigation-stability:
+    requirement: navigation attempts land on a functioning page or approved redirect
+    threshold: at least 99 percent
+  public-links:
+    requirement: public/shared recipe links remain directly reachable with meaningful metadata
+    threshold: 100 percent of release-candidate checks
+  accessibility:
+    requirement: primary navigation and high-traffic form workflows retain accessible landmarks, labels, and validation messaging
+    threshold: zero blocking regressions in automated accessibility checks
+  performance-top-workflows:
+    requirement: login, group landing, and shopping-list entry remain within the configured cold-start regression budget
+    threshold: all monitored workflows stay within their regression thresholds
+  rollback:
+    requirement: operators can return to the stable legacy experience quickly
+    threshold: completed within 15 minutes
+  coexistence-routing:
+    requirement: the legacy gateway exposes the active release variant and route-slice decision for approved and fallback paths
+    threshold: 100 percent of coexistence smoke checks
+  parity-gap-register:
+    requirement: every open migration difference is recorded with severity and disposition before phase promotion
+    threshold: zero undocumented gaps for release candidates
+
+required_evidence:
+  - route inventory status against contracts/route-parity.yaml
+  - automated smoke/integration results for in-scope routes
+  - locale and RTL verification notes
+  - parity-gap register for known differences
+  - automated accessibility evidence from `frontend-react/src/test/accessibility/navigation.a11y.test.tsx` and `frontend-react/src/test/accessibility/forms.a11y.test.tsx`
+  - performance regression evidence from `tests/e2e/react-migration/performance.spec.ts`
+  - coexistence routing evidence from tests/e2e/react-migration/coexistence-routing.spec.ts
+  - rollout and rollback drill evidence from tests/e2e/react-migration/cutover-rollback.spec.ts
+  - parity report output from tests/e2e/react-migration/reporters/parityReport.ts
+  - phase checklist state from checklists/phase-parity.md
+  - deployment notes showing current compose/task expectations still hold
+  - rollback instructions tested against the active release shape
+  - React workspace evidence for `task ui:react:build` and `task ui:react:test`

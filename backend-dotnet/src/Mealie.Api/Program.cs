@@ -135,7 +135,13 @@ builder.Host.UseSerilog((ctx, cfg) =>
 builder.Services.AddScoped<TenantFilter>();
 builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
 {
-    if (appSettings.DbEngine.Equals("postgres", StringComparison.OrdinalIgnoreCase))
+    if (appSettings.DbEngine.Equals("sqlserver", StringComparison.OrdinalIgnoreCase) ||
+        appSettings.DbEngine.Equals("mssql", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlServer(appSettings.DatabaseUrl)
+            .UseSnakeCaseNamingConvention();
+    }
+    else if (appSettings.DbEngine.Equals("postgres", StringComparison.OrdinalIgnoreCase))
     {
         options.UseNpgsql(appSettings.DatabaseUrl)
             .UseSnakeCaseNamingConvention();
@@ -474,8 +480,16 @@ if (args.Length > 0)
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                await db.Database.MigrateAsync();
-                Console.WriteLine("✅ Migrations applied.");
+                if (db.Database.ProviderName?.Contains("SqlServer", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    await db.Database.EnsureCreatedAsync();
+                    Console.WriteLine("✅ SQL Server bootstrap applied from current EF model.");
+                }
+                else
+                {
+                    await db.Database.MigrateAsync();
+                    Console.WriteLine("✅ Migrations applied.");
+                }
             }
 
             return;
@@ -486,53 +500,68 @@ if (args.Length > 0)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
-
-    // Ensure report tables exist — applied as raw SQL so it's always idempotent
-    // regardless of EF migration discovery issues with hand-written migrations.
-    await db.Database.ExecuteSqlRawAsync(@"
-        CREATE TABLE IF NOT EXISTS reports (
-            id TEXT NOT NULL,
-            name TEXT NOT NULL,
-            category TEXT NOT NULL DEFAULT 'migration',
-            status TEXT NOT NULL DEFAULT 'in-progress',
-            timestamp TEXT NOT NULL,
-            group_id TEXT NOT NULL,
-            CONSTRAINT pk_reports PRIMARY KEY (id),
-            CONSTRAINT fk_reports_groups_group_id FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
-        );
-        CREATE INDEX IF NOT EXISTS ix_reports_group_id ON reports (group_id);
-        CREATE TABLE IF NOT EXISTS report_entries (
-            id TEXT NOT NULL,
-            report_id TEXT NOT NULL,
-            timestamp TEXT NOT NULL,
-            success INTEGER NOT NULL,
-            message TEXT NOT NULL,
-            exception TEXT,
-            CONSTRAINT pk_report_entries PRIMARY KEY (id),
-            CONSTRAINT fk_report_entries_reports_report_id FOREIGN KEY (report_id) REFERENCES reports (id) ON DELETE CASCADE
-        );
-        CREATE INDEX IF NOT EXISTS ix_report_entries_report_id ON report_entries (report_id);
-    ");
-
-    // Ensure site_settings system-prompt columns exist — idempotent guard for hand-written migration discovery issues.
-    // Use PRAGMA to pre-check so we avoid noisy EF error logs on every restart when columns already exist.
-    var promptCols = new[] { "ingredient_system_prompt", "category_system_prompt", "tag_system_prompt" };
-    var existingCols = new HashSet<string>();
-    await using (var conn = db.Database.GetDbConnection())
+    var isSqlServer = db.Database.ProviderName?.Contains("SqlServer", StringComparison.OrdinalIgnoreCase) == true;
+    if (isSqlServer)
     {
-        var wasOpen = conn.State == System.Data.ConnectionState.Open;
-        if (!wasOpen) await conn.OpenAsync();
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT name FROM pragma_table_info('site_settings')";
-        await using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
-            existingCols.Add(reader.GetString(0));
-        if (!wasOpen) conn.Close();
+        await db.Database.EnsureCreatedAsync();
     }
+    else
+    {
+        await db.Database.MigrateAsync();
 
-    foreach (var col in promptCols.Where(c => !existingCols.Contains(c)))
-        await db.Database.ExecuteSqlRawAsync("ALTER TABLE site_settings ADD COLUMN " + col + " TEXT");
+        // Ensure report tables exist — applied as raw SQL so it's always idempotent
+        // regardless of EF migration discovery issues with hand-written migrations.
+        await db.Database.ExecuteSqlRawAsync(@"
+            CREATE TABLE IF NOT EXISTS reports (
+                id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL DEFAULT 'migration',
+                status TEXT NOT NULL DEFAULT 'in-progress',
+                timestamp TEXT NOT NULL,
+                group_id TEXT NOT NULL,
+                CONSTRAINT pk_reports PRIMARY KEY (id),
+                CONSTRAINT fk_reports_groups_group_id FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS ix_reports_group_id ON reports (group_id);
+            CREATE TABLE IF NOT EXISTS report_entries (
+                id TEXT NOT NULL,
+                report_id TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                success INTEGER NOT NULL,
+                message TEXT NOT NULL,
+                exception TEXT,
+                CONSTRAINT pk_report_entries PRIMARY KEY (id),
+                CONSTRAINT fk_report_entries_reports_report_id FOREIGN KEY (report_id) REFERENCES reports (id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS ix_report_entries_report_id ON report_entries (report_id);
+        ");
+
+        // Ensure site_settings system-prompt columns exist — idempotent guard for hand-written migration discovery issues.
+        var promptCols = new[] { "ingredient_system_prompt", "category_system_prompt", "tag_system_prompt" };
+        var existingCols = new HashSet<string>();
+        var isPostgres = db.Database.ProviderName?.Contains("Npgsql") == true;
+        await using (var conn = db.Database.GetDbConnection())
+        {
+            var wasOpen = conn.State == System.Data.ConnectionState.Open;
+            if (!wasOpen) await conn.OpenAsync();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = isPostgres
+                ? """
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = current_schema()
+                      AND table_name = 'site_settings'
+                    """
+                : "SELECT name FROM pragma_table_info('site_settings')";
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                existingCols.Add(reader.GetString(0));
+            if (!wasOpen) conn.Close();
+        }
+
+        foreach (var col in promptCols.Where(c => !existingCols.Contains(c)))
+            await db.Database.ExecuteSqlRawAsync("ALTER TABLE site_settings ADD COLUMN " + col + " TEXT");
+    }
 }
 
 await SeedCommand.RunAsync(app.Services);

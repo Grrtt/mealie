@@ -1,12 +1,15 @@
 # Mealie — Full Stack (C# backend + Nuxt frontend)
 #
-# Profiles:
-#   (default)  SQLite + Mailpit
-#   postgres   PostgreSQL + Mailpit
+# Default stack:
+#   SQL Server + Mailpit
 #
 # Usage:
-#   SQLite  : docker compose -f docker-compose.dotnet.yml up --build
-#   Postgres: docker compose -f docker-compose.dotnet.yml --profile postgres up --build
+#   SQL Server (default):
+#     docker compose -f docker-compose.dotnet.yml up --build
+#   SQLite override:
+#     MEALIE_DB_ENGINE=sqlite \
+#     MEALIE_DATABASE_URL="Data Source=/app/data/mealie.db" \
+#     docker compose -f docker-compose.dotnet.yml up --build
 #
 # URLs once running:
 #   App     → http://localhost
@@ -25,12 +28,86 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+    environment:
+      MEALIE_FRONTEND_RELEASE_VARIANT: "${MEALIE_FRONTEND_RELEASE_VARIANT:-react-default}"
+      MEALIE_ROUTE_SLICE_AUTH: "${MEALIE_ROUTE_SLICE_AUTH:-true}"
+      MEALIE_ROUTE_SLICE_PUBLIC_RECIPES: "${MEALIE_ROUTE_SLICE_PUBLIC_RECIPES:-true}"
+      MEALIE_ROUTE_SLICE_GROUP_HOME: "${MEALIE_ROUTE_SLICE_GROUP_HOME:-true}"
+      MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT: "${MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT:-true}"
+      MEALIE_ROUTE_SLICE_RECIPES: "${MEALIE_ROUTE_SLICE_RECIPES:-true}"
+      MEALIE_ROUTE_SLICE_COOKBOOKS: "${MEALIE_ROUTE_SLICE_COOKBOOKS:-true}"
+      MEALIE_ROUTE_SLICE_HOUSEHOLD: "${MEALIE_ROUTE_SLICE_HOUSEHOLD:-true}"
+      MEALIE_ROUTE_SLICE_SHOPPING_LISTS: "${MEALIE_ROUTE_SLICE_SHOPPING_LISTS:-true}"
+      MEALIE_ROUTE_SLICE_USER_PROFILE: "${MEALIE_ROUTE_SLICE_USER_PROFILE:-true}"
+      MEALIE_ROUTE_SLICE_GROUP_DATA: "${MEALIE_ROUTE_SLICE_GROUP_DATA:-true}"
+      MEALIE_ROUTE_SLICE_ADMIN: "${MEALIE_ROUTE_SLICE_ADMIN:-true}"
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        envsubst '$$MEALIE_FRONTEND_RELEASE_VARIANT $$MEALIE_ROUTE_SLICE_AUTH $$MEALIE_ROUTE_SLICE_PUBLIC_RECIPES $$MEALIE_ROUTE_SLICE_GROUP_HOME $$MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT $$MEALIE_ROUTE_SLICE_RECIPES $$MEALIE_ROUTE_SLICE_COOKBOOKS $$MEALIE_ROUTE_SLICE_HOUSEHOLD $$MEALIE_ROUTE_SLICE_SHOPPING_LISTS $$MEALIE_ROUTE_SLICE_USER_PROFILE $$MEALIE_ROUTE_SLICE_GROUP_DATA $$MEALIE_ROUTE_SLICE_ADMIN'
+        < /etc/nginx/conf.d/default.conf
+        > /etc/nginx/conf.d/default.conf.rendered
+        && mv /etc/nginx/conf.d/default.conf.rendered /etc/nginx/conf.d/default.conf
+        && exec nginx -g 'daemon off;'
     depends_on:
       mealie-api:
         condition: service_healthy
     profiles: ["", "sqlite", "postgres"]
 
-  # ── C# Backend (SQLite, default) ─────────────────────────────────────────────
+  mealie-frontend-react:
+    container_name: mealie_frontend_react
+    build:
+      context: .
+      dockerfile: frontend-react/Dockerfile
+      args:
+        SUB_PATH: "${SUB_PATH:-/}"
+        VITE_RELEASE_VARIANT: "${MEALIE_REACT_RELEASE_VARIANT:-react-default}"
+        VITE_LEGACY_FALLBACK_ORIGIN: "${MEALIE_LEGACY_FALLBACK_ORIGIN:-http://localhost}"
+        VITE_ROUTE_SLICE_AUTH: "${MEALIE_ROUTE_SLICE_AUTH:-true}"
+        VITE_ROUTE_SLICE_PUBLIC_RECIPES: "${MEALIE_ROUTE_SLICE_PUBLIC_RECIPES:-true}"
+        VITE_ROUTE_SLICE_GROUP_HOME: "${MEALIE_ROUTE_SLICE_GROUP_HOME:-true}"
+        VITE_ROUTE_SLICE_RECIPE_CREATE_IMPORT: "${MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT:-true}"
+        VITE_ROUTE_SLICE_RECIPES: "${MEALIE_ROUTE_SLICE_RECIPES:-true}"
+        VITE_ROUTE_SLICE_COOKBOOKS: "${MEALIE_ROUTE_SLICE_COOKBOOKS:-true}"
+        VITE_ROUTE_SLICE_HOUSEHOLD: "${MEALIE_ROUTE_SLICE_HOUSEHOLD:-true}"
+        VITE_ROUTE_SLICE_SHOPPING_LISTS: "${MEALIE_ROUTE_SLICE_SHOPPING_LISTS:-true}"
+        VITE_ROUTE_SLICE_USER_PROFILE: "${MEALIE_ROUTE_SLICE_USER_PROFILE:-true}"
+        VITE_ROUTE_SLICE_GROUP_DATA: "${MEALIE_ROUTE_SLICE_GROUP_DATA:-true}"
+        VITE_ROUTE_SLICE_ADMIN: "${MEALIE_ROUTE_SLICE_ADMIN:-true}"
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      MEALIE_REACT_RELEASE_VARIANT: "${MEALIE_REACT_RELEASE_VARIANT:-react-default}"
+      MEALIE_ROUTE_SLICE_AUTH: "${MEALIE_ROUTE_SLICE_AUTH:-true}"
+      MEALIE_ROUTE_SLICE_PUBLIC_RECIPES: "${MEALIE_ROUTE_SLICE_PUBLIC_RECIPES:-true}"
+      MEALIE_ROUTE_SLICE_GROUP_HOME: "${MEALIE_ROUTE_SLICE_GROUP_HOME:-true}"
+      MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT: "${MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT:-true}"
+      MEALIE_ROUTE_SLICE_RECIPES: "${MEALIE_ROUTE_SLICE_RECIPES:-true}"
+      MEALIE_ROUTE_SLICE_COOKBOOKS: "${MEALIE_ROUTE_SLICE_COOKBOOKS:-true}"
+      MEALIE_ROUTE_SLICE_HOUSEHOLD: "${MEALIE_ROUTE_SLICE_HOUSEHOLD:-true}"
+      MEALIE_ROUTE_SLICE_SHOPPING_LISTS: "${MEALIE_ROUTE_SLICE_SHOPPING_LISTS:-true}"
+      MEALIE_ROUTE_SLICE_USER_PROFILE: "${MEALIE_ROUTE_SLICE_USER_PROFILE:-true}"
+      MEALIE_ROUTE_SLICE_GROUP_DATA: "${MEALIE_ROUTE_SLICE_GROUP_DATA:-true}"
+      MEALIE_ROUTE_SLICE_ADMIN: "${MEALIE_ROUTE_SLICE_ADMIN:-true}"
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        envsubst '$$MEALIE_REACT_RELEASE_VARIANT $$MEALIE_ROUTE_SLICE_AUTH $$MEALIE_ROUTE_SLICE_PUBLIC_RECIPES $$MEALIE_ROUTE_SLICE_GROUP_HOME $$MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT $$MEALIE_ROUTE_SLICE_RECIPES $$MEALIE_ROUTE_SLICE_COOKBOOKS $$MEALIE_ROUTE_SLICE_HOUSEHOLD $$MEALIE_ROUTE_SLICE_SHOPPING_LISTS $$MEALIE_ROUTE_SLICE_USER_PROFILE $$MEALIE_ROUTE_SLICE_GROUP_DATA $$MEALIE_ROUTE_SLICE_ADMIN'
+        < /etc/nginx/conf.d/default.conf
+        > /etc/nginx/conf.d/default.conf.rendered
+        && mv /etc/nginx/conf.d/default.conf.rendered /etc/nginx/conf.d/default.conf
+        && exec nginx -g 'daemon off;'
+    depends_on:
+      mealie-api:
+        condition: service_healthy
+    # Keep the React runtime available in the default compose shape now that the
+    # shipped gateway routes to React by default. Explicit rollback still happens
+    # by flipping MEALIE_FRONTEND_RELEASE_VARIANT back to legacy-only.
+
+  # ── C# Backend (SQL Server, default) ─────────────────────────────────────────
   mealie-api:
     container_name: mealie_api
     build:
@@ -42,8 +119,8 @@ services:
     volumes:
       - mealie-data:/app/data
     environment:
-      DB_ENGINE: sqlite
-      DATABASE_URL: "Data Source=/app/data/mealie.db"
+      DB_ENGINE: "${MEALIE_DB_ENGINE:-sqlserver}"
+      DATABASE_URL: "${MEALIE_DATABASE_URL:-Server=sqlserver,1433;Database=mealie;User Id=sa;Password=MealieSqlServerDev123!;TrustServerCertificate=True;Encrypt=False}"
       SECRET: "local-dev-secret-change-me-32chars!!"
       BASE_URL: "http://localhost"
       DATA_DIR: /app/data
@@ -57,44 +134,7 @@ services:
       SMTP_FROM_NAME: "Mealie (local)"
       MCP_SECRET: "mealie"
     depends_on:
-      mailpit:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/healthz"]
-      interval: 30s
-      timeout: 10s
-      start_period: 20s
-      retries: 3
-    profiles: ["", "sqlite"]
-
-  # ── C# Backend (Postgres) ────────────────────────────────────────────────────
-  mealie-api-pg:
-    container_name: mealie_api_pg
-    build:
-      context: ./backend-dotnet
-      dockerfile: docker/Dockerfile
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-    volumes:
-      - mealie-data:/app/data
-    environment:
-      DB_ENGINE: postgres
-      DATABASE_URL: "Host=postgres;Port=5432;Database=mealie;Username=mealie;Password=mealie"
-      SECRET: "local-dev-secret-change-me-32chars!!"
-      BASE_URL: "http://localhost"
-      DATA_DIR: /app/data
-      LOG_LEVEL: Debug
-      ASPNETCORE_ENVIRONMENT: Development
-      ALLOW_SIGNUP: "true"
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      SMTP_AUTH_STRATEGY: NONE
-      SMTP_FROM_EMAIL: "noreply@mealie.local"
-      SMTP_FROM_NAME: "Mealie (local)"
-      MCP_SECRET: "mealie"
-    depends_on:
-      postgres:
+      sqlserver:
         condition: service_healthy
       mailpit:
         condition: service_started
@@ -104,27 +144,28 @@ services:
       timeout: 10s
       start_period: 20s
       retries: 3
-    profiles: ["postgres"]
+    profiles: ["", "sqlserver", "postgres", "sqlite"]
 
-  # ── PostgreSQL ───────────────────────────────────────────────────────────────
-  postgres:
-    container_name: mealie_postgres
-    image: postgres:16-alpine
+  # ── SQL Server ───────────────────────────────────────────────────────────────
+  sqlserver:
+    container_name: mealie_sqlserver
+    image: mcr.microsoft.com/mssql/server:2022-latest
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "14330:1433"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - sqlserver-data:/var/opt/mssql
     environment:
-      POSTGRES_USER: mealie
-      POSTGRES_PASSWORD: mealie
-      POSTGRES_DB: mealie
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "MealieSqlServerDev123!"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mealie -d mealie"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $$MSSQL_SA_PASSWORD -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-    profiles: ["postgres"]
+      start_period: 20s
+    profiles: ["", "sqlserver"]
 
   # ── Mailpit (email testing UI) ───────────────────────────────────────────────
   mailpit:
@@ -137,10 +178,10 @@ services:
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "true"
       MP_SMTP_AUTH_ALLOW_INSECURE: "true"
-    profiles: ["", "sqlite", "postgres"]
+    profiles: ["", "sqlite", "postgres", "sqlserver"]
 
 volumes:
   mealie-data:
     driver: local
-  postgres-data:
+  sqlserver-data:
     driver: local

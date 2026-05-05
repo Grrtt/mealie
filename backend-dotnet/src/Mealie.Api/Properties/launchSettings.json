@@ -8,8 +8,8 @@
       "applicationUrl": "http://localhost:9000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DB_ENGINE": "sqlite",
-        "DATABASE_URL": "Data Source=../../../data/mealie.db",
+        "DB_ENGINE": "sqlserver",
+        "DATABASE_URL": "Server=localhost,14330;Database=mealie;User Id=sa;Password=MealieSqlServerDev123!;TrustServerCertificate=True;Encrypt=False",
         "SECRET": "development-secret-do-not-use-in-production",
         "DATA_DIR": "../../../data",
         "LOG_LEVEL": "Debug",
@@ -24,8 +24,8 @@
       "applicationUrl": "http://localhost:9000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "DB_ENGINE": "sqlite",
-        "DATABASE_URL": "Data Source=../../../data/mealie.db",
+        "DB_ENGINE": "sqlserver",
+        "DATABASE_URL": "Server=localhost,14330;Database=mealie;User Id=sa;Password=MealieSqlServerDev123!;TrustServerCertificate=True;Encrypt=False",
         "SECRET": "development-secret-do-not-use-in-production",
         "DATA_DIR": "../../../data"
       }
