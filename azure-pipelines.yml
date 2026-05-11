@@ -36,15 +36,12 @@ pr: none
 #      Common optional APP_ variables for SMTP are wired in the
 #      "Generate deployment .env" step below.
 #
-#   3. Environments (Pipelines → Environments):
-#      • Create "PROD" — add approval gates if you want a manual production gate.
-#
 # LINUX SERVER:
-#   4. Docker and Docker Compose plugin installed; deploy user in the 'docker'
+#   3. Docker and Docker Compose plugin installed; deploy user in the 'docker'
 #      group and $(DEPLOY_PATH)/website writable by that user.
 #
 # DEPLOYMENT SHAPE:
-#   5. This pipeline deploys docker-compose.yml together with
+#   4. This pipeline deploys docker-compose.yml together with
 #      docker-compose.azure.yml so the server serves the React frontend on
 #      the published frontend port defined in docker-compose.yml (currently 9000)
 #      from GHCR images.
@@ -181,105 +178,101 @@ stages:
     displayName: Deploy to Linux Server
     dependsOn: Docker
     jobs:
-      - deployment: DeployJob
+      - job: DeployJob
         displayName: SSH deploy
         pool:
           vmImage: ubuntu-latest
-        environment: 'PROD'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - download: current
-                  artifact: deploy-compose
-                  displayName: Download base compose file
+        steps:
+          - download: current
+            artifact: deploy-compose
+            displayName: Download base compose file
 
-                - download: current
-                  artifact: deploy-override
-                  displayName: Download Azure override compose file
+          - download: current
+            artifact: deploy-override
+            displayName: Download Azure override compose file
 
-                - script: |
-                    DB_ENGINE="${APP_MEALIE_DB_ENGINE:-sqlserver}"
-                    DATABASE_URL="${APP_MEALIE_DATABASE_URL:-Server=sqlserver,1433;Database=mealie;User Id=sa;Password=${APP_MEALIE_SQLSERVER_PASSWORD};TrustServerCertificate=True;Encrypt=False}"
+          - script: |
+              DB_ENGINE="${APP_MEALIE_DB_ENGINE:-sqlserver}"
+              DATABASE_URL="${APP_MEALIE_DATABASE_URL:-Server=sqlserver,1433;Database=mealie;User Id=sa;Password=${APP_MEALIE_SQLSERVER_PASSWORD};TrustServerCertificate=True;Encrypt=False}"
 
-                    cat > "$(Agent.TempDirectory)/.env" <<EOF
-                    MEALIE_API_IMAGE=ghcr.io/$(GH_OWNER)/$(apiImageName):$(imageTag)
-                    MEALIE_FRONTEND_IMAGE=ghcr.io/$(GH_OWNER)/$(frontendImageName):$(imageTag)
-                    MEALIE_ASPNETCORE_ENVIRONMENT=Production
-                    MEALIE_LOG_LEVEL=Information
-                    MEALIE_ALLOW_SIGNUP=false
-                    MEALIE_DB_ENGINE=${DB_ENGINE}
-                    MEALIE_DATABASE_URL=${DATABASE_URL}
-                    MEALIE_BASE_URL=${APP_MEALIE_BASE_URL}
-                    MEALIE_SECRET=${APP_MEALIE_SECRET}
-                    MEALIE_SQLSERVER_PASSWORD=${APP_MEALIE_SQLSERVER_PASSWORD}
-                    MEALIE_SMTP_HOST=${APP_MEALIE_SMTP_HOST}
-                    MEALIE_SMTP_PORT=${APP_MEALIE_SMTP_PORT}
-                    MEALIE_SMTP_AUTH_STRATEGY=${APP_MEALIE_SMTP_AUTH_STRATEGY}
-                    MEALIE_SMTP_USER=${APP_MEALIE_SMTP_USER}
-                    MEALIE_SMTP_PASSWORD=${APP_MEALIE_SMTP_PASSWORD}
-                    MEALIE_SMTP_FROM_EMAIL=${APP_MEALIE_SMTP_FROM_EMAIL}
-                    MEALIE_SMTP_FROM_NAME=${APP_MEALIE_SMTP_FROM_NAME}
-                    EOF
-                  displayName: Generate deployment .env
-                  env:
-                    APP_MEALIE_BASE_URL: $(APP_MEALIE_BASE_URL)
-                    APP_MEALIE_DB_ENGINE: $(APP_MEALIE_DB_ENGINE)
-                    APP_MEALIE_DATABASE_URL: $(APP_MEALIE_DATABASE_URL)
-                    APP_MEALIE_SECRET: $(APP_MEALIE_SECRET)
-                    APP_MEALIE_SMTP_AUTH_STRATEGY: $(APP_MEALIE_SMTP_AUTH_STRATEGY)
-                    APP_MEALIE_SMTP_FROM_EMAIL: $(APP_MEALIE_SMTP_FROM_EMAIL)
-                    APP_MEALIE_SMTP_FROM_NAME: $(APP_MEALIE_SMTP_FROM_NAME)
-                    APP_MEALIE_SMTP_HOST: $(APP_MEALIE_SMTP_HOST)
-                    APP_MEALIE_SMTP_PASSWORD: $(APP_MEALIE_SMTP_PASSWORD)
-                    APP_MEALIE_SMTP_PORT: $(APP_MEALIE_SMTP_PORT)
-                    APP_MEALIE_SMTP_USER: $(APP_MEALIE_SMTP_USER)
-                    APP_MEALIE_SQLSERVER_PASSWORD: $(APP_MEALIE_SQLSERVER_PASSWORD)
+              cat > "$(Agent.TempDirectory)/.env" <<EOF
+              MEALIE_API_IMAGE=ghcr.io/$(GH_OWNER)/$(apiImageName):$(imageTag)
+              MEALIE_FRONTEND_IMAGE=ghcr.io/$(GH_OWNER)/$(frontendImageName):$(imageTag)
+              MEALIE_ASPNETCORE_ENVIRONMENT=Production
+              MEALIE_LOG_LEVEL=Information
+              MEALIE_ALLOW_SIGNUP=false
+              MEALIE_DB_ENGINE=${DB_ENGINE}
+              MEALIE_DATABASE_URL=${DATABASE_URL}
+              MEALIE_BASE_URL=${APP_MEALIE_BASE_URL}
+              MEALIE_SECRET=${APP_MEALIE_SECRET}
+              MEALIE_SQLSERVER_PASSWORD=${APP_MEALIE_SQLSERVER_PASSWORD}
+              MEALIE_SMTP_HOST=${APP_MEALIE_SMTP_HOST}
+              MEALIE_SMTP_PORT=${APP_MEALIE_SMTP_PORT}
+              MEALIE_SMTP_AUTH_STRATEGY=${APP_MEALIE_SMTP_AUTH_STRATEGY}
+              MEALIE_SMTP_USER=${APP_MEALIE_SMTP_USER}
+              MEALIE_SMTP_PASSWORD=${APP_MEALIE_SMTP_PASSWORD}
+              MEALIE_SMTP_FROM_EMAIL=${APP_MEALIE_SMTP_FROM_EMAIL}
+              MEALIE_SMTP_FROM_NAME=${APP_MEALIE_SMTP_FROM_NAME}
+              EOF
+            displayName: Generate deployment .env
+            env:
+              APP_MEALIE_BASE_URL: $(APP_MEALIE_BASE_URL)
+              APP_MEALIE_DB_ENGINE: $(APP_MEALIE_DB_ENGINE)
+              APP_MEALIE_DATABASE_URL: $(APP_MEALIE_DATABASE_URL)
+              APP_MEALIE_SECRET: $(APP_MEALIE_SECRET)
+              APP_MEALIE_SMTP_AUTH_STRATEGY: $(APP_MEALIE_SMTP_AUTH_STRATEGY)
+              APP_MEALIE_SMTP_FROM_EMAIL: $(APP_MEALIE_SMTP_FROM_EMAIL)
+              APP_MEALIE_SMTP_FROM_NAME: $(APP_MEALIE_SMTP_FROM_NAME)
+              APP_MEALIE_SMTP_HOST: $(APP_MEALIE_SMTP_HOST)
+              APP_MEALIE_SMTP_PASSWORD: $(APP_MEALIE_SMTP_PASSWORD)
+              APP_MEALIE_SMTP_PORT: $(APP_MEALIE_SMTP_PORT)
+              APP_MEALIE_SMTP_USER: $(APP_MEALIE_SMTP_USER)
+              APP_MEALIE_SQLSERVER_PASSWORD: $(APP_MEALIE_SQLSERVER_PASSWORD)
 
-                - task: SSH@0
-                  displayName: Ensure remote deploy directory exists
-                  inputs:
-                    sshEndpoint: $(CLIENT_NAME)-deploy
-                    runOptions: commands
-                    commands: mkdir -p $(DEPLOY_PATH)/website
-                    failOnStdErr: false
+          - task: SSH@0
+            displayName: Ensure remote deploy directory exists
+            inputs:
+              sshEndpoint: $(CLIENT_NAME)-deploy
+              runOptions: commands
+              commands: mkdir -p $(DEPLOY_PATH)/website
+              failOnStdErr: false
 
-                - task: CopyFilesOverSSH@0
-                  displayName: Copy .env to server
-                  inputs:
-                    sshEndpoint: $(CLIENT_NAME)-deploy
-                    sourceFolder: $(Agent.TempDirectory)
-                    contents: .env
-                    targetFolder: $(DEPLOY_PATH)/website
-                    overwrite: true
+          - task: CopyFilesOverSSH@0
+            displayName: Copy .env to server
+            inputs:
+              sshEndpoint: $(CLIENT_NAME)-deploy
+              sourceFolder: $(Agent.TempDirectory)
+              contents: .env
+              targetFolder: $(DEPLOY_PATH)/website
+              overwrite: true
 
-                - task: CopyFilesOverSSH@0
-                  displayName: Copy docker-compose.yml to server
-                  inputs:
-                    sshEndpoint: $(CLIENT_NAME)-deploy
-                    sourceFolder: $(Pipeline.Workspace)/deploy-compose
-                    contents: docker-compose.yml
-                    targetFolder: $(DEPLOY_PATH)/website
-                    overwrite: true
+          - task: CopyFilesOverSSH@0
+            displayName: Copy docker-compose.yml to server
+            inputs:
+              sshEndpoint: $(CLIENT_NAME)-deploy
+              sourceFolder: $(Pipeline.Workspace)/deploy-compose
+              contents: docker-compose.yml
+              targetFolder: $(DEPLOY_PATH)/website
+              overwrite: true
 
-                - task: CopyFilesOverSSH@0
-                  displayName: Copy docker-compose.azure.yml to server
-                  inputs:
-                    sshEndpoint: $(CLIENT_NAME)-deploy
-                    sourceFolder: $(Pipeline.Workspace)/deploy-override
-                    contents: docker-compose.azure.yml
-                    targetFolder: $(DEPLOY_PATH)/website
-                    overwrite: true
+          - task: CopyFilesOverSSH@0
+            displayName: Copy docker-compose.azure.yml to server
+            inputs:
+              sshEndpoint: $(CLIENT_NAME)-deploy
+              sourceFolder: $(Pipeline.Workspace)/deploy-override
+              contents: docker-compose.azure.yml
+              targetFolder: $(DEPLOY_PATH)/website
+              overwrite: true
 
-                - task: SSH@0
-                  displayName: Pull images and restart stack
-                  inputs:
-                    sshEndpoint: $(CLIENT_NAME)-deploy
-                    runOptions: commands
-                    commands: |
-                      echo "$(GITHUB_TOKEN)" | docker login ghcr.io -u "$(GITHUB_USER)" --password-stdin
-                      cd $(DEPLOY_PATH)/website
-                      docker compose --env-file .env -f docker-compose.yml -f docker-compose.azure.yml pull mealie-api mealie-frontend
-                      docker compose --env-file .env -f docker-compose.yml -f docker-compose.azure.yml up -d --remove-orphans
-                      docker image prune -f
-                    failOnStdErr: false
+          - task: SSH@0
+            displayName: Pull images and restart stack
+            inputs:
+              sshEndpoint: $(CLIENT_NAME)-deploy
+              runOptions: commands
+              commands: |
+                echo "$(GITHUB_TOKEN)" | docker login ghcr.io -u "$(GITHUB_USER)" --password-stdin
+                cd $(DEPLOY_PATH)/website
+                docker compose --env-file .env -f docker-compose.yml -f docker-compose.azure.yml pull mealie-api mealie-frontend
+                docker compose --env-file .env -f docker-compose.yml -f docker-compose.azure.yml up -d --remove-orphans
+                docker image prune -f
+              failOnStdErr: false
