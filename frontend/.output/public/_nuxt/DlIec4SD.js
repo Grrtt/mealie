@@ -1,1 +1,0 @@
-import{e as n,x as s,m as t,K as c,n as d}from"./D2r1MBJ5.js";const o=n({__name:"AdvancedOnly",setup(r){const e=s().user.value?.advanced||!1;return(a,l)=>t(e)?c(a.$slots,"default",{key:0}):d("",!0)}}),_=Object.assign(o,{__name:"AdvancedOnly"});export{_ as A};

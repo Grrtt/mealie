@@ -9,6 +9,8 @@ frontend-react/dist/
 frontend-react/node_modules/
 frontend-react/coverage/
 frontend-react/.yarn/*
+frontend/
+.worktrees/
 
 dev/data/mealie.db-journal
 dev/data/backups/*
