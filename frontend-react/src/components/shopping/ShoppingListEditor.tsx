@@ -7,13 +7,10 @@ import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { WorkflowLinks } from "@/components/navigation/WorkflowLinks";
 import {

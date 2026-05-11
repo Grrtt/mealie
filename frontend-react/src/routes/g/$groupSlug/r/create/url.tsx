@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -22,9 +22,16 @@ export function RecipeCreateUrlRouteComponent() {
   const [includeCategories, setIncludeCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const urlInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     document.title = "Import Recipe URL · Mealie";
+
+    const frame = requestAnimationFrame(() => {
+      urlInputRef.current?.focus();
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   return (
@@ -34,6 +41,8 @@ export function RecipeCreateUrlRouteComponent() {
         {busy ? <LinearProgress /> : null}
         {error ? <Alert severity="error">{error}</Alert> : null}
         <TextField
+          autoFocus
+          inputRef={urlInputRef}
           label="Recipe URL"
           value={url}
           onChange={event => setUrl(event.target.value)}

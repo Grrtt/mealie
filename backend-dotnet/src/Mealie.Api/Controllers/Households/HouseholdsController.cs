@@ -4,6 +4,7 @@ using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Groups;
 using Mealie.Application.Queries.Recipes;
+using Mealie.Application.Services.Auth;
 using Mealie.Api.Controllers.Shared;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
@@ -17,6 +18,7 @@ namespace Mealie.Api.Controllers.Households;
 [Route("api/households")]
 public class HouseholdsController(
     QueryExecutor executor,
+    IRegistrationInviteService registrationInviteService,
     IEmailService emailService,
     IOptions<AppSettings> settings,
     ITenantContext tenantContext) : MealieControllerBase(tenantContext)
@@ -101,15 +103,31 @@ public class HouseholdsController(
     public async Task<IActionResult> SendInvitationEmail([FromBody] HouseholdInvitationEmailRequest request,
         CancellationToken ct = default)
     {
-        if (emailService.IsConfigured && !string.IsNullOrEmpty(request.Email))
+        var email = request.Email.Trim();
+        var token = request.Token.Trim();
+
+        if (string.IsNullOrWhiteSpace(email))
         {
-            var baseUrl = settings.Value.BaseUrl.TrimEnd('/');
-            var inviteUrl = $"{baseUrl}/register?token={Uri.EscapeDataString(request.Token)}";
-            var household = await executor.ExecuteAsync(new GetHouseholdQuery(CurrentHouseholdId), ct);
-            await emailService.SendInvitationEmailAsync(request.Email, household?.Name ?? "Mealie", inviteUrl);
+            return BadRequest(new { detail = "Email address is required" });
         }
 
-        return Ok(new { message = "Invitation email queued" });
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return BadRequest(new { detail = "Invite token is required" });
+        }
+
+        if (!emailService.IsConfigured)
+        {
+            return StatusCode(424, new { detail = "Email service is not configured (SMTP_HOST is not set)" });
+        }
+
+        var baseUrl = settings.Value.BaseUrl.TrimEnd('/');
+        var invite = registrationInviteService.CreateInvite(email, token);
+        var inviteUrl = $"{baseUrl}/register?invite={Uri.EscapeDataString(invite)}";
+        var household = await executor.ExecuteAsync(new GetHouseholdQuery(CurrentHouseholdId), ct);
+        await emailService.SendInvitationEmailAsync(email, household?.Name ?? "Mealie", inviteUrl, ct);
+
+        return Ok(new { detail = $"Invitation email sent to {email}" });
     }
 
     [HttpPut("permissions")]

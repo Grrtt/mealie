@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Grid from "@mui/material/Grid";
+import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -13,10 +14,24 @@ import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import {
   fetchAdminAbout,
   fetchAdminAnalytics,
+  fetchAiConfigurations,
   fetchAdminChecks,
   fetchSiteSettings,
   updateSiteSettings,
 } from "@/features/settings/api";
+
+const builtInParserOptions = [
+  {
+    value: "nlp",
+    label: "NLP parser",
+    description: "Use the built-in structured ingredient parser.",
+  },
+  {
+    value: "brute",
+    label: "Brute parser",
+    description: "Use the fallback parser when structured parsing is not preferred.",
+  },
+];
 
 export function AdminSiteSettingsRouteComponent() {
   const { data: user } = useCurrentUser();
@@ -26,6 +41,7 @@ export function AdminSiteSettingsRouteComponent() {
   const checksQuery = useQuery({ queryKey: ["admin-checks"], queryFn: fetchAdminChecks });
   const analyticsQuery = useQuery({ queryKey: ["admin-analytics"], queryFn: fetchAdminAnalytics });
   const siteSettingsQuery = useQuery({ queryKey: ["admin-site-settings"], queryFn: fetchSiteSettings });
+  const aiConfigurationsQuery = useQuery({ queryKey: ["admin-ai-configurations"], queryFn: fetchAiConfigurations });
   const [form, setForm] = useState({
     defaultParser: "nlp",
     ingredientSystemPrompt: "",
@@ -43,6 +59,26 @@ export function AdminSiteSettingsRouteComponent() {
       });
     }
   }, [siteSettingsQuery.data]);
+
+  const parserOptions = useMemo(() => {
+    const aiOptions = (aiConfigurationsQuery.data ?? []).map(config => ({
+      value: config.id,
+      label: config.name,
+      description: `AI provider (${config.providerType})`,
+    }));
+    const options = [...builtInParserOptions, ...aiOptions];
+    const hasCurrentOption = options.some(option => option.value === form.defaultParser);
+
+    if (!hasCurrentOption && siteSettingsQuery.data?.defaultParserUnavailable) {
+      options.unshift({
+        value: form.defaultParser,
+        label: "Missing AI provider",
+        description: "The saved AI configuration no longer exists. Choose a replacement and save.",
+      });
+    }
+
+    return options;
+  }, [aiConfigurationsQuery.data, form.defaultParser, siteSettingsQuery.data?.defaultParserUnavailable]);
 
   const mutation = useMutation({
     mutationFn: async () => await updateSiteSettings(form),
@@ -64,11 +100,31 @@ export function AdminSiteSettingsRouteComponent() {
     >
       {status ? <Alert severity="success" onClose={() => setStatus(null)}>{status}</Alert> : null}
       {error ? <Alert severity="error" onClose={() => setError(null)}>{error}</Alert> : null}
+      {aiConfigurationsQuery.error ? (
+        <Alert severity="error">
+          {aiConfigurationsQuery.error instanceof Error ? aiConfigurationsQuery.error.message : "Unable to load AI providers."}
+        </Alert>
+      ) : null}
 
       <Card>
         <CardContent>
           <Stack spacing={2}>
-            <TextField label="Default parser" value={form.defaultParser} onChange={event => setForm(current => ({ ...current, defaultParser: event.target.value }))} />
+            <TextField
+              select
+              label="Default parser"
+              value={form.defaultParser}
+              onChange={event => setForm(current => ({ ...current, defaultParser: event.target.value }))}
+              helperText={siteSettingsQuery.data?.defaultParserUnavailable
+                ? "The saved AI provider is no longer available. Choose another parser and save."
+                : "Choose a built-in parser or one of your saved AI providers."}
+            >
+              {parserOptions.map(option => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                  {option.description ? ` — ${option.description}` : ""}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Ingredient prompt"
               value={form.ingredientSystemPrompt}

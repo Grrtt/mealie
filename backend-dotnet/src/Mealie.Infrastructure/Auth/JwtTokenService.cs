@@ -16,6 +16,7 @@ public interface IJwtTokenService
 
 public class JwtTokenService(IOptions<AppSettings> settings) : IJwtTokenService
 {
+    private const int AccessTokenLifetimeHours = 48;
     private readonly AppSettings _settings = settings.Value;
 
     public string GenerateAccessToken(Guid userId, Guid groupId, Guid householdId, bool isAdmin)
@@ -40,7 +41,7 @@ public class JwtTokenService(IOptions<AppSettings> settings) : IJwtTokenService
             "mealie",
             "mealie",
             claims,
-            expires: DateTime.UtcNow.AddHours(48),
+            expires: DateTime.UtcNow.AddHours(AccessTokenLifetimeHours),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -65,6 +66,7 @@ public class JwtTokenService(IOptions<AppSettings> settings) : IJwtTokenService
                     ValidIssuer = "mealie",
                     ValidateAudience = true,
                     ValidAudience = "mealie",
+                    ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 }, out _);
             return principal;

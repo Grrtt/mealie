@@ -7,7 +7,9 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import type { RecipeSummary } from "@/lib/api/contracts";
 import { recipeImageUrl } from "@/features/recipes/api";
+import { formatRecipeDuration } from "@/features/recipes/format-duration";
 import { apiClient } from "@/lib/api/client";
+import { RecipeImage } from "@/components/recipes/RecipeImage";
 
 type Props = {
   recipes: RecipeSummary[];
@@ -20,15 +22,15 @@ export function RecipeCards({ recipes, hrefBuilder }: Props) {
       {recipes.map(recipe => (
         <Grid key={recipe.id ?? recipe.slug} size={{ xs: 12, md: 6, lg: 4 }}>
           <Card sx={{ height: "100%" }}>
-            <CardActionArea href={apiClient.resolvePath(hrefBuilder(recipe))} sx={{ height: "100%" }}>
-              {recipe.id ? (
-                <img
-                  src={recipeImageUrl(recipe.id, typeof recipe.image === "string" ? recipe.image : null) ?? undefined}
-                  alt={recipe.name ?? "Recipe image"}
-                  style={{ width: "100%", height: 180, objectFit: "cover", display: "block" }}
-                />
-              ) : null}
-              <CardContent>
+              <CardActionArea href={apiClient.resolvePath(hrefBuilder(recipe))} sx={{ height: "100%" }}>
+                {recipe.id ? (
+                  <RecipeImage
+                    alt={recipe.name ?? "Recipe image"}
+                    src={recipeImageUrl(recipe.id, typeof recipe.image === "string" ? recipe.image : null, "min-original.webp")}
+                    wrapperSx={{ height: 180 }}
+                  />
+                ) : null}
+                <CardContent>
                 <Stack spacing={1}>
                   <Typography variant="h6">{recipe.name ?? "Untitled recipe"}</Typography>
                   {recipe.description ? (
@@ -37,7 +39,7 @@ export function RecipeCards({ recipes, hrefBuilder }: Props) {
                     </Typography>
                   ) : null}
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {recipe.totalTime ? <Chip size="small" label={recipe.totalTime} /> : null}
+                    {recipe.totalTime ? <Chip size="small" label={formatRecipeDuration(recipe.totalTime)} /> : null}
                     {recipe.rating ? <Chip size="small" label={`★ ${recipe.rating}`} /> : null}
                   </Stack>
                 </Stack>

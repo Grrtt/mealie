@@ -90,7 +90,7 @@ public class JsonLdScraperStrategy
     private static ScrapedRecipeDto MapRecipe(Recipe r) => new()
     {
         Name = r.Name.FirstOrDefault(),
-        Description = r.Description.FirstOrDefault()?.ToString(),
+        Description = System.Net.WebUtility.HtmlDecode(r.Description.FirstOrDefault()?.ToString()),
         Image = ExtractImageUrl(r),
         RecipeYield = r.RecipeYield.FirstOrDefault()?.ToString(),
         TotalTime = FormatDuration(r.TotalTime.FirstOrDefault()),
@@ -178,4 +178,3 @@ public class JsonLdScraperStrategy
         _ => null
     };
 }
-

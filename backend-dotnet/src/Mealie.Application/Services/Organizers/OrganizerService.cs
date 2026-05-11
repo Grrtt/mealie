@@ -393,7 +393,7 @@ public class OrganizerService(ApplicationDbContext db) : IOrganizerService
             Id = r.Id,
             Name = r.Name,
             Slug = r.Slug,
-            Description = r.Description,
+            Description = System.Net.WebUtility.HtmlDecode(r.Description),
             Image = r.Image,
             OrgUrl = r.OrgUrl,
             Rating = r.Rating,

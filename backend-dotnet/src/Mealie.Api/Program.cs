@@ -65,9 +65,20 @@ builder.Configuration.Bind(appSettings);
 appSettings.Secret = Environment.GetEnvironmentVariable("SECRET") ?? appSettings.Secret;
 appSettings.DatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") ?? appSettings.DatabaseUrl;
 appSettings.DbEngine = Environment.GetEnvironmentVariable("DB_ENGINE") ?? appSettings.DbEngine;
+appSettings.BaseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? appSettings.BaseUrl;
 appSettings.DataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? appSettings.DataDir;
 appSettings.LogLevel = Environment.GetEnvironmentVariable("LOG_LEVEL") ?? appSettings.LogLevel;
+appSettings.SmtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? appSettings.SmtpHost;
+appSettings.SmtpUser = Environment.GetEnvironmentVariable("SMTP_USER") ?? appSettings.SmtpUser;
+appSettings.SmtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? appSettings.SmtpPassword;
+appSettings.SmtpFromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL") ?? appSettings.SmtpFromEmail;
 appSettings.McpSecret = Environment.GetEnvironmentVariable("MCP_SECRET") ?? appSettings.McpSecret;
+
+var smtpPortEnv = Environment.GetEnvironmentVariable("SMTP_PORT");
+if (smtpPortEnv is not null && int.TryParse(smtpPortEnv, out var smtpPort))
+{
+    appSettings.SmtpPort = smtpPort;
+}
 
 var allowSignupEnv = Environment.GetEnvironmentVariable("ALLOW_SIGNUP");
 if (allowSignupEnv is not null)
@@ -178,7 +189,21 @@ builder.Services.AddAuthentication(options =>
             ValidIssuer = "mealie",
             ValidateAudience = true,
             ValidAudience = "mealie",
+            ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token)
+                    && context.Request.Cookies.TryGetValue(AuthCookieService.AccessTokenCookieName, out var cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     })
     .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", _ => { });
@@ -190,6 +215,7 @@ builder.Services.AddAuthorizationBuilder()
 
 // ── Infrastructure Services ────────────────────────────────────────────────
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IAuthCookieService, AuthCookieService>();
 
 // Auth services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -267,6 +293,7 @@ builder.Services.AddScoped<IWebhookService, WebhookService>();
 builder.Services.AddScoped<IEventNotifierService, EventNotifierService>();
 builder.Services.AddScoped<IBackupService, BackupService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IRegistrationInviteService, RegistrationInviteService>();
 builder.Services.AddSingleton<IApiKeyEncryptionService>(sp =>
     new ApiKeyEncryptionService(appSettings.Secret, sp.GetRequiredService<ILogger<ApiKeyEncryptionService>>()));
 builder.Services.AddScoped<ScheduledBackupJob>();

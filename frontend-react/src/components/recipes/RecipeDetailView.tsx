@@ -15,10 +15,6 @@ import CardContent from "@mui/material/CardContent";
 import Checkbox from "@mui/material/Checkbox";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
@@ -46,9 +42,12 @@ import {
   reimportRecipe,
   setRecipeRating,
 } from "@/features/recipes/api";
+import { formatRecipeDuration } from "@/features/recipes/format-duration";
 import { fetchGroupRecipeActions, triggerGroupRecipeAction } from "@/features/settings/api";
 import { addRecipeToShoppingList, createOrSelectShoppingList, fetchShoppingLists } from "@/features/shopping/fromRecipe";
 import { apiClient } from "@/lib/api/client";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
+import { RecipeImage } from "@/components/recipes/RecipeImage";
 
 type Props = {
   currentUser: PrivateUser | null;
@@ -566,6 +565,10 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
 
   return (
     <Stack spacing={2.5}>
+      {actionStatus ? <Alert severity="success" onClose={() => setActionStatus(null)}>{actionStatus}</Alert> : null}
+      {actionError ? <Alert severity="error" onClose={() => setActionError(null)}>{actionError}</Alert> : null}
+      {wakeLockError ? <Alert severity="warning">{wakeLockError}</Alert> : null}
+
       {!isCookMode ? (
         <Card variant="outlined" sx={{ overflow: "hidden" }}>
           <Box sx={{ position: "relative" }}>
@@ -781,10 +784,10 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                       <Box sx={{ ...infoMetricSx(), minWidth: 240, alignSelf: "center" }}>
                         <Typography color="text.secondary" variant="caption">Time</Typography>
                         <Stack spacing={0.5} sx={{ mt: 0.75, alignItems: "center" }}>
-                          {recipe.prepTime ? <Typography variant="body2">Prep {recipe.prepTime}</Typography> : null}
-                          {recipe.cookTime ? <Typography variant="body2">Cook {recipe.cookTime}</Typography> : null}
-                          {recipe.totalTime ? <Typography variant="body2">Total {recipe.totalTime}</Typography> : null}
-                          {recipe.performTime ? <Typography variant="body2">Perform {recipe.performTime}</Typography> : null}
+                          {recipe.prepTime ? <Typography variant="body2">Prep {formatRecipeDuration(recipe.prepTime)}</Typography> : null}
+                          {recipe.cookTime ? <Typography variant="body2">Cook {formatRecipeDuration(recipe.cookTime)}</Typography> : null}
+                          {recipe.totalTime ? <Typography variant="body2">Total {formatRecipeDuration(recipe.totalTime)}</Typography> : null}
+                          {recipe.performTime ? <Typography variant="body2">Perform {formatRecipeDuration(recipe.performTime)}</Typography> : null}
                         </Stack>
                       </Box>
                     ) : null}
@@ -794,17 +797,12 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
             </Grid>
             {imageUrl ? (
               <Grid size={{ xs: 12, md: 6 }}>
-                <Box
-                  component="img"
-                  data-print-role="recipe-image"
-                  src={imageUrl}
+                <RecipeImage
                   alt={recipe.name ?? "Recipe image"}
-                  sx={{
-                    width: "100%",
-                    height: "100%",
+                  imgProps={{ "data-print-role": "recipe-image" }}
+                  src={imageUrl}
+                  wrapperSx={{
                     minHeight: { xs: 240, md: 360 },
-                    objectFit: "cover",
-                    display: "block",
                   }}
                 />
               </Grid>
@@ -1459,9 +1457,6 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
         </Box>
       ) : null}
 
-      {actionStatus ? <Alert severity="success" onClose={() => setActionStatus(null)}>{actionStatus}</Alert> : null}
-      {actionError ? <Alert severity="error" onClose={() => setActionError(null)}>{actionError}</Alert> : null}
-      {wakeLockError ? <Alert severity="warning">{wakeLockError}</Alert> : null}
       {wakeLockSupported && wakeLockActive ? (
         <Typography color="text.secondary" sx={{ px: { xs: 0.5, md: 1 } }} variant="caption">
           Screen wake lock is active while this recipe is open.

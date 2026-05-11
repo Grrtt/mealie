@@ -61,10 +61,9 @@ public class RecipeService(
 
             var luceneResult = await searchIndex.SearchAsync(searchQuery, ct);
 
-            // Fall back to EF if the index is empty and no filter was applied
             var noFilterApplied = filter is null || filter.IsEmpty;
 
-            if (luceneResult.Total > 0 || !noFilterApplied)
+            if (luceneResult.Total > 0)
             {
                 var slugs = luceneResult.Slugs;
                 var items = await db.Recipes.IgnoreQueryFilters()
@@ -89,6 +88,18 @@ public class RecipeService(
                     Items = orderedItems
                 };
             }
+
+            if (noFilterApplied)
+            {
+                return new PaginatedResponse<RecipeSummaryResponse>
+                {
+                    Page = pagination.Page,
+                    PerPage = pagination.PerPage,
+                    Total = 0,
+                    TotalPages = 0,
+                    Items = []
+                };
+            }
         }
 
         // EF Core path — handles all filters including foods, tools, households
@@ -100,8 +111,10 @@ public class RecipeService(
 
         if (filter?.Search is { Length: > 0 } search)
         {
+            var normalizedSearch = search.Trim().ToLowerInvariant();
             query = query.Where(r =>
-                r.Name.Contains(search) || (r.Description != null && r.Description.Contains(search)));
+                r.Name.ToLower().Contains(normalizedSearch) ||
+                (r.Description != null && r.Description.ToLower().Contains(normalizedSearch)));
         }
 
         if (filter?.Tags is { Count: > 0 } tagFilters)
@@ -515,8 +528,7 @@ public class RecipeService(
         }
 
         var recipeId = recipe.Id;
-        db.Recipes.Remove(recipe);
-        await db.SaveChangesAsync(ct);
+        await RecipeDeletionHelper.DeleteRecipesAsync(db, [recipeId], ct);
 
         await mediator.Publish(new RecipeDeletedEvent(recipeId, recipe.HouseholdId), ct);
 
@@ -1052,7 +1064,7 @@ public class RecipeService(
             Id = r.Id,
             Name = r.Name,
             Slug = r.Slug,
-            Description = r.Description,
+            Description = System.Net.WebUtility.HtmlDecode(r.Description),
             Image = r.Image,
             OrgUrl = r.OrgUrl,
             Rating = r.Rating,
@@ -1073,7 +1085,7 @@ public class RecipeService(
             Id = r.Id,
             Name = r.Name,
             Slug = r.Slug,
-            Description = r.Description,
+            Description = System.Net.WebUtility.HtmlDecode(r.Description),
             RecipeYield = r.RecipeYield,
             TotalTime = r.TotalTime,
             PrepTime = r.PrepTime,

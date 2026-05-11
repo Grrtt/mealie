@@ -14,6 +14,7 @@ namespace Mealie.Api.Controllers.Auth;
 public class AuthController(
     IAuthService authService,
     IOidcService oidcService,
+    IAuthCookieService authCookieService,
     IJwtTokenService jwtTokenService,
     IOptions<AppSettings> settings) : ControllerBase
 {
@@ -27,6 +28,7 @@ public class AuthController(
             return Unauthorized(new { detail = "Incorrect username or password" });
         }
 
+        authCookieService.SetAccessTokenCookie(Response, result.AccessToken);
         return Ok(result);
     }
 
@@ -39,13 +41,14 @@ public class AuthController(
             return Unauthorized(new { detail = "Invalid or expired refresh token" });
         }
 
+        authCookieService.SetAccessTokenCookie(Response, result.AccessToken);
         return Ok(result);
     }
 
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        Response.Cookies.Delete("mealie.access_token");
+        authCookieService.ClearAccessTokenCookie(Response);
         return Ok(new { message = "Logged out" });
     }
 
@@ -111,6 +114,7 @@ public class AuthController(
         var token = jwtTokenService.GenerateAccessToken(
             user.Id, user.GroupId, user.HouseholdId ?? Guid.Empty, user.Admin);
 
+        authCookieService.SetAccessTokenCookie(Response, token);
         return Ok(new TokenResponse { AccessToken = token, TokenType = "bearer" });
     }
 }

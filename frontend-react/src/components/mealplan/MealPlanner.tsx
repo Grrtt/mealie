@@ -8,16 +8,15 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import Divider from "@mui/material/Divider";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { RecipeImage } from "@/components/recipes/RecipeImage";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
+import { recipeImageUrl } from "@/features/recipes/api";
 import {
   createMealPlanEntry,
   defaultMealPlanRange,
@@ -373,69 +372,87 @@ export function MealPlanner({ groupSlug, mode, search }: Props) {
                           {items.map(entry => (
                             <Card key={entry.id} variant="outlined">
                               <CardContent>
-                                <Stack spacing={1}>
-                                  <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ md: "center" }}>
-                                    {entry.recipe?.slug ? (
-                                      <Button
-                                        href={apiClient.resolvePath(`/g/${groupSlug}/r/${entry.recipe.slug}`)}
-                                        sx={{ justifyContent: "flex-start", p: 0 }}
-                                      >
-                                        {entryHeading(entry)}
-                                      </Button>
-                                    ) : (
-                                      <Typography variant="subtitle1">{entryHeading(entry)}</Typography>
-                                    )}
-                                    <Box sx={{ flexGrow: 1 }} />
-                                    <Chip label={mealPlanLabels[entry.entryType ?? "dinner"]} size="small" />
+                                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                                  {entry.recipe?.id ? (
+                                    <Box sx={{ width: { xs: "100%", sm: 144 }, flexShrink: 0 }}>
+                                      <RecipeImage
+                                        alt={entry.recipe.name ?? "Recipe image"}
+                                        src={recipeImageUrl(
+                                          entry.recipe.id,
+                                          typeof entry.recipe.image === "string" ? entry.recipe.image : null,
+                                          "min-original.webp",
+                                        )}
+                                        wrapperSx={{
+                                          height: { xs: 180, sm: 112 },
+                                          borderRadius: 2,
+                                        }}
+                                      />
+                                    </Box>
+                                  ) : null}
+                                  <Stack spacing={1} sx={{ minWidth: 0, flex: 1 }}>
+                                    <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ md: "center" }}>
+                                      {entry.recipe?.slug ? (
+                                        <Button
+                                          href={apiClient.resolvePath(`/g/${groupSlug}/r/${entry.recipe.slug}`)}
+                                          sx={{ justifyContent: "flex-start", p: 0 }}
+                                        >
+                                          {entryHeading(entry)}
+                                        </Button>
+                                      ) : (
+                                        <Typography variant="subtitle1">{entryHeading(entry)}</Typography>
+                                      )}
+                                      <Box sx={{ flexGrow: 1 }} />
+                                      <Chip label={mealPlanLabels[entry.entryType ?? "dinner"]} size="small" />
+                                    </Stack>
+                                    {entryDescription(entry) ? (
+                                      <Typography color="text.secondary">{entryDescription(entry)}</Typography>
+                                    ) : null}
+                                    {mode === "edit" ? (
+                                      <>
+                                        <Divider />
+                                        <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
+                                          <Button size="small" variant="outlined" onClick={() => openEdit(entry)}>
+                                            Edit
+                                          </Button>
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            onClick={() => helperMutation.mutate(async () => await updateMealPlanEntry(
+                                              toUpdatePayload(entry, {
+                                                date: shiftMealPlanDate(entry.date, -1),
+                                                recipeId: entry.recipeId ?? null,
+                                              }),
+                                            ))}
+                                            disabled={helperMutation.isPending}
+                                          >
+                                            Move earlier
+                                          </Button>
+                                          <Button
+                                            size="small"
+                                            variant="outlined"
+                                            onClick={() => helperMutation.mutate(async () => await updateMealPlanEntry(
+                                              toUpdatePayload(entry, {
+                                                date: shiftMealPlanDate(entry.date, 1),
+                                                recipeId: entry.recipeId ?? null,
+                                              }),
+                                            ))}
+                                            disabled={helperMutation.isPending}
+                                          >
+                                            Move later
+                                          </Button>
+                                          <Button
+                                            size="small"
+                                            color="error"
+                                            variant="outlined"
+                                            onClick={() => deleteMutation.mutate(entry.id)}
+                                            disabled={deleteMutation.isPending}
+                                          >
+                                            Delete
+                                          </Button>
+                                        </Stack>
+                                      </>
+                                    ) : null}
                                   </Stack>
-                                  {entryDescription(entry) ? (
-                                    <Typography color="text.secondary">{entryDescription(entry)}</Typography>
-                                  ) : null}
-                                  {mode === "edit" ? (
-                                    <>
-                                      <Divider />
-                                      <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
-                                        <Button size="small" variant="outlined" onClick={() => openEdit(entry)}>
-                                          Edit
-                                        </Button>
-                                        <Button
-                                          size="small"
-                                          variant="outlined"
-                                          onClick={() => helperMutation.mutate(async () => await updateMealPlanEntry(
-                                            toUpdatePayload(entry, {
-                                              date: shiftMealPlanDate(entry.date, -1),
-                                              recipeId: entry.recipeId ?? null,
-                                            }),
-                                          ))}
-                                          disabled={helperMutation.isPending}
-                                        >
-                                          Move earlier
-                                        </Button>
-                                        <Button
-                                          size="small"
-                                          variant="outlined"
-                                          onClick={() => helperMutation.mutate(async () => await updateMealPlanEntry(
-                                            toUpdatePayload(entry, {
-                                              date: shiftMealPlanDate(entry.date, 1),
-                                              recipeId: entry.recipeId ?? null,
-                                            }),
-                                          ))}
-                                          disabled={helperMutation.isPending}
-                                        >
-                                          Move later
-                                        </Button>
-                                        <Button
-                                          size="small"
-                                          color="error"
-                                          variant="outlined"
-                                          onClick={() => deleteMutation.mutate(entry.id)}
-                                          disabled={deleteMutation.isPending}
-                                        >
-                                          Delete
-                                        </Button>
-                                      </Stack>
-                                    </>
-                                  ) : null}
                                 </Stack>
                               </CardContent>
                             </Card>

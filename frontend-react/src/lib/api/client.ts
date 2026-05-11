@@ -25,30 +25,11 @@ function getBasePath() {
     : import.meta.env.BASE_URL.replace(/\/$/, "");
 }
 
-function getCookie(name: string) {
-  if (typeof document === "undefined") return null;
-  const cookie = document.cookie
-    .split("; ")
-    .find(entry => entry.startsWith(`${name}=`));
-
-  return cookie ? decodeURIComponent(cookie.split("=").slice(1).join("=")) : null;
-}
-
-function clearCookie(name: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`;
-}
-
 function buildHeaders(headers?: HeadersInit) {
   const nextHeaders = new Headers(headers);
   const locale = getPersistedLocale();
 
   nextHeaders.set("Accept-Language", locale);
-
-  const token = getCookie("mealie.access_token");
-  if (token) {
-    nextHeaders.set("Authorization", `Bearer ${token}`);
-  }
 
   return nextHeaders;
 }
@@ -71,7 +52,6 @@ function redirectToLogin() {
 }
 
 async function request<T>(path: string, init?: RequestOptions) {
-  const hadToken = Boolean(getCookie("mealie.access_token"));
   const response = await fetch(resolvePath(path), {
     credentials: "include",
     ...init,
@@ -81,8 +61,7 @@ async function request<T>(path: string, init?: RequestOptions) {
   const payload = await parseBody(response);
 
   if (!response.ok) {
-    if (response.status === 401 && hadToken) {
-      clearCookie("mealie.access_token");
+    if (response.status === 401) {
       if (!init?.suppressAuthRedirect) {
         redirectToLogin();
       }
@@ -115,20 +94,6 @@ function withBody<T>(path: string, method: "POST" | "PUT" | "PATCH", body?: Body
 
 export function resolvePath(path: string) {
   return `${getBasePath()}${normalizePath(path)}`;
-}
-
-export function setAuthToken(token: string | null) {
-  if (typeof document === "undefined") return;
-  if (!token) {
-    clearCookie("mealie.access_token");
-    return;
-  }
-
-  document.cookie = `mealie.access_token=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
-}
-
-export function getAuthToken() {
-  return getCookie("mealie.access_token");
 }
 
 export const apiClient = {

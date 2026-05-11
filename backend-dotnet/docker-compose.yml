@@ -3,6 +3,13 @@
 # Default stack:
 #   SQL Server backend + Mailpit
 #
+# To send email directly through Gmail instead of Mailpit, set:
+#   MEALIE_SMTP_HOST=smtp.gmail.com
+#   MEALIE_SMTP_PORT=587
+#   MEALIE_SMTP_USER=your-account@gmail.com
+#   MEALIE_SMTP_PASSWORD=<gmail-app-password>
+#   MEALIE_SMTP_FROM_EMAIL=your-account@gmail.com
+#
 # Usage:
 #   SQL Server (default):
 #     docker compose up
@@ -32,11 +39,13 @@ services:
       DATA_DIR: /app/data
       LOG_LEVEL: Debug
       ALLOW_SIGNUP: "true"
-      # Email — point at Mailpit
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
+      # Email — defaults to Mailpit, but can be overridden for direct Gmail SMTP
+      SMTP_HOST: "${MEALIE_SMTP_HOST:-mailpit}"
+      SMTP_PORT: "${MEALIE_SMTP_PORT:-1025}"
       SMTP_AUTH_STRATEGY: NONE
-      SMTP_FROM_EMAIL: "noreply@mealie.local"
+      SMTP_USER: "${MEALIE_SMTP_USER:-}"
+      SMTP_PASSWORD: "${MEALIE_SMTP_PASSWORD:-}"
+      SMTP_FROM_EMAIL: "${MEALIE_SMTP_FROM_EMAIL:-noreply@mealie.local}"
       SMTP_FROM_NAME: "Mealie (local)"
     depends_on:
       sqlserver:

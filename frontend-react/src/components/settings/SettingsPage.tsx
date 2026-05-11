@@ -29,7 +29,7 @@ export function SettingsPage({ user, title, description, actions, children }: Pr
         <Stack
           direction={{ xs: "column", md: "row" }}
           spacing={2}
-          alignItems={{ md: "center" }}
+          alignItems={{ md: "flex-end" }}
           justifyContent="space-between"
         >
           <Stack spacing={1}>

@@ -65,6 +65,10 @@ export interface UpdateSiteSettingsRequest {
   tagSystemPrompt?: string | null;
 }
 
+export interface SeederConfig {
+  locale: string;
+}
+
 export interface AiConfigurationResponse {
   id: string;
   name: string;
@@ -99,6 +103,27 @@ export interface UpdateAiConfigurationRequest {
   defaultModel?: string | null;
   enableImageServices?: boolean | null;
   enableTranscriptionServices?: boolean | null;
+}
+
+export type AdminLogMinimumLevel = "Warning" | "Error";
+
+export interface AdminLogEntryResponse {
+  timestamp: string;
+  level: string;
+  message: string;
+  exception: string | null;
+  sourceContext: string | null;
+  requestMethod: string | null;
+  requestPath: string | null;
+  statusCode: number | null;
+  correlationId: string | null;
+}
+
+export interface AdminLogsResponse {
+  minimumLevel: AdminLogMinimumLevel;
+  limit: number;
+  totalCount: number;
+  entries: AdminLogEntryResponse[];
 }
 
 export interface UnresolvedIngredient {
@@ -152,11 +177,59 @@ export async function fetchHousehold() {
 }
 
 export async function fetchHouseholdPreferences() {
-  return await apiClient.get<ReadHouseholdPreferences>("/api/households/preferences");
+  return normalizeHouseholdPreferences(await apiClient.get<ReadHouseholdPreferences>("/api/households/preferences"));
 }
 
 export async function updateHouseholdPreferences(payload: Partial<ReadHouseholdPreferences>) {
-  return await apiClient.put<ReadHouseholdPreferences>("/api/households/preferences", payload);
+  const normalizedPayload: Record<string, string | boolean> = {};
+
+  if (payload.privateHousehold != null) {
+    normalizedPayload.privateHousehold = payload.privateHousehold;
+  }
+
+  if (payload.firstDayOfWeek != null) {
+    normalizedPayload.firstDayOfWeek = String(payload.firstDayOfWeek);
+  }
+
+  for (const key of ["recipePublic", "recipeShowNutrition", "recipeShowAssets", "recipeLandscapeView", "recipeDisableComments"] as const) {
+    const value = payload[key];
+    if (value != null) {
+      normalizedPayload[key] = String(value);
+    }
+  }
+
+  return normalizeHouseholdPreferences(await apiClient.put<ReadHouseholdPreferences>("/api/households/preferences", normalizedPayload));
+}
+
+function parseNullableBoolean(value: unknown) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+
+    if (["0", "false", "no", "off", "none", ""].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeHouseholdPreferences(payload: ReadHouseholdPreferences) {
+  return {
+    ...payload,
+    firstDayOfWeek: payload.firstDayOfWeek == null ? undefined : Number(payload.firstDayOfWeek),
+    recipePublic: parseNullableBoolean(payload.recipePublic) ?? false,
+    recipeShowNutrition: parseNullableBoolean(payload.recipeShowNutrition) ?? false,
+    recipeShowAssets: parseNullableBoolean(payload.recipeShowAssets) ?? false,
+    recipeLandscapeView: parseNullableBoolean(payload.recipeLandscapeView) ?? false,
+    recipeDisableComments: parseNullableBoolean(payload.recipeDisableComments) ?? false,
+  } satisfies ReadHouseholdPreferences;
 }
 
 export async function fetchHouseholdMembers() {
@@ -173,6 +246,10 @@ export async function fetchHouseholdStatistics() {
 
 export async function createHouseholdInvite(uses = 1) {
   return await apiClient.post<{ token: string; usesLeft: number }>("/api/households/invitations", { uses });
+}
+
+export async function sendHouseholdInvitationEmail(payload: { email: string; token: string }) {
+  return await apiClient.post<{ detail: string }>("/api/households/invitations/email", payload);
 }
 
 type HouseholdNotifier = GroupEventNotifierOut & { appriseUrl?: string | null };
@@ -403,6 +480,18 @@ export async function updateSiteSettings(payload: UpdateSiteSettingsRequest) {
   return await apiClient.put<SiteSettingsResponse>("/api/admin/site-settings", payload);
 }
 
+export async function seedFoods(payload: SeederConfig) {
+  return await apiClient.post<{ detail?: string; message?: string }>("/api/groups/seeders/foods", payload);
+}
+
+export async function seedUnits(payload: SeederConfig) {
+  return await apiClient.post<{ detail?: string; message?: string }>("/api/groups/seeders/units", payload);
+}
+
+export async function seedLabels(payload: SeederConfig) {
+  return await apiClient.post<{ detail?: string; message?: string }>("/api/groups/seeders/labels", payload);
+}
+
 export async function fetchBackups() {
   return await apiClient.get<AllBackups>("/api/admin/backups");
 }
@@ -441,6 +530,16 @@ export async function deleteAiConfiguration(id: string) {
 
 export async function activateAiConfiguration(id: string) {
   return await apiClient.put<AiConfigurationResponse>(`/api/admin/ai-configurations/${id}/activate`, {});
+}
+
+export async function fetchAdminLogs({
+  minimumLevel = "Warning",
+  limit = 100,
+}: {
+  minimumLevel?: AdminLogMinimumLevel;
+  limit?: number;
+} = {}) {
+  return await apiClient.get<AdminLogsResponse>(`/api/admin/logs${toQuery({ minimumLevel, limit })}`);
 }
 
 export async function fetchIndexes() {

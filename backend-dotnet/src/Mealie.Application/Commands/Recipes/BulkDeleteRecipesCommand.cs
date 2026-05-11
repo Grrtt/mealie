@@ -11,8 +11,7 @@ public record BulkDeleteRecipesCommand(IList<string> Slugs) : IQuery<bool>
         var db = services.Db;
         var recipes = await db.Recipes.Where(r => Slugs.Contains(r.Slug)).ToListAsync(ct);
         var recipeIds = recipes.Select(r => r.Id).ToList();
-        db.Recipes.RemoveRange(recipes);
-        await db.SaveChangesAsync(ct);
+        await RecipeDeletionHelper.DeleteRecipesAsync(db, recipeIds, ct);
         if (recipeIds.Count > 0)
         {
             await services.Mediator.Publish(new RecipesBulkDeletedEvent(recipeIds), ct);

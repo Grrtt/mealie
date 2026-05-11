@@ -23,9 +23,17 @@ public class EmailService(AppSettings settings, ILogger<EmailService> logger) : 
         CancellationToken ct = default)
     {
         var subject = $"Mealie - Invitation to join {groupName}";
-        var body =
-            $"<p>You have been invited to join the group <strong>{groupName}</strong> on Mealie.</p><p><a href=\"{inviteUrl}\">Click here to accept the invitation</a></p>";
+        var body = BuildInvitationEmailBody(groupName, inviteUrl);
         await SendEmailAsync(to, subject, body, ct);
+    }
+
+    public static string BuildInvitationEmailBody(string groupName, string inviteUrl)
+    {
+        return $$"""
+                 <p>You have been invited to join the group <strong>{{groupName}}</strong> on Mealie.</p>
+                 <p><a href="{{inviteUrl}}">Click here to accept the invitation</a></p>
+                 <p>This secure invitation link will pre-fill your registration details.</p>
+                 """;
     }
 
     private async Task SendEmailAsync(string to, string subject, string htmlBody, CancellationToken ct)
@@ -61,6 +69,7 @@ public class EmailService(AppSettings settings, ILogger<EmailService> logger) : 
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to send email to {To}", to);
+            throw;
         }
     }
 }

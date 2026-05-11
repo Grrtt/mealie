@@ -7,4 +7,10 @@ public class RegisterRequest
     public string Password { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? GroupToken { get; set; }
+    public string? Invite { get; set; }
+}
+
+public class RegistrationInvitePrefillResponse
+{
+    public string Email { get; set; } = string.Empty;
 }

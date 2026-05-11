@@ -30,17 +30,7 @@ public abstract class OpenAiCompatibleParserStrategy(
             var client = clientFactory.CreateClient(config, providerDescriptor);
             var numbered = string.Join("\n", ingredients.Select((s, i) => $"{i + 1}. {s}"));
 
-            var systemPrompt = config.IngredientSystemPrompt ?? """
-                              You are a recipe ingredient parser. Given a numbered list of ingredient strings,
-                              extract the structured data for each one and return a JSON object with a single key
-                              "ingredients" whose value is an array of objects — one per input line, in the same order.
-                              Each object must have exactly these fields:
-                              - quantity: number or null
-                              - unit: string or null (the unit of measure, e.g. "cup", "tablespoon")
-                              - food: string or null (the main ingredient, e.g. "flour", "butter")
-                              - note: string or null (preparation notes, e.g. "finely chopped", "room temperature")
-                              The array length must equal the number of input lines.
-                              """;
+            var systemPrompt = config.IngredientSystemPrompt ?? DefaultAiParserPrompts.Ingredient;
 
             var requestBody = new
             {
@@ -131,23 +121,9 @@ public abstract class OpenAiCompatibleParserStrategy(
         {
             var client = clientFactory.CreateClient(config, providerDescriptor);
 
-            var categoryInstructions = config.CategorySystemPrompt ?? """
-                Classify this recipe into the appropriate meal categories.
-                Choose only from: Breakfast, Lunch, Dinner, Snack, Side.
-                Consider the recipe name, description, and ingredients to determine what meal(s) this suits.
-                The website's existing categories are shown for context — do not repeat them, only add clearly
-                applicable meal-type categories that are missing.
-                Return only categories that clearly apply. If none apply, return an empty array.
-                """;
+            var categoryInstructions = config.CategorySystemPrompt ?? DefaultAiParserPrompts.Category;
 
-            var tagInstructions = config.TagSystemPrompt ?? """
-                Suggest cuisine and culture tags for this recipe.
-                Consider labels such as: Italian, Mexican, Chinese, Indian, Japanese, Thai, Mediterranean,
-                American, French, Greek, Korean, Vietnamese, Middle Eastern, Comfort, Quick, Healthy.
-                The website's existing tags are shown for context — do not repeat them, only suggest new
-                culture/cuisine tags that are not already listed.
-                Return only tags that clearly apply. If none apply, return an empty array.
-                """;
+            var tagInstructions = config.TagSystemPrompt ?? DefaultAiParserPrompts.Tag;
 
             var systemPrompt = $"""
                 You are a recipe organizer. Given recipe details and its existing website categories/tags,

@@ -111,9 +111,13 @@ function mapListParams(params: RecipeListParams = {}) {
   });
 }
 
-export function recipeImageUrl(recipeId?: string | null, imageVersion?: string | null) {
+export function recipeImageUrl(
+  recipeId?: string | null,
+  imageVersion?: string | null,
+  imageName = "original.webp",
+) {
   if (!recipeId) return null;
-  return apiClient.resolvePath(`/api/media/recipes/${recipeId}/images/original.webp${imageVersion ? `?version=${encodeURIComponent(imageVersion)}` : ""}`);
+  return apiClient.resolvePath(`/api/media/recipes/${recipeId}/images/${imageName}${imageVersion ? `?version=${encodeURIComponent(imageVersion)}` : ""}`);
 }
 
 export function recipeAssetUrl(recipeId: string, assetFileName: string) {
@@ -230,11 +234,6 @@ async function readSseSlug(path: string, payload: ScrapeRecipeData | { url: stri
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(typeof document !== "undefined" && document.cookie.includes("mealie.access_token=")
-        ? {
-            Authorization: `Bearer ${decodeURIComponent(document.cookie.split("; ").find(entry => entry.startsWith("mealie.access_token="))?.split("=").slice(1).join("=") ?? "")}`,
-          }
-        : {}),
     },
     body: JSON.stringify(payload),
   });

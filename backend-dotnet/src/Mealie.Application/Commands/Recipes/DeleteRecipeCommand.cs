@@ -17,8 +17,7 @@ public record DeleteRecipeCommand(Guid GroupId, string Slug) : IQuery<bool>
         }
 
         var recipeId = recipe.Id;
-        db.Recipes.Remove(recipe);
-        await db.SaveChangesAsync(ct);
+        await RecipeDeletionHelper.DeleteRecipesAsync(db, [recipeId], ct);
         await services.Mediator.Publish(new RecipeDeletedEvent(recipeId, recipe.HouseholdId), ct);
         return true;
     }

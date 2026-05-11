@@ -22,6 +22,7 @@ import { RegisterRouteComponent } from "@/routes/register/index";
 import { ForgotPasswordRouteComponent } from "@/routes/forgot-password";
 import { ResetPasswordRouteComponent } from "@/routes/reset-password";
 import { GroupLandingRouteComponent } from "@/routes/g/$groupSlug/index";
+import { RecipesRouteComponent } from "@/routes/g/$groupSlug/recipes/index";
 import { RecipeDetailRouteComponent } from "@/routes/g/$groupSlug/r/$slug/index";
 import { RecipeTimelineRouteComponent } from "@/routes/g/$groupSlug/recipes/timeline";
 import { RecipeFinderRouteComponent } from "@/routes/g/$groupSlug/recipes/finder/index";
@@ -70,6 +71,7 @@ import { GroupReportDetailRouteComponent } from "@/routes/group/reports/$id";
 import { AdminSiteSettingsRouteComponent } from "@/routes/admin/site-settings";
 import { AdminBackupsRouteComponent } from "@/routes/admin/backups";
 import { AdminAiConfigurationsRouteComponent } from "@/routes/admin/ai-configurations";
+import { AdminLogsRouteComponent } from "@/routes/admin/logs";
 import { AdminDebugIndexesRouteComponent } from "@/routes/admin/debug/indexes";
 import { AdminDebugOpenAiRouteComponent } from "@/routes/admin/debug/openai";
 import { AdminDebugParserRouteComponent } from "@/routes/admin/debug/parser";
@@ -158,6 +160,15 @@ const recipeDetailRoute = createRoute({
   },
   component: RecipeDetailRouteComponent,
   validateSearch: search => search as { edit?: string | boolean },
+});
+
+const recipesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/g/$groupSlug/recipes",
+  beforeLoad: async ({ location }) => {
+    await requireAuth(location);
+  },
+  component: RecipesRouteComponent,
 });
 
 const recipeTimelineRoute = createRoute({
@@ -603,6 +614,15 @@ const adminAiConfigurationsRoute = createRoute({
   component: AdminAiConfigurationsRouteComponent,
 });
 
+const adminLogsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin/logs",
+  beforeLoad: async ({ location }) => {
+    await requireAdmin(location);
+  },
+  component: AdminLogsRouteComponent,
+});
+
 const adminDebugIndexesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin/debug/indexes",
@@ -719,6 +739,7 @@ const routeTree = rootRoute.addChildren([
   resetPasswordRoute,
   shareTargetRecipeCreateUrlRoute,
   groupLandingRoute,
+  recipesRoute,
   recipeDetailRoute,
   recipeTimelineRoute,
   recipeFinderRoute,
@@ -767,6 +788,7 @@ const routeTree = rootRoute.addChildren([
   adminSiteSettingsRoute,
   adminBackupsRoute,
   adminAiConfigurationsRoute,
+  adminLogsRoute,
   adminDebugIndexesRoute,
   adminDebugOpenAiRoute,
   adminDebugParserRoute,

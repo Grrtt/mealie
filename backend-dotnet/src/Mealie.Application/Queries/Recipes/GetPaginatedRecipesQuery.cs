@@ -29,7 +29,7 @@ public record GetPaginatedRecipesQuery(Guid HouseholdId, PaginationParams Pagina
                 Pagination.Skip, Pagination.PerPage);
             var luceneResult = await searchIndex.SearchAsync(searchQuery, ct);
             var noFilterApplied = Filter is null || Filter.IsEmpty;
-            if (luceneResult.Total > 0 || !noFilterApplied)
+            if (luceneResult.Total > 0)
             {
                 var slugs = luceneResult.Slugs;
                 var items = await db.Recipes.IgnoreQueryFilters()
@@ -43,6 +43,18 @@ public record GetPaginatedRecipesQuery(Guid HouseholdId, PaginationParams Pagina
                     TotalPages = (int)Math.Ceiling((double)luceneResult.Total / Pagination.PerPage), Items = ordered
                 };
             }
+
+            if (noFilterApplied)
+            {
+                return new PaginatedResponse<RecipeSummaryResponse>
+                {
+                    Page = Pagination.Page,
+                    PerPage = Pagination.PerPage,
+                    Total = 0,
+                    TotalPages = 0,
+                    Items = []
+                };
+            }
         }
 
         var query = db.Recipes.IgnoreQueryFilters()
@@ -51,8 +63,10 @@ public record GetPaginatedRecipesQuery(Guid HouseholdId, PaginationParams Pagina
 
         if (Filter?.Search is { Length: > 0 } search)
         {
+            var normalizedSearch = search.Trim().ToLowerInvariant();
             query = query.Where(r =>
-                r.Name.Contains(search) || (r.Description != null && r.Description.Contains(search)));
+                r.Name.ToLower().Contains(normalizedSearch) ||
+                (r.Description != null && r.Description.ToLower().Contains(normalizedSearch)));
         }
 
         if (Filter?.Tags is { Count: > 0 } tagFilters)
@@ -152,7 +166,7 @@ file static class RecipeCommandMappings
     {
         return new RecipeSummaryResponse
         {
-            Id = r.Id, Name = r.Name, Slug = r.Slug, Description = r.Description,
+            Id = r.Id, Name = r.Name, Slug = r.Slug, Description = System.Net.WebUtility.HtmlDecode(r.Description),
             Image = r.Image, OrgUrl = r.OrgUrl, Rating = r.Rating,
             GroupId = r.GroupId, HouseholdId = r.HouseholdId, CreatedAt = r.CreatedAt, UpdateAt = r.UpdateAt,
             Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
@@ -165,7 +179,7 @@ file static class RecipeCommandMappings
     {
         return new RecipeDetailResponse
         {
-            Id = r.Id, Name = r.Name, Slug = r.Slug, Description = r.Description,
+            Id = r.Id, Name = r.Name, Slug = r.Slug, Description = System.Net.WebUtility.HtmlDecode(r.Description),
             RecipeYield = r.RecipeYield, TotalTime = r.TotalTime, PrepTime = r.PrepTime,
             CookTime = r.CookTime, PerformTime = r.PerformTime, Rating = r.Rating,
             DisableAmount = r.DisableAmount, Image = r.Image, OrgUrl = r.OrgUrl,

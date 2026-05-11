@@ -20,6 +20,7 @@ import SoupKitchenRoundedIcon from "@mui/icons-material/SoupKitchenRounded";
 import StorageRoundedIcon from "@mui/icons-material/StorageRounded";
 import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
 import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
+import WarningRoundedIcon from "@mui/icons-material/WarningRounded";
 import Box from "@mui/material/Box";
 import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
@@ -28,6 +29,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import type { ReactNode } from "react";
+import { alpha } from "@mui/material/styles";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import { apiClient } from "@/lib/api/client";
 
@@ -73,7 +75,7 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
   const currentPath = typeof window === "undefined" ? "" : window.location.pathname;
   const isAdminRoute = currentPath.startsWith(apiClient.resolvePath("/admin"));
 
-  const recipesRoot = apiClient.resolvePath(`/g/${groupSlug}`);
+  const recipesRoot = apiClient.resolvePath(`/g/${groupSlug}/recipes`);
   const recipeFinder = apiClient.resolvePath(`/g/${groupSlug}/recipes/finder`);
   const recipeTimeline = apiClient.resolvePath(`/g/${groupSlug}/recipes/timeline`);
   const cookbooksRoot = apiClient.resolvePath(`/g/${groupSlug}/cookbooks`);
@@ -93,7 +95,7 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
       matches: (pathname) => {
         if (pathname === recipesRoot) return true;
         if (pathname.startsWith(apiClient.resolvePath(`/g/${groupSlug}/r/`))) return true;
-        return pathname.startsWith(apiClient.resolvePath(`/g/${groupSlug}/recipes/`))
+        return pathname.startsWith(`${recipesRoot}/`)
           && !pathname.startsWith(recipeFinder)
           && !pathname.startsWith(recipeTimeline)
           && !pathname.startsWith(categoriesRoot)
@@ -212,6 +214,13 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
     },
     {
       type: "item",
+      label: "Logs",
+      href: apiClient.resolvePath("/admin/logs"),
+      icon: <WarningRoundedIcon />,
+      matches: pathname => pathname.startsWith(apiClient.resolvePath("/admin/logs")),
+    },
+    {
+      type: "item",
       label: "Ingredient aliases",
       href: apiClient.resolvePath("/admin/manage/ingredient-aliases"),
       icon: <GroupRoundedIcon />,
@@ -275,26 +284,35 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
   function renderItems(items: NavItem[], nested = false) {
     return items.map(item => {
       if (isItem(item)) {
+        const selected = item.matches(currentPath);
+
         return (
           <ListItemButton
             key={item.label}
             component="a"
             href={item.href}
             onClick={onNavigate}
-            selected={item.matches(currentPath)}
+            selected={selected}
             sx={{
-              borderRadius: 2,
+              borderRadius: 2.5,
               px: nested ? 2 : 1.5,
-              py: 1,
+              py: 1.05,
               ml: nested ? 2 : 0,
+              color: selected ? "primary.dark" : "text.primary",
+              bgcolor: selected ? theme => alpha(theme.palette.primary.main, 0.12) : "transparent",
+              "&:hover": {
+                bgcolor: theme => selected
+                  ? alpha(theme.palette.primary.main, 0.16)
+                  : alpha(theme.palette.primary.main, 0.05),
+              },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+            <ListItemIcon sx={{ minWidth: 40, color: selected ? "primary.dark" : "text.secondary" }}>
               {item.icon}
             </ListItemIcon>
             <ListItemText
               primary={item.label}
-              primaryTypographyProps={{ fontWeight: item.matches(currentPath) ? 700 : 500 }}
+              primaryTypographyProps={{ fontWeight: selected ? 700 : 500 }}
             />
           </ListItemButton>
         );
@@ -309,12 +327,19 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
             onClick={() => toggleGroup(item.key, selected)}
             selected={selected}
             sx={{
-              borderRadius: 2,
+              borderRadius: 2.5,
               px: nested ? 2 : 1.5,
-              py: 1,
+              py: 1.05,
+              color: selected ? "primary.dark" : "text.primary",
+              bgcolor: selected ? theme => alpha(theme.palette.primary.main, 0.1) : "transparent",
+              "&:hover": {
+                bgcolor: theme => selected
+                  ? alpha(theme.palette.primary.main, 0.14)
+                  : alpha(theme.palette.primary.main, 0.05),
+              },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+            <ListItemIcon sx={{ minWidth: 40, color: selected ? "primary.dark" : "text.secondary" }}>
               {item.icon}
             </ListItemIcon>
             <ListItemText
@@ -342,9 +367,27 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
             href={apiClient.resolvePath("/admin")}
             onClick={onNavigate}
             selected={currentPath === adminRoot || currentPath === `${adminRoot}/setup`}
-            sx={{ borderRadius: 2, px: 1.5, py: 1 }}
+            sx={{
+              borderRadius: 2.5,
+              px: 1.5,
+              py: 1.05,
+              color: currentPath === adminRoot || currentPath === `${adminRoot}/setup` ? "primary.dark" : "text.primary",
+              bgcolor: currentPath === adminRoot || currentPath === `${adminRoot}/setup`
+                ? theme => alpha(theme.palette.primary.main, 0.12)
+                : "transparent",
+              "&:hover": {
+                bgcolor: theme => currentPath === adminRoot || currentPath === `${adminRoot}/setup`
+                  ? alpha(theme.palette.primary.main, 0.16)
+                  : alpha(theme.palette.primary.main, 0.05),
+              },
+            }}
           >
-            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+            <ListItemIcon
+              sx={{
+                minWidth: 40,
+                color: currentPath === adminRoot || currentPath === `${adminRoot}/setup` ? "primary.dark" : "text.secondary",
+              }}
+            >
               <StorageRoundedIcon />
             </ListItemIcon>
             <ListItemText primary="Admin setup" primaryTypographyProps={{ fontWeight: currentPath === adminRoot || currentPath === `${adminRoot}/setup` ? 700 : 500 }} />

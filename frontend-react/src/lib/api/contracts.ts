@@ -66,6 +66,11 @@ export type RegistrationPayload = {
   fullName: string;
   password: string;
   groupToken?: string;
+  invite?: string;
+};
+
+export type RegistrationInvitePrefill = {
+  email: string;
 };
 
 export type ActivityKey = "recipes" | "mealplanner" | "shopping_list";

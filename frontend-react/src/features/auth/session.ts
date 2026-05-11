@@ -1,9 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
-import { apiClient, ApiError, getAuthToken, setAuthToken } from "@/lib/api/client";
+import { apiClient, ApiError } from "@/lib/api/client";
 import type {
   AppInfo,
   AppStartupInfo,
   PrivateUser,
+  RegistrationInvitePrefill,
   RegistrationPayload,
   Token,
 } from "@/lib/api/contracts";
@@ -14,16 +15,11 @@ export const currentUserQueryKey = ["auth", "current-user"] as const;
 export const currentUserQueryOptions = queryOptions({
   queryKey: currentUserQueryKey,
   queryFn: async (): Promise<PrivateUser | null> => {
-    if (!getAuthToken()) {
-      return null;
-    }
-
     try {
       return await apiClient.get<PrivateUser>("/api/users/self", { suppressAuthRedirect: true });
     }
     catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        setAuthToken(null);
         return null;
       }
 
@@ -54,22 +50,20 @@ export async function signInWithPassword(payload: {
   formData.append("password", payload.password);
   formData.append("remember_me", String(payload.rememberMe));
 
-  const token = await apiClient.post<Token>("/api/auth/token", formData, {
+  await apiClient.post<Token>("/api/auth/token", formData, {
     suppressAuthRedirect: true,
   });
 
-  setAuthToken(token.access_token);
   await queryClient.removeQueries({ queryKey: currentUserQueryKey });
   return await fetchCurrentUser();
 }
 
 export async function signInWithOidcCallback(search: string) {
   const queryString = search.startsWith("?") ? search : `?${search}`;
-  const token = await apiClient.get<Token>(`/api/auth/oauth/callback${queryString}`, {
+  await apiClient.get<Token>(`/api/auth/oauth/callback${queryString}`, {
     suppressAuthRedirect: true,
   });
 
-  setAuthToken(token.access_token);
   await queryClient.removeQueries({ queryKey: currentUserQueryKey });
   return await fetchCurrentUser();
 }
@@ -79,11 +73,10 @@ export function beginOidcSignIn() {
 }
 
 export async function refreshSession() {
-  const token = await apiClient.get<Token>("/api/auth/refresh", {
+  await apiClient.get<Token>("/api/auth/refresh", {
     suppressAuthRedirect: true,
   });
 
-  setAuthToken(token.access_token);
   await queryClient.removeQueries({ queryKey: currentUserQueryKey });
   return await fetchCurrentUser();
 }
@@ -95,13 +88,36 @@ export async function signOut() {
     });
   }
   finally {
-    setAuthToken(null);
     queryClient.setQueryData(currentUserQueryKey, null);
   }
 }
 
+type RegistrationResponse = {
+  detail: string;
+  authenticated: boolean;
+};
+
 export async function registerUser(payload: RegistrationPayload) {
-  return await apiClient.post<{ detail: string }>("/api/users/register", payload, {
+  const response = await apiClient.post<RegistrationResponse>("/api/users/register", payload, {
+    suppressAuthRedirect: true,
+  });
+
+  if (!response.authenticated) {
+    return { ...response, user: null };
+  }
+
+  await queryClient.removeQueries({ queryKey: currentUserQueryKey });
+  const user = await fetchCurrentUser();
+
+  if (!user) {
+    throw new Error("Registration completed but the authenticated session could not be loaded");
+  }
+
+  return { ...response, user };
+}
+
+export async function resolveRegistrationInvite(invite: string) {
+  return await apiClient.get<RegistrationInvitePrefill>(`/api/users/register/invite?invite=${encodeURIComponent(invite)}`, {
     suppressAuthRedirect: true,
   });
 }

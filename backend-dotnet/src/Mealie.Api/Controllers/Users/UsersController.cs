@@ -18,6 +18,8 @@ namespace Mealie.Api.Controllers.Users;
 public class UsersController(
     IRegistrationService registrationService,
     IPasswordResetService passwordResetService,
+    IAuthCookieService authCookieService,
+    IJwtTokenService jwtTokenService,
     QueryExecutor executor,
     ITenantContext tenantContext,
     IOptions<AppSettings> settings) : ControllerBase
@@ -31,6 +33,19 @@ public class UsersController(
         return Ok(new { allow_registration = settings.Value.AllowSignup });
     }
 
+    [HttpGet("register/invite")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResolveRegistrationInvite([FromQuery] string invite, CancellationToken ct)
+    {
+        var prefill = await registrationService.ResolveInviteAsync(invite, ct);
+        if (prefill is null)
+        {
+            return BadRequest(new { detail = "Registration invite is invalid or expired" });
+        }
+
+        return Ok(prefill);
+    }
+
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -40,13 +55,24 @@ public class UsersController(
             return BadRequest(new { detail = "Registration is disabled" });
         }
 
-        var success = await registrationService.RegisterAsync(request);
-        if (!success)
+        var result = await registrationService.RegisterAsync(request);
+        if (!result.Success)
         {
-            return BadRequest(new { detail = "Registration failed — username or email already taken" });
+            return BadRequest(new { detail = result.Error ?? "Registration failed" });
         }
 
-        return Ok(new { detail = "Registration successful" });
+        var authenticated = !string.IsNullOrWhiteSpace(request.Invite) && result.AuthContext is not null;
+        if (authenticated)
+        {
+            var token = jwtTokenService.GenerateAccessToken(
+                result.AuthContext!.UserId,
+                result.AuthContext.GroupId,
+                result.AuthContext.HouseholdId,
+                result.AuthContext.IsAdmin);
+            authCookieService.SetAccessTokenCookie(Response, token);
+        }
+
+        return Ok(new { detail = "Registration successful", authenticated });
     }
 
     [HttpPost("forgot-password")]

@@ -24,28 +24,31 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { MainNav } from "@/components/navigation/MainNav";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import { apiClient } from "@/lib/api/client";
 
 type Props = {
   groupSlug: string;
   title?: string;
+  subtitle?: string | null;
   userName?: string | null;
   children: React.ReactNode;
 };
 
 const drawerWidth = 280;
 
-export function AppShell({ groupSlug, title = "Mealie", userName, children }: Props) {
+export function AppShell({ groupSlug, title = "Mealie", subtitle, userName, children }: Props) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
   const { data: currentUser } = useCurrentUser();
   const displayName = userName ?? currentUser?.fullName ?? currentUser?.username ?? null;
+  const shellSubtitle = subtitle ?? [currentUser?.group, currentUser?.household].filter(Boolean).join(" • ");
   const canManage = Boolean(currentUser?.canManage);
   const isAdmin = Boolean(currentUser?.admin);
 
@@ -59,42 +62,81 @@ export function AppShell({ groupSlug, title = "Mealie", userName, children }: Pr
     : "M";
 
   const drawer = (
-    <Box sx={{ display: "flex", height: "100%", flexDirection: "column" }}>
-      <Box sx={{ px: 2, py: 2 }}>
-        {displayName ? (
-          <Stack
-            component="a"
-            direction="row"
-            spacing={1.5}
-            href={apiClient.resolvePath("/user/profile")}
-            sx={{
-              alignItems: "center",
-              color: "inherit",
-              textDecoration: "none",
-              borderRadius: 2,
-              px: 1,
-              py: 1,
-              "&:hover": { bgcolor: "action.hover" },
-            }}
-          >
-            <Avatar sx={{ bgcolor: "primary.main", color: "primary.contrastText" }}>
-              {initials}
-            </Avatar>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography noWrap fontWeight={600} variant="body2">
-                {displayName}
-              </Typography>
-              <Typography color="text.secondary" noWrap variant="caption">
-                User settings
-              </Typography>
-            </Box>
-          </Stack>
-        ) : null}
+    <Box
+        sx={{
+          display: "flex",
+          height: "100%",
+          flexDirection: "column",
+          bgcolor: "background.paper",
+          backgroundImage: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 0)} 220px)`,
+        }}
+      >
+      <Box sx={{ px: 2.5, py: 2.5 }}>
+        <Stack spacing={2}>
+          <Box>
+            <Typography sx={{ color: "text.secondary", fontSize: 12, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" }}>
+              Mealie
+            </Typography>
+            <Typography variant="h6" sx={{ mt: 0.5 }}>
+              {currentUser?.group ?? title}
+            </Typography>
+            <Typography color="text.secondary" variant="body2">
+              {currentUser?.household ?? "Recipe workspace"}
+            </Typography>
+          </Box>
+          {displayName ? (
+            <Stack
+              component="a"
+              direction="row"
+              spacing={1.5}
+              href={apiClient.resolvePath("/user/profile")}
+              sx={{
+                alignItems: "center",
+                color: "inherit",
+                textDecoration: "none",
+                borderRadius: 3,
+                border: 1,
+                borderColor: alpha(theme.palette.primary.main, 0.12),
+                bgcolor: alpha(theme.palette.background.paper, 0.88),
+                px: 1.25,
+                py: 1.25,
+                transition: "background-color 120ms ease, border-color 120ms ease, transform 120ms ease",
+                "&:hover": {
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  borderColor: alpha(theme.palette.primary.main, 0.2),
+                  transform: "translateY(-1px)",
+                },
+              }}
+            >
+              <Avatar sx={{ bgcolor: "primary.main", color: "primary.contrastText", width: 42, height: 42 }}>
+                {initials}
+              </Avatar>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography noWrap fontWeight={700} variant="body2">
+                  {displayName}
+                </Typography>
+                <Typography color="text.secondary" noWrap variant="caption">
+                  {currentUser?.username ? `@${currentUser.username}` : "User settings"}
+                </Typography>
+              </Box>
+            </Stack>
+          ) : null}
+        </Stack>
         <Button
           fullWidth
           href={apiClient.resolvePath(`/g/${groupSlug}/r/create`)}
           startIcon={<AddBoxRoundedIcon />}
-          sx={{ mt: displayName ? 2 : 0.5, justifyContent: "flex-start", px: 1.5, py: 1.25 }}
+          sx={{
+            mt: displayName ? 2 : 1,
+            justifyContent: "flex-start",
+            px: 1.75,
+            py: 1.25,
+            borderRadius: 3,
+            boxShadow: "none",
+            "&:hover": {
+              boxShadow: "none",
+            },
+          }}
           variant="contained"
         >
           Create
@@ -135,6 +177,10 @@ export function AppShell({ groupSlug, title = "Mealie", userName, children }: Pr
           anchorOrigin={{ horizontal: "right", vertical: "top" }}
           transformOrigin={{ horizontal: "left", vertical: "bottom" }}
         >
+          <Box sx={{ px: 2, pt: 1.5, pb: 1 }} onClick={event => event.stopPropagation()}>
+            <ThemeModeSelector />
+          </Box>
+          <Divider />
           <MenuItem
             component="a"
             href={apiClient.resolvePath("/user/profile")}
@@ -198,31 +244,53 @@ export function AppShell({ groupSlug, title = "Mealie", userName, children }: Pr
         sx={{
           borderBottom: 1,
           borderColor: "divider",
-          bgcolor: "primary.main",
-          color: "primary.contrastText",
+          bgcolor: alpha(theme.palette.background.paper, 0.88),
+          backdropFilter: "blur(12px)",
+          color: "text.primary",
           width: { lg: `calc(100% - ${drawerWidth}px)` },
           ml: { lg: `${drawerWidth}px` },
         }}
       >
-        <Toolbar sx={{ gap: 2, py: 1 }}>
+        <Toolbar sx={{ gap: 2, py: 1.25 }}>
           <IconButton
             aria-label="Open navigation menu"
             edge="start"
             onClick={() => setMobileSidebarOpen(true)}
-            sx={{ color: "inherit", display: { lg: "none" } }}
+            sx={{
+              color: "inherit",
+              display: { lg: "none" },
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 2.5,
+            }}
           >
             <MenuRoundedIcon />
           </IconButton>
           <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-            <Typography noWrap variant="h6">
+            <Typography noWrap variant="h5" sx={{ fontSize: { xs: "1.15rem", md: "1.35rem" }, fontWeight: 700 }}>
               {title}
             </Typography>
-            {displayName ? (
+            {shellSubtitle ? (
               <Typography color="text.secondary" noWrap variant="body2">
-                {displayName}
+                {shellSubtitle}
               </Typography>
             ) : null}
           </Box>
+          {displayName ? (
+            <Stack direction="row" spacing={1.25} alignItems="center" sx={{ display: { xs: "none", sm: "flex" } }}>
+              <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", color: "primary.contrastText" }}>
+                {initials}
+              </Avatar>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography noWrap variant="body2" fontWeight={700}>
+                  {displayName}
+                </Typography>
+                <Typography noWrap variant="caption" color="text.secondary">
+                  {currentUser?.email}
+                </Typography>
+              </Box>
+            </Stack>
+          ) : null}
         </Toolbar>
       </AppBar>
 
@@ -254,6 +322,7 @@ export function AppShell({ groupSlug, title = "Mealie", userName, children }: Pr
               width: drawerWidth,
               borderRight: 1,
               borderRightColor: "divider",
+              bgcolor: "background.paper",
             },
           }}
           variant="permanent"
@@ -267,10 +336,11 @@ export function AppShell({ groupSlug, title = "Mealie", userName, children }: Pr
         sx={{
           flexGrow: 1,
           width: { lg: `calc(100% - ${drawerWidth}px)` },
+          background: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.06)} 0%, ${theme.palette.background.default} 180px)`,
         }}
       >
         <Toolbar />
-        <Container component="section" maxWidth="xl" sx={{ py: 4 }}>
+        <Container component="section" maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
           {children}
         </Container>
       </Box>

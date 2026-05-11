@@ -7,16 +7,28 @@ import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
-import { createHouseholdInvite, fetchHouseholdStatistics } from "@/features/settings/api";
+import { createHouseholdInvite, fetchHouseholdStatistics, sendHouseholdInvitationEmail } from "@/features/settings/api";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { apiClient } from "@/lib/api/client";
+
+class InviteEmailError extends Error {
+  constructor(message: string, public readonly token: string) {
+    super(message);
+    this.name = "InviteEmailError";
+  }
+}
 
 export function UserProfileRouteComponent() {
   const { data: user } = useCurrentUser();
   const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteStatus, setInviteStatus] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const statsQuery = useQuery({
     queryKey: ["profile-household-stats"],
@@ -25,13 +37,29 @@ export function UserProfileRouteComponent() {
   });
 
   const inviteMutation = useMutation({
-    mutationFn: async () => await createHouseholdInvite(),
-    onSuccess: invite => {
+    mutationFn: async (email: string) => {
+      const invite = await createHouseholdInvite();
+
+      try {
+        await sendHouseholdInvitationEmail({ email, token: invite.token });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to send invite email.";
+        throw new InviteEmailError(message, invite.token);
+      }
+
+      return { email, token: invite.token };
+    },
+    onSuccess: result => {
       setInviteError(null);
-      setInviteToken(invite.token);
+      setInviteToken(null);
+      setInviteStatus(`Invitation email sent to ${result.email}.`);
+      setInviteEmail("");
+      setInviteDialogOpen(false);
     },
     onError: error => {
-      setInviteError(error instanceof Error ? error.message : "Unable to create invite link.");
+      setInviteToken(error instanceof InviteEmailError ? error.token : null);
+      setInviteStatus(null);
+      setInviteError(error instanceof Error ? error.message : "Unable to send invite email.");
     },
   });
 
@@ -106,16 +134,26 @@ export function UserProfileRouteComponent() {
       actions={user?.canInvite ? (
         <Button
           variant="contained"
-          onClick={() => inviteMutation.mutate()}
+          onClick={() => {
+            setInviteError(null);
+            setInviteStatus(null);
+            setInviteToken(null);
+            setInviteDialogOpen(true);
+          }}
           disabled={inviteMutation.isPending}
         >
-          Generate invite link
+          Send invite email
         </Button>
       ) : undefined}
     >
+      {inviteStatus ? (
+        <Alert severity="success" onClose={() => setInviteStatus(null)}>
+          {inviteStatus}
+        </Alert>
+      ) : null}
       {inviteToken ? (
-        <Alert severity="success" onClose={() => setInviteToken(null)}>
-          Invite token created: <strong>{inviteToken}</strong>
+        <Alert severity="warning" onClose={() => setInviteToken(null)}>
+          Invite token created but email delivery failed: <strong>{inviteToken}</strong>
         </Alert>
       ) : null}
       {inviteError ? (
@@ -168,6 +206,34 @@ export function UserProfileRouteComponent() {
           </Grid>
         ))}
       </Grid>
+
+      <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Send invite email</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography color="text.secondary">
+              Create a new invite token and email a secure registration link directly to the recipient.
+            </Typography>
+            <TextField
+              autoFocus
+              label="Recipient email"
+              type="email"
+              value={inviteEmail}
+              onChange={event => setInviteEmail(event.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={() => inviteMutation.mutate(inviteEmail.trim())}
+            disabled={inviteMutation.isPending || !inviteEmail.trim()}
+          >
+            Send invite
+          </Button>
+        </DialogActions>
+      </Dialog>
     </SettingsPage>
   );
 }

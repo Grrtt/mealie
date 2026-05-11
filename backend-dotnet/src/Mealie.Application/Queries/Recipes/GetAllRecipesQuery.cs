@@ -22,7 +22,7 @@ file static class RecipeCommandMappings
     {
         return new RecipeSummaryResponse
         {
-            Id = r.Id, Name = r.Name, Slug = r.Slug, Description = r.Description,
+            Id = r.Id, Name = r.Name, Slug = r.Slug, Description = System.Net.WebUtility.HtmlDecode(r.Description),
             Image = r.Image, OrgUrl = r.OrgUrl, Rating = r.Rating,
             GroupId = r.GroupId, HouseholdId = r.HouseholdId, CreatedAt = r.CreatedAt, UpdateAt = r.UpdateAt,
             Tags = r.Tags.Select(t => new OrganizerSimpleResponse { Id = t.Id, Name = t.Name, Slug = t.Slug }).ToList(),
