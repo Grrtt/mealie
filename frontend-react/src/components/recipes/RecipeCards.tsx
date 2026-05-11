@@ -5,10 +5,10 @@ import Chip from "@mui/material/Chip";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { Link } from "@tanstack/react-router";
 import type { RecipeSummary } from "@/lib/api/contracts";
 import { recipeImageUrl } from "@/features/recipes/api";
 import { formatRecipeDuration } from "@/features/recipes/format-duration";
-import { apiClient } from "@/lib/api/client";
 import { RecipeImage } from "@/components/recipes/RecipeImage";
 
 type Props = {
@@ -22,7 +22,7 @@ export function RecipeCards({ recipes, hrefBuilder }: Props) {
       {recipes.map(recipe => (
         <Grid key={recipe.id ?? recipe.slug} size={{ xs: 12, md: 6, lg: 4 }}>
           <Card sx={{ height: "100%" }}>
-              <CardActionArea href={apiClient.resolvePath(hrefBuilder(recipe))} sx={{ height: "100%" }}>
+              <CardActionArea component={Link} to={hrefBuilder(recipe)} sx={{ height: "100%" }}>
                 {recipe.id ? (
                   <RecipeImage
                     alt={recipe.name ?? "Recipe image"}

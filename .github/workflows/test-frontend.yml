@@ -37,17 +37,17 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install dependencies 👨🏻‍💻
-        run: yarn
-        working-directory: "frontend"
+        run: yarn install --frozen-lockfile --non-interactive
+        working-directory: "frontend-react"
 
-      - name: Prepare nuxt 🚀
-        run: yarn nuxt prepare
-        working-directory: "frontend"
+      - name: Build frontend 🏗
+        run: yarn build
+        working-directory: "frontend-react"
 
       - name: Run linter 👀
         run: yarn lint --max-warnings=0
-        working-directory: "frontend"
+        working-directory: "frontend-react"
 
       - name: Run tests 🧪
-        run: yarn test:ci
-        working-directory: "frontend"
+        run: yarn test
+        working-directory: "frontend-react"

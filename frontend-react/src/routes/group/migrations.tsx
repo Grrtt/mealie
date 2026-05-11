@@ -13,7 +13,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
 import { fetchGroupReports, startGroupMigration } from "@/features/settings/api";
-import type { SupportedMigrations } from "../../../../frontend/app/lib/api/types/group";
+import type { SupportedMigrations } from "@/lib/api/types/group";
 
 const migrationOptions: SupportedMigrations[] = [
   "mealie_alpha",

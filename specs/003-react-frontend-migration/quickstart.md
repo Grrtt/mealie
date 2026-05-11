@@ -2,7 +2,7 @@
 
 ## Goal
 
-Use the current Nuxt frontend as the parity baseline while preparing later implementation tasks for a phased React replacement that preserves backend and deployment expectations.
+Use the shipped React frontend as the parity baseline for continued validation of the final single-SPA deployment shape.
 
 ## 1. Baseline the current application
 
@@ -12,7 +12,7 @@ From the repository root, install dependencies first:
 task setup
 ```
 
-For the normal split-process developer baseline, run the backend and current frontend in separate terminals:
+For the normal split-process developer baseline, run the backend and React frontend in separate terminals:
 
 ```bash
 task dotnet
@@ -32,7 +32,7 @@ Key expectations from the current codebase:
 - Production-like compose entry point is `docker compose -f docker-compose.dotnet.yml up --build`
 - Static production build command is `task ui:generate`
 
-## 2. Use the planning artifacts as the migration source of truth
+## 2. Use the planning artifacts as the source of truth
 
 - `plan.md` — architecture, phases, coexistence/cutover, validation strategy
 - `research.md` — decisions and tradeoffs already resolved
@@ -41,26 +41,23 @@ Key expectations from the current codebase:
 - `contracts/release-gates.yaml` — required evidence before promoting a phase
 - `contracts/runtime-invariants.md` — non-negotiable runtime behaviors to preserve
 
-## 3. Baseline checks to perform before implementation begins
+## 3. Baseline checks to perform before validation begins
 
-1. Confirm the current frontend route inventory from `frontend/app/pages/**/*.vue`.
+1. Confirm the current frontend route inventory from `frontend-react/src/routes/**/*.tsx`.
 2. Confirm public/protected/admin route rules from:
-   - `frontend/app/middleware/auth-redirect.global.ts`
-   - `frontend/app/middleware/admin-only.ts`
+   - `frontend-react/src/features/auth/routeGuards.ts`
 3. Confirm auth/session behavior from:
-   - `frontend/app/composables/use-auth-backend.ts`
-   - `frontend/app/composables/use-mealie-auth.ts`
-   - `frontend/app/plugins/axios.ts`
-   - `frontend/app/plugins/init-auth.client.ts`
+   - `frontend-react/src/features/auth/session.ts`
+   - `frontend-react/src/features/auth/useCurrentUser.ts`
+   - `frontend-react/src/lib/api/client.ts`
 4. Confirm localization/runtime expectations from:
-   - `frontend/nuxt.config.ts`
-   - `frontend/app/i18n.config.ts`
-   - `frontend/app/lang/locales/*`
-   - `frontend/app/lang/dateTimeFormats/*`
+   - `frontend-react/src/lib/i18n/i18n.ts`
+   - `frontend-react/src/lib/i18n/messages/*`
+   - `frontend-react/src/lib/i18n/dateTimeFormats/*`
 5. Confirm static deployment expectations from:
-   - `frontend/Dockerfile`
-   - `frontend/nginx.conf`
-   - `docker-compose.dotnet.yml`
+   - `frontend-react/Dockerfile`
+   - `frontend-react/nginx.conf`
+   - `docker-compose.yml`
    - `Taskfile.yml`
 
 ## 4. Future implementation order
@@ -71,8 +68,8 @@ When task generation begins, create tasks in this order:
 2. React runtime foundation (routing, auth, i18n, API, theming, validation, shell)
 3. Core recipe + planning + shopping workflows
 4. Profile/household/group-data workflows
-5. Admin workflows and cutover controls
-6. Final cutover + legacy retirement
+5. Admin workflows
+6. Ongoing React-only deployment validation
 
 ## 5. Verification checkpoints for every migration slice
 
@@ -82,50 +79,36 @@ When task generation begins, create tasks in this order:
 - Locale smoke tests pass, including RTL where applicable
 - Public/shared routes keep working without auth
 - No new backend or deployment dependency is introduced unless explicitly approved
-- Rollback path remains documented and testable
+- React remains the only shipped frontend
 
-## 6. Release-variant coexistence workflow
+## 6. React-only frontend workflow
 
-The migration gateway now exposes rollout state through `MEALIE_FRONTEND_RELEASE_VARIANT` plus the `MEALIE_ROUTE_SLICE_*` flags documented in `contracts/route-parity.yaml`.
+The migration is complete: the active app ships a single React SPA from `frontend-react/`.
 
-### Legacy-only baseline
+### Local validation
 
 ```bash
-task ui:release:rollback
-curl -sf http://localhost/__release-variant
+task ui
+curl -I http://localhost:4173/login
+curl -I http://localhost:4173/admin
 ```
 
 Expected outcome:
 
-- `/__release-variant` reports `legacy-only`
-- unsupported or not-yet-approved paths continue to resolve through the Nuxt frontend
+- both routes are served by the same React app
+- direct navigation and deep links stay functional
+- no route is redirected to a legacy frontend
 
-### Hybrid cutover for approved React slices
+### Docker validation
 
 ```bash
-task ui:release:hybrid
-curl -sf http://localhost/__release-variant
-curl -I http://localhost/login
-curl -I http://localhost/admin
+docker compose up --build --detach
+curl -sf http://localhost:9000/healthz
+curl -sf http://localhost/login
 ```
 
 Expected outcome:
 
-- `/__release-variant` reports `hybrid`
-- `/login` returns `X-Mealie-Frontend-Instance: react`
-- `/admin` remains `X-Mealie-Frontend-Instance: legacy` until the final cutover tasks retire that fallback
-
-### React sidecar validation
-
-The React sidecar continues to run on `http://localhost:8080` during coexistence. It exposes the same rollout metadata for direct smoke checks:
-
-```bash
-curl -sf http://localhost:8080/__release-variant
-```
-
-### Rollback drill
-
-1. Run `task ui:release:hybrid`.
-2. Verify an approved route such as `/login` is served from React.
-3. Run `task ui:release:rollback`.
-4. Re-run the same route checks and confirm the gateway returns to `legacy-only` without touching backend data, users, or auth cookies.
+- the backend responds on port `9000`
+- the frontend responds on port `80`
+- the stack runs without any release-variant or route-slice configuration

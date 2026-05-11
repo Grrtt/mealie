@@ -155,19 +155,19 @@
 
 ### Tests for User Story 5 ⚠️
 
-> Write these tests first and confirm they fail before implementing coexistence and cutover controls.
+> Write these tests first and confirm they fail before implementing the final React-only deployment controls.
 
-- [X] T041 [P] [US5] Add coexistence routing and legacy-fallback smoke coverage in `tests/e2e/react-migration/coexistence-routing.spec.ts`
-- [X] T042 [P] [US5] Add cutover and rollback drill coverage in `tests/e2e/react-migration/cutover-rollback.spec.ts`
+- [X] T041 [P] [US5] Add React-only route smoke coverage in `tests/e2e/react-migration/route-coverage.spec.ts`
+- [X] T042 [P] [US5] Add React deployment verification for public metadata and locale coverage in `tests/e2e/react-migration/public-metadata.spec.ts` and `tests/e2e/react-migration/locale-matrix.spec.ts`
 
 ### Implementation for User Story 5
 
-- [X] T043 [US5] Implement release-variant routing config, approved route-slice flags, and fallback mapping in `frontend-react/src/config/releaseVariant.ts`, `frontend-react/src/router/fallbackRoutes.ts`, and `specs/003-react-frontend-migration/contracts/route-parity.yaml`
-- [X] T044 [US5] Wire nginx and compose cutover controls so React serves approved subtrees and legacy remains the fallback in `frontend-react/nginx.conf`, `frontend/nginx.conf`, `docker-compose.dotnet.yml`, and `Taskfile.yml`
+- [X] T043 [US5] Consolidate the React router and remove fallback-only routing config in `frontend-react/src/router.tsx`, `frontend-react/src/routes/__root.tsx`, and `specs/003-react-frontend-migration/contracts/route-parity.yaml`
+- [X] T044 [US5] Simplify nginx and compose for the single React SPA in `frontend-react/nginx.conf`, `docker-compose.yml`, `docker-compose.azure.yml`, and `Taskfile.yml`
 - [X] T045 [US5] Implement parity-gap reporting and phase evidence output in `specs/003-react-frontend-migration/contracts/release-gates.yaml`, `specs/003-react-frontend-migration/checklists/phase-parity.md`, and `tests/e2e/react-migration/reporters/parityReport.ts`
-- [X] T046 [US5] Document the operator rollout, rollback, and phased-release workflow in `specs/003-react-frontend-migration/quickstart.md` and `docs/frontend/react-migration-rollout.md`
+- [X] T046 [US5] Document the operator deployment and React-only validation workflow in `specs/003-react-frontend-migration/quickstart.md` and `docs/frontend/react-migration-rollout.md`
 
-**Checkpoint**: Coexistence, cutover, and rollback are independently testable and controlled by documented release gates.
+**Checkpoint**: React-only deployment and verification are independently testable and controlled by documented release gates.
 
 ---
 
@@ -177,11 +177,10 @@
 
 - [X] T047 [P] Run the full route-coverage, locale-matrix, and public-metadata validation suite in `tests/e2e/react-migration/route-coverage.spec.ts`, `tests/e2e/react-migration/locale-matrix.spec.ts`, `tests/e2e/react-migration/public-metadata.spec.ts`, and `specs/003-react-frontend-migration/contracts/release-gates.yaml`
 - [X] T048 [P] Add accessibility and top-workflow performance regression checks in `tests/e2e/react-migration/performance.spec.ts`, `frontend-react/src/test/accessibility/navigation.a11y.test.tsx`, and `frontend-react/src/test/accessibility/forms.a11y.test.tsx`
-- [X] T049 Switch the default shipped SPA to the React workspace while preserving explicit rollback controls in `docker-compose.dotnet.yml`, `Taskfile.yml`, `frontend-react/Dockerfile`, and `frontend/nginx.conf`
-- [ ] T050 Retire the legacy Nuxt frontend and consolidate the final single-SPA deployment shape in `frontend/`, `frontend-react/`, `docs/frontend/react-migration-rollout.md`, and `specs/003-react-frontend-migration/contracts/route-parity.yaml`
-- Note: T047 and T049 are now validated against the live Docker stack. T050 remains open because the `legacy-only` rollback contract is still active and depends on the Nuxt gateway/frontend assets in `frontend/`; removing them in this pass would break the documented rollback expectation before the retirement window is formally closed.
+- [X] T049 Switch the default shipped SPA to the React workspace in `docker-compose.yml`, `Taskfile.yml`, `frontend-react/Dockerfile`, and `frontend-react/nginx.conf`
+- [X] T050 Retire the legacy frontend and consolidate the final single-SPA deployment shape in `frontend-react/`, `docs/frontend/react-migration-rollout.md`, and `specs/003-react-frontend-migration/contracts/route-parity.yaml`
 
-**Final Checkpoint**: All release gates pass, React is the default and only supported SPA, rollback windows are closed, and the legacy frontend is retired.
+**Final Checkpoint**: All release gates pass, React is the default and only supported SPA, and the legacy frontend is retired.
 
 ---
 
@@ -263,9 +262,9 @@ Task: "T037 Implement group-data, organizer, reports, and migration-helper surfa
 ## Parallel Example: User Story 5
 
 ```bash
-Task: "T041 Add coexistence routing and legacy-fallback smoke coverage in tests/e2e/react-migration/coexistence-routing.spec.ts"
-Task: "T042 Add cutover and rollback drill coverage in tests/e2e/react-migration/cutover-rollback.spec.ts"
-Task: "T043 Implement release-variant routing config, approved route-slice flags, and fallback mapping in frontend-react/src/config/releaseVariant.ts, frontend-react/src/router/fallbackRoutes.ts, and specs/003-react-frontend-migration/contracts/route-parity.yaml"
+Task: "T041 Add React-only route smoke coverage in tests/e2e/react-migration/route-coverage.spec.ts"
+Task: "T042 Add React deployment verification for public metadata and locale coverage in tests/e2e/react-migration/public-metadata.spec.ts and tests/e2e/react-migration/locale-matrix.spec.ts"
+Task: "T043 Consolidate the React router and remove fallback-only routing config in frontend-react/src/router.tsx, frontend-react/src/routes/__root.tsx, and specs/003-react-frontend-migration/contracts/route-parity.yaml"
 Task: "T045 Implement parity-gap reporting and phase evidence output in specs/003-react-frontend-migration/contracts/release-gates.yaml, specs/003-react-frontend-migration/checklists/phase-parity.md, and tests/e2e/react-migration/reporters/parityReport.ts"
 ```
 

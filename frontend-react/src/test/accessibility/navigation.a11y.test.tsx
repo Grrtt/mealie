@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import { forwardRef } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MainNav } from "@/components/navigation/MainNav";
@@ -10,6 +12,17 @@ vi.mock("@/features/auth/useCurrentUser", () => ({
   useCurrentUser: () => useCurrentUserMock(),
 }));
 
+vi.mock("@tanstack/react-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
+
+  return {
+    ...actual,
+    Link: forwardRef<HTMLAnchorElement, { to: string } & ComponentPropsWithoutRef<"a">>(({ to, ...props }, ref) => (
+      <a ref={ref} href={to} {...props} />
+    )),
+  };
+});
+
 describe("navigation accessibility", () => {
   beforeEach(() => {
     useCurrentUserMock.mockReturnValue({ data: null });
@@ -18,10 +31,8 @@ describe("navigation accessibility", () => {
 
   it("exposes the main navigation as a landmark with named links in keyboard order", async () => {
     const user = userEvent.setup();
-    const queryClient = new QueryClient();
-
     render(
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={new QueryClient()}>
         <MainNav groupSlug="home" />
       </QueryClientProvider>,
     );

@@ -9,18 +9,18 @@ import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/layout/AppShell";
 import { WorkflowLinks } from "@/components/navigation/WorkflowLinks";
-import { createShoppingList, deleteShoppingList, fetchShoppingLists } from "@/features/shopping/fromRecipe";
+import { createShoppingList, deleteShoppingList, shoppingListsQueryOptions } from "@/features/shopping/fromRecipe";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
-import { apiClient } from "@/lib/api/client";
 
 const showAllStorageKey = "react-migration-shopping-show-all";
 
 export function ShoppingListsRouteComponent() {
   const { data: user } = useCurrentUser();
+  const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { disableRedirect?: string | boolean };
   const [name, setName] = useState("");
   const [showAll, setShowAll] = useState(() => {
@@ -30,10 +30,7 @@ export function ShoppingListsRouteComponent() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const listsQuery = useQuery({
-    queryKey: ["shopping-lists"],
-    queryFn: fetchShoppingLists,
-  });
+  const listsQuery = useQuery(shoppingListsQueryOptions);
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -44,9 +41,7 @@ export function ShoppingListsRouteComponent() {
       setStatus("Shopping list created");
       setName("");
       await listsQuery.refetch();
-      if (typeof window !== "undefined") {
-        window.location.assign(apiClient.resolvePath(`/shopping-lists/${created.id}`));
-      }
+      await navigate({ href: `/shopping-lists/${created.id}` });
     },
     onError: createError => {
       setError(createError instanceof Error ? createError.message : "Unable to create shopping list");
@@ -76,13 +71,12 @@ export function ShoppingListsRouteComponent() {
   }, [showAll]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const disableRedirect = search.disableRedirect === true || search.disableRedirect === "true";
 
     if (!disableRedirect && visibleLists.length === 1) {
-      window.location.replace(apiClient.resolvePath(`/shopping-lists/${visibleLists[0].id}`));
+      void navigate({ href: `/shopping-lists/${visibleLists[0].id}`, replace: true });
     }
-  }, [search.disableRedirect, visibleLists]);
+  }, [navigate, search.disableRedirect, visibleLists]);
 
   if (listsQuery.isLoading) {
     return (
@@ -135,7 +129,7 @@ export function ShoppingListsRouteComponent() {
               <CardContent>
                 <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
                   <Stack spacing={0.5} sx={{ flex: 1 }}>
-                    <Button href={apiClient.resolvePath(`/shopping-lists/${list.id}`)} sx={{ justifyContent: "flex-start", p: 0 }}>
+                    <Button onClick={() => void navigate({ href: `/shopping-lists/${list.id}` })} sx={{ justifyContent: "flex-start", p: 0 }}>
                       {list.name ?? "Untitled list"}
                     </Button>
                     <Typography color="text.secondary">

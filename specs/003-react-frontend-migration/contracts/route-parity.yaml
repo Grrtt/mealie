@@ -1,16 +1,15 @@
 version: 1
 feature: react-frontend-migration
 source_of_truth:
-  pages_glob: frontend/app/pages/**/*.vue
+  pages_glob: frontend-react/src/routes/**/*.tsx
   auth_middleware:
-    - frontend/app/middleware/auth-redirect.global.ts
-    - frontend/app/middleware/admin-only.ts
+    - frontend-react/src/features/auth/routeGuards.ts
   workflow_sources:
-    - frontend/app/composables/use-auth-backend.ts
-    - frontend/app/composables/use-mealie-auth.ts
-    - frontend/app/composables/api/api-client.ts
-    - frontend/app/pages/index.vue
-    - frontend/app/pages/login.vue
+    - frontend-react/src/features/auth/session.ts
+    - frontend-react/src/features/auth/useCurrentUser.ts
+    - frontend-react/src/lib/api/client.ts
+    - frontend-react/src/routes/index.tsx
+    - frontend-react/src/routes/login.tsx
 
 special_redirects:
   - path: /
@@ -19,26 +18,6 @@ special_redirects:
     behavior: OIDC callback handling on the login route
   - path: /r/create/url
     behavior: PWA/share-target shortcut to the current user's group recipe-import route
-
-coexistence_controls:
-  default_release_variant: react-default
-  gateway_env:
-    release_variant: MEALIE_FRONTEND_RELEASE_VARIANT
-    route_slice_flags:
-      auth: MEALIE_ROUTE_SLICE_AUTH
-      public-recipes: MEALIE_ROUTE_SLICE_PUBLIC_RECIPES
-      group-home: MEALIE_ROUTE_SLICE_GROUP_HOME
-      recipe-create-import: MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT
-      recipes: MEALIE_ROUTE_SLICE_RECIPES
-      cookbooks: MEALIE_ROUTE_SLICE_COOKBOOKS
-      household: MEALIE_ROUTE_SLICE_HOUSEHOLD
-      shopping-lists: MEALIE_ROUTE_SLICE_SHOPPING_LISTS
-      user-profile: MEALIE_ROUTE_SLICE_USER_PROFILE
-      group-data: MEALIE_ROUTE_SLICE_GROUP_DATA
-      admin: MEALIE_ROUTE_SLICE_ADMIN
-  status_endpoints:
-    legacy_gateway: /__release-variant
-    react_sidecar: http://localhost:8080/__release-variant
 
 route_slices:
   auth:

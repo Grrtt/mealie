@@ -13,7 +13,6 @@ import { getLocaleDirection } from "@/lib/i18n/locales";
 import { createDirectionalCache } from "@/theme/rtlCache";
 import { createAppTheme } from "@/theme";
 import { ThemePreferenceProvider, useThemePreference } from "@/theme/themePreference";
-import { applyReleaseVariantMetadata, resolveLegacyFallbackUrl, shouldServeFromLegacy } from "@/config/releaseVariant";
 import { hydrateSession } from "@/features/auth/session";
 
 function ThemedProviders({ i18n }: { i18n: Awaited<ReturnType<typeof createI18n>> }) {
@@ -56,7 +55,85 @@ function AppProviders({ i18n }: { i18n: Awaited<ReturnType<typeof createI18n>> }
   );
 }
 
-async function clearLegacyServiceWorkers() {
+function normalizeBasePath() {
+  return import.meta.env.BASE_URL === "/" ? "" : import.meta.env.BASE_URL.replace(/\/$/, "");
+}
+
+function stripBasePath(pathname: string, basePath: string) {
+  if (!basePath) {
+    return pathname || "/";
+  }
+
+  if (pathname === basePath) {
+    return "/";
+  }
+
+  if (!pathname.startsWith(`${basePath}/`)) {
+    return null;
+  }
+
+  return pathname.slice(basePath.length) || "/";
+}
+
+function installInternalNavigationInterceptor() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const basePath = normalizeBasePath();
+
+  const clickHandler = (event: MouseEvent) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const anchor = target.closest("a");
+    if (!(anchor instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    if (anchor.target && anchor.target !== "_self") {
+      return;
+    }
+
+    if (anchor.hasAttribute("download") || anchor.dataset.routerIgnore === "true") {
+      return;
+    }
+
+    const rawHref = anchor.getAttribute("href");
+    if (!rawHref || rawHref.startsWith("#")) {
+      return;
+    }
+
+    const url = new URL(anchor.href, window.location.href);
+    if (url.origin !== window.location.origin) {
+      return;
+    }
+
+    const appPathname = stripBasePath(url.pathname, basePath);
+    if (!appPathname) {
+      return;
+    }
+
+    if (["/api", "/docs", "/healthz", "/swagger", "/mcp"].some(prefix => appPathname === prefix || appPathname.startsWith(`${prefix}/`))) {
+      return;
+    }
+
+    event.preventDefault();
+    void router.navigate({
+      href: `${appPathname}${url.search}${url.hash}`,
+    });
+  };
+
+  window.document.addEventListener("click", clickHandler);
+}
+
+async function clearExistingServiceWorkers() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
     return false;
   }
@@ -86,21 +163,12 @@ async function bootstrap() {
     throw new Error("Missing #root element");
   }
 
-  if (await clearLegacyServiceWorkers()) {
+  if (await clearExistingServiceWorkers()) {
     window.location.reload();
     return;
   }
 
-  applyReleaseVariantMetadata();
-
-  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  if (shouldServeFromLegacy(currentPath)) {
-    const fallbackUrl = resolveLegacyFallbackUrl(currentPath);
-    if (fallbackUrl !== window.location.href) {
-      window.location.replace(fallbackUrl);
-      return;
-    }
-  }
+  installInternalNavigationInterceptor();
 
   const i18n = await createI18n();
   await hydrateSession();

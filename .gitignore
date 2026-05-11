@@ -2,14 +2,9 @@
 .env
 *.temp
 
-# frontend/.env.development
 docs/site/
 *temp/*
 .secret
-frontend/dist/
-frontend/.output/*
-frontend/.yarn/*
-frontend/.yarnrc.yml
 frontend-react/dist/
 frontend-react/node_modules/
 frontend-react/coverage/
@@ -55,9 +50,6 @@ pnpm-debug.log*
 **/obj/
 *.user
 
-# frontend copied into Python module for packaging purposes
-/mealie/frontend
-
 .mypy_cache/
 
 # Node Modules
@@ -75,4 +67,3 @@ lcov.info
 .run/
 .task/*
 .dev.env
-frontend/eslint.config.deprecated.js

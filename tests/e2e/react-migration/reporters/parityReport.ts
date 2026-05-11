@@ -56,8 +56,6 @@ class ParityReport implements Reporter {
     console.log([
       "",
       "## React Migration Parity Report",
-      `Release Variant: ${process.env.MEALIE_FRONTEND_RELEASE_VARIANT ?? "n/a"}`,
-      "",
       "| Spec | Status | Passed | Failed | Skipped |",
       "|------|--------|--------|--------|---------|",
       ...rows,

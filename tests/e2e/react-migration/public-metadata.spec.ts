@@ -1,19 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { reactUrl } from "./fixtures";
-import { readReleaseGatesContract } from "./contracts";
 
 const demoGroupSlug = "demo-group";
 const demoTokenId = "demo-token";
 const demoRecipeSlug = "demo-soup";
 const demoRecipeName = "Demo Soup";
 const demoRecipeDescription = "Bright lemon broth with herbs and tender vegetables.";
-
-test("release contracts keep public metadata as a cutover gate", async () => {
-  const releaseGates = readReleaseGatesContract();
-
-  expect(releaseGates).toContain("public-links:");
-  expect(releaseGates).toContain("threshold: 100 percent of release-candidate checks");
-});
 
 test("shared recipe routes publish meaningful title and social metadata", async ({ page }) => {
   await page.route(`**/api/recipes/shared/${demoTokenId}`, async route => {

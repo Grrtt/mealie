@@ -28,6 +28,7 @@ import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { alpha } from "@mui/material/styles";
 import { useCurrentUser } from "@/features/auth/useCurrentUser";
@@ -289,8 +290,8 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
         return (
           <ListItemButton
             key={item.label}
-            component="a"
-            href={item.href}
+            component={Link}
+            to={item.href}
             onClick={onNavigate}
             selected={selected}
             sx={{
@@ -363,8 +364,8 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
       {isAdminRoute && currentUser?.admin ? (
         <List sx={{ display: "grid", gap: 0.5, p: 0 }}>
           <ListItemButton
-            component="a"
-            href={apiClient.resolvePath("/admin")}
+            component={Link}
+            to="/admin"
             onClick={onNavigate}
             selected={currentPath === adminRoot || currentPath === `${adminRoot}/setup`}
             sx={{

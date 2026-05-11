@@ -9,8 +9,8 @@ trigger:
       - docker-compose.azure.yml
       - backend-dotnet/**
       - frontend-react/**
-      - frontend/app/lib/api/types/**
-      - frontend/app/lang/**
+      - frontend-react/src/lib/api/types/**
+      - frontend-react/src/lib/i18n/**
 
 pr: none
 
@@ -22,21 +22,22 @@ pr: none
 #      • Type: SSH — named "mealie-deploy"
 #        Add your Linux server host, port (22), username, and private key.
 #
-#   2. Variable Groups (Library → Variable Groups):
-#      • "mealie-dev-vars" and "mealie-prod-vars"
+#   2. Variables:
+#      Define these either as pipeline variables or in any authorized variable
+#      group linked to the pipeline. This YAML does not require a specific
+#      variable group name.
 #      Required variables:
 #        - GH_OWNER                     : GitHub username or org that owns the repo
 #        - GITHUB_USER                  : GitHub username for ghcr.io login
 #        - GITHUB_TOKEN                 : GitHub PAT with read:packages + write:packages
 #        - APP_MEALIE_BASE_URL          : Public base URL, e.g. https://mealie.example.com
 #        - APP_MEALIE_SECRET            : Backend SECRET value
-#        - APP_MEALIE_MCP_SECRET        : MCP secret
 #        - APP_MEALIE_SQLSERVER_PASSWORD: SQL Server SA password for the bundled DB
-#      Common optional APP_ variables for SMTP and route-slice rollout are wired
-#      in the "Generate deployment .env" step below.
+#      Common optional APP_ variables for SMTP are wired in the
+#      "Generate deployment .env" step below.
 #
 #   3. Environments (Pipelines → Environments):
-#      • Create "DEV" and "PROD" — add manual approval gates to PROD.
+#      • Create "PROD" — add approval gates if you want a manual production gate.
 #
 # LINUX SERVER:
 #   4. Docker and Docker Compose plugin installed; deploy user in the 'docker'
@@ -44,18 +45,10 @@ pr: none
 #
 # DEPLOYMENT SHAPE:
 #   5. This pipeline deploys docker-compose.yml together with
-#      docker-compose.azure.yml so the server disables the legacy Nuxt service
-#      and serves the React frontend on port 80 from GHCR images.
+#      docker-compose.azure.yml so the server serves the React frontend on
+#      the published frontend port defined in docker-compose.yml (currently 9000)
+#      from GHCR images.
 # ─────────────────────────────────────────────────────────────────────────────
-
-parameters:
-  - name: environment
-    displayName: Deployment Environment
-    type: string
-    default: DEV
-    values:
-      - DEV
-      - PROD
 
 variables:
   - name: CLIENT_NAME
@@ -64,11 +57,10 @@ variables:
     value: '/home/mealie'
   - name: apiImageName
     value: '$(CLIENT_NAME)-api'
-  - name: frontendReactImageName
-    value: '$(CLIENT_NAME)-frontend-react'
+  - name: frontendImageName
+    value: '$(CLIENT_NAME)-frontend'
   - name: imageTag
-    value: '${{ lower(parameters.environment) }}-$(Build.BuildId)'
-  - group: 'mealie-${{ lower(parameters.environment) }}-vars'
+    value: 'prod-$(Build.BuildId)'
 
 stages:
   - stage: Build
@@ -80,6 +72,28 @@ stages:
           vmImage: ubuntu-latest
         steps:
           - checkout: self
+
+          - script: |
+              missing=0
+              for name in GH_OWNER GITHUB_USER GITHUB_TOKEN APP_MEALIE_BASE_URL APP_MEALIE_SECRET APP_MEALIE_SQLSERVER_PASSWORD; do
+                if [ -z "$(printenv "$name")" ]; then
+                  echo "##vso[task.logissue type=error]Missing required pipeline variable: $name"
+                  missing=1
+                fi
+              done
+
+              if [ "$missing" -ne 0 ]; then
+                echo "##vso[task.complete result=Failed;]Required pipeline variables are missing. Define them in the pipeline or in an authorized variable group."
+                exit 1
+              fi
+            displayName: Validate required pipeline variables
+            env:
+              GH_OWNER: $(GH_OWNER)
+              GITHUB_USER: $(GITHUB_USER)
+              GITHUB_TOKEN: $(GITHUB_TOKEN)
+              APP_MEALIE_BASE_URL: $(APP_MEALIE_BASE_URL)
+              APP_MEALIE_SECRET: $(APP_MEALIE_SECRET)
+              APP_MEALIE_SQLSERVER_PASSWORD: $(APP_MEALIE_SQLSERVER_PASSWORD)
 
           - task: UseDotNet@2
             displayName: Install .NET 10 SDK
@@ -154,20 +168,14 @@ stages:
             displayName: Build & push backend image
 
           - script: |
-              IMAGE="ghcr.io/$(GH_OWNER)/$(frontendReactImageName):$(imageTag)"
+              IMAGE="ghcr.io/$(GH_OWNER)/$(frontendImageName):$(imageTag)"
               echo "Building $IMAGE"
               docker build \
-                --build-arg VITE_RELEASE_VARIANT="${APP_MEALIE_REACT_RELEASE_VARIANT:-react-default}" \
-                --build-arg VITE_LEGACY_FALLBACK_ORIGIN="${APP_MEALIE_LEGACY_FALLBACK_ORIGIN:-${APP_MEALIE_BASE_URL:-}}" \
                 -f frontend-react/Dockerfile \
                 -t "$IMAGE" \
-                .
+                frontend-react
               docker push "$IMAGE"
-            displayName: Build & push React migration image
-            env:
-              APP_MEALIE_BASE_URL: $(APP_MEALIE_BASE_URL)
-              APP_MEALIE_LEGACY_FALLBACK_ORIGIN: $(APP_MEALIE_LEGACY_FALLBACK_ORIGIN)
-              APP_MEALIE_REACT_RELEASE_VARIANT: $(APP_MEALIE_REACT_RELEASE_VARIANT)
+            displayName: Build & push frontend image
 
   - stage: Deploy
     displayName: Deploy to Linux Server
@@ -177,7 +185,7 @@ stages:
         displayName: SSH deploy
         pool:
           vmImage: ubuntu-latest
-        environment: '${{ parameters.environment }}'
+        environment: 'PROD'
         strategy:
           runOnce:
             deploy:
@@ -191,38 +199,19 @@ stages:
                   displayName: Download Azure override compose file
 
                 - script: |
-                    case "${{ parameters.environment }}" in
-                      DEV)
-                        ASPNET_ENV="Development"
-                        LOG_LEVEL="Debug"
-                        ALLOW_SIGNUP="true"
-                        ;;
-                      PROD)
-                        ASPNET_ENV="Production"
-                        LOG_LEVEL="Information"
-                        ALLOW_SIGNUP="false"
-                        ;;
-                      *)
-                        ASPNET_ENV="${{ parameters.environment }}"
-                        LOG_LEVEL="Information"
-                        ALLOW_SIGNUP="false"
-                        ;;
-                    esac
-
                     DB_ENGINE="${APP_MEALIE_DB_ENGINE:-sqlserver}"
                     DATABASE_URL="${APP_MEALIE_DATABASE_URL:-Server=sqlserver,1433;Database=mealie;User Id=sa;Password=${APP_MEALIE_SQLSERVER_PASSWORD};TrustServerCertificate=True;Encrypt=False}"
 
                     cat > "$(Agent.TempDirectory)/.env" <<EOF
                     MEALIE_API_IMAGE=ghcr.io/$(GH_OWNER)/$(apiImageName):$(imageTag)
-                    MEALIE_FRONTEND_REACT_IMAGE=ghcr.io/$(GH_OWNER)/$(frontendReactImageName):$(imageTag)
-                    MEALIE_ASPNETCORE_ENVIRONMENT=${ASPNET_ENV}
-                    MEALIE_LOG_LEVEL=${LOG_LEVEL}
-                    MEALIE_ALLOW_SIGNUP=${ALLOW_SIGNUP}
+                    MEALIE_FRONTEND_IMAGE=ghcr.io/$(GH_OWNER)/$(frontendImageName):$(imageTag)
+                    MEALIE_ASPNETCORE_ENVIRONMENT=Production
+                    MEALIE_LOG_LEVEL=Information
+                    MEALIE_ALLOW_SIGNUP=false
                     MEALIE_DB_ENGINE=${DB_ENGINE}
                     MEALIE_DATABASE_URL=${DATABASE_URL}
                     MEALIE_BASE_URL=${APP_MEALIE_BASE_URL}
                     MEALIE_SECRET=${APP_MEALIE_SECRET}
-                    MEALIE_MCP_SECRET=${APP_MEALIE_MCP_SECRET}
                     MEALIE_SQLSERVER_PASSWORD=${APP_MEALIE_SQLSERVER_PASSWORD}
                     MEALIE_SMTP_HOST=${APP_MEALIE_SMTP_HOST}
                     MEALIE_SMTP_PORT=${APP_MEALIE_SMTP_PORT}
@@ -231,39 +220,12 @@ stages:
                     MEALIE_SMTP_PASSWORD=${APP_MEALIE_SMTP_PASSWORD}
                     MEALIE_SMTP_FROM_EMAIL=${APP_MEALIE_SMTP_FROM_EMAIL}
                     MEALIE_SMTP_FROM_NAME=${APP_MEALIE_SMTP_FROM_NAME}
-                    MEALIE_REACT_RELEASE_VARIANT=${APP_MEALIE_REACT_RELEASE_VARIANT}
-                    MEALIE_LEGACY_FALLBACK_ORIGIN=${APP_MEALIE_LEGACY_FALLBACK_ORIGIN}
-                    MEALIE_ROUTE_SLICE_AUTH=${APP_MEALIE_ROUTE_SLICE_AUTH}
-                    MEALIE_ROUTE_SLICE_PUBLIC_RECIPES=${APP_MEALIE_ROUTE_SLICE_PUBLIC_RECIPES}
-                    MEALIE_ROUTE_SLICE_GROUP_HOME=${APP_MEALIE_ROUTE_SLICE_GROUP_HOME}
-                    MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT=${APP_MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT}
-                    MEALIE_ROUTE_SLICE_RECIPES=${APP_MEALIE_ROUTE_SLICE_RECIPES}
-                    MEALIE_ROUTE_SLICE_COOKBOOKS=${APP_MEALIE_ROUTE_SLICE_COOKBOOKS}
-                    MEALIE_ROUTE_SLICE_HOUSEHOLD=${APP_MEALIE_ROUTE_SLICE_HOUSEHOLD}
-                    MEALIE_ROUTE_SLICE_SHOPPING_LISTS=${APP_MEALIE_ROUTE_SLICE_SHOPPING_LISTS}
-                    MEALIE_ROUTE_SLICE_USER_PROFILE=${APP_MEALIE_ROUTE_SLICE_USER_PROFILE}
-                    MEALIE_ROUTE_SLICE_GROUP_DATA=${APP_MEALIE_ROUTE_SLICE_GROUP_DATA}
-                    MEALIE_ROUTE_SLICE_ADMIN=${APP_MEALIE_ROUTE_SLICE_ADMIN}
                     EOF
                   displayName: Generate deployment .env
                   env:
                     APP_MEALIE_BASE_URL: $(APP_MEALIE_BASE_URL)
                     APP_MEALIE_DB_ENGINE: $(APP_MEALIE_DB_ENGINE)
                     APP_MEALIE_DATABASE_URL: $(APP_MEALIE_DATABASE_URL)
-                    APP_MEALIE_LEGACY_FALLBACK_ORIGIN: $(APP_MEALIE_LEGACY_FALLBACK_ORIGIN)
-                    APP_MEALIE_MCP_SECRET: $(APP_MEALIE_MCP_SECRET)
-                    APP_MEALIE_REACT_RELEASE_VARIANT: $(APP_MEALIE_REACT_RELEASE_VARIANT)
-                    APP_MEALIE_ROUTE_SLICE_ADMIN: $(APP_MEALIE_ROUTE_SLICE_ADMIN)
-                    APP_MEALIE_ROUTE_SLICE_AUTH: $(APP_MEALIE_ROUTE_SLICE_AUTH)
-                    APP_MEALIE_ROUTE_SLICE_COOKBOOKS: $(APP_MEALIE_ROUTE_SLICE_COOKBOOKS)
-                    APP_MEALIE_ROUTE_SLICE_GROUP_DATA: $(APP_MEALIE_ROUTE_SLICE_GROUP_DATA)
-                    APP_MEALIE_ROUTE_SLICE_GROUP_HOME: $(APP_MEALIE_ROUTE_SLICE_GROUP_HOME)
-                    APP_MEALIE_ROUTE_SLICE_HOUSEHOLD: $(APP_MEALIE_ROUTE_SLICE_HOUSEHOLD)
-                    APP_MEALIE_ROUTE_SLICE_PUBLIC_RECIPES: $(APP_MEALIE_ROUTE_SLICE_PUBLIC_RECIPES)
-                    APP_MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT: $(APP_MEALIE_ROUTE_SLICE_RECIPE_CREATE_IMPORT)
-                    APP_MEALIE_ROUTE_SLICE_RECIPES: $(APP_MEALIE_ROUTE_SLICE_RECIPES)
-                    APP_MEALIE_ROUTE_SLICE_SHOPPING_LISTS: $(APP_MEALIE_ROUTE_SLICE_SHOPPING_LISTS)
-                    APP_MEALIE_ROUTE_SLICE_USER_PROFILE: $(APP_MEALIE_ROUTE_SLICE_USER_PROFILE)
                     APP_MEALIE_SECRET: $(APP_MEALIE_SECRET)
                     APP_MEALIE_SMTP_AUTH_STRATEGY: $(APP_MEALIE_SMTP_AUTH_STRATEGY)
                     APP_MEALIE_SMTP_FROM_EMAIL: $(APP_MEALIE_SMTP_FROM_EMAIL)
@@ -317,7 +279,7 @@ stages:
                     commands: |
                       echo "$(GITHUB_TOKEN)" | docker login ghcr.io -u "$(GITHUB_USER)" --password-stdin
                       cd $(DEPLOY_PATH)/website
-                      docker compose --env-file .env -f docker-compose.yml -f docker-compose.azure.yml pull mealie-api mealie-frontend-react
+                      docker compose --env-file .env -f docker-compose.yml -f docker-compose.azure.yml pull mealie-api mealie-frontend
                       docker compose --env-file .env -f docker-compose.yml -f docker-compose.azure.yml up -d --remove-orphans
                       docker image prune -f
                     failOnStdErr: false

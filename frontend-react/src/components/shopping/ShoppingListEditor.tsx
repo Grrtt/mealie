@@ -10,6 +10,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { useNavigate } from "@tanstack/react-router";
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { WorkflowLinks } from "@/components/navigation/WorkflowLinks";
@@ -17,12 +18,11 @@ import {
   addRecipesToShoppingList,
   createShoppingListItems,
   deleteShoppingListItems,
-  fetchShoppingList,
   removeRecipeFromShoppingList,
+  shoppingListQueryOptions,
   updateShoppingList,
   updateShoppingListItems,
 } from "@/features/shopping/fromRecipe";
-import { apiClient } from "@/lib/api/client";
 import type { ShoppingListItemCreate, ShoppingListItemOut } from "@/lib/api/contracts";
 
 type Props = {
@@ -57,6 +57,7 @@ function itemSubtitle(item: ShoppingListItemOut) {
 }
 
 export function ShoppingListEditor({ groupSlug, listId }: Props) {
+  const navigate = useNavigate();
   const [listName, setListName] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,8 +76,7 @@ export function ShoppingListEditor({ groupSlug, listId }: Props) {
   });
 
   const listQuery = useQuery({
-    queryKey: ["shopping-list", listId],
-    queryFn: async () => await fetchShoppingList(listId),
+    ...shoppingListQueryOptions(listId),
     refetchInterval: 30_000,
   });
 
@@ -220,7 +220,7 @@ export function ShoppingListEditor({ groupSlug, listId }: Props) {
             <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }}>
               <Typography variant="h4">{list.name ?? "Shopping list"}</Typography>
               <Box sx={{ flexGrow: 1 }} />
-              <Button href={apiClient.resolvePath("/shopping-lists?disableRedirect=true")} variant="outlined">
+              <Button onClick={() => void navigate({ href: "/shopping-lists?disableRedirect=true" })} variant="outlined">
                 All shopping lists
               </Button>
             </Stack>
@@ -382,7 +382,7 @@ export function ShoppingListEditor({ groupSlug, listId }: Props) {
                       <Stack spacing={0.5} sx={{ flex: 1 }}>
                         {reference.recipe.slug ? (
                           <Button
-                            href={apiClient.resolvePath(`/g/${groupSlug}/r/${reference.recipe.slug}`)}
+                            onClick={() => void navigate({ href: `/g/${groupSlug}/r/${reference.recipe.slug}` })}
                             sx={{ justifyContent: "flex-start", p: 0 }}
                           >
                             {reference.recipe.name}

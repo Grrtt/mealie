@@ -6,7 +6,7 @@ allowed-tools: shell
 
 # Mealie Implementation Completion Requirements
 
-Before declaring any implementation task **done**, you MUST verify both the C# backend and the Nuxt frontend compile successfully, then rebuild both Docker containers to confirm the full stack works.
+Before declaring any implementation task **done**, you MUST verify both the C# backend and the React frontend compile successfully, then rebuild both Docker containers to confirm the full stack works.
 
 ## Step 1 — Compile the C# Backend
 
@@ -23,15 +23,9 @@ cd backend-dotnet && dotnet build Mealie.slnx -p:AllowMissingPrunePackageData=tr
 
 Do not proceed to Step 2 until `0 Error(s)` is confirmed.
 
-## Step 2 — Compile the Nuxt Frontend
+## Step 2 — Compile the React Frontend
 
 Run from the repo root:
-
-```bash
-cd frontend && yarn build
-```
-
-Or using the task runner:
 
 ```bash
 task ui:build

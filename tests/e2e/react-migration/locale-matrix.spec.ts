@@ -3,17 +3,12 @@ import { reactUrl } from "./fixtures";
 import {
   listDateTimeLocaleCodes,
   listMessageLocaleCodes,
-  readReleaseGatesContract,
   rtlLocales,
 } from "./contracts";
 
 const localeCodes = listMessageLocaleCodes();
 
 test("locale assets remain aligned with the release gate contract", async () => {
-  const releaseGates = readReleaseGatesContract();
-
-  expect(releaseGates).toContain("locale-smoke:");
-  expect(releaseGates).toContain("threshold: 100 percent locales; zero blocking RTL defects");
   expect(listDateTimeLocaleCodes()).toEqual(localeCodes);
   expect(localeCodes.length).toBeGreaterThanOrEqual(42);
 });

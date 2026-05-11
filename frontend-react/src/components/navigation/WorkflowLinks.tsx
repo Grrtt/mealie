@@ -7,11 +7,11 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { useNavigate } from "@tanstack/react-router";
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
 import { addRecipeToShoppingList, createOrSelectShoppingList, fetchShoppingLists } from "@/features/shopping/fromRecipe";
 import { addMealPlanToShoppingList } from "@/features/mealplan/toShoppingList";
 import { createMealPlanEntry, formatMealPlanDate } from "@/features/mealplan/actions";
-import { apiClient } from "@/lib/api/client";
 import type { PlanEntryType, ReadPlanEntry, Recipe, ShoppingListSummary } from "@/lib/api/contracts";
 
 type Props = {
@@ -25,6 +25,7 @@ type ShoppingDialogMode = "recipe" | "planner" | null;
 const defaultPlanType: PlanEntryType = "dinner";
 
 export function WorkflowLinks({ groupSlug, recipe, mealPlanEntries = [] }: Props) {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shoppingDialogMode, setShoppingDialogMode] = useState<ShoppingDialogMode>(null);
@@ -129,13 +130,13 @@ export function WorkflowLinks({ groupSlug, recipe, mealPlanEntries = [] }: Props
               Move between recipes, meal planning, and shopping without leaving the React slice.
             </Typography>
             <Stack direction={{ xs: "column", md: "row" }} spacing={2} useFlexGap flexWrap="wrap">
-              <Button href={apiClient.resolvePath("/household/mealplan/planner/view")} variant="outlined">
+              <Button onClick={() => void navigate({ href: "/household/mealplan/planner/view" })} variant="outlined">
                 Open meal planner
               </Button>
-              <Button href={apiClient.resolvePath("/shopping-lists?disableRedirect=true")} variant="outlined">
+              <Button onClick={() => void navigate({ href: "/shopping-lists?disableRedirect=true" })} variant="outlined">
                 Open shopping lists
               </Button>
-              <Button href={apiClient.resolvePath(`/g/${groupSlug}/recipes/categories`)} variant="outlined">
+              <Button onClick={() => void navigate({ href: `/g/${groupSlug}/recipes/categories` })} variant="outlined">
                 Browse recipes
               </Button>
               {recipe ? (

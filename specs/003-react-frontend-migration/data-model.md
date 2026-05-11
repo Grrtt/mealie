@@ -66,10 +66,10 @@ This feature does not introduce new backend persistence. The data model below de
 | `name` | string | Human-readable phase label | Required |
 | `goal` | string | User-facing purpose of the phase | Required |
 | `surfaceIds` | string[] | Surfaces in scope for the phase | Required |
-| `releaseVariant` | enum | `legacy-only`, `hybrid`, `react-default` | Required |
+| `deploymentMode` | enum | `react-only` | Required |
 | `entryCriteria` | string[] | Conditions to start the phase | Required |
 | `exitCriteria` | string[] | Conditions to declare the phase complete | Required |
-| `rollbackMode` | string | How operators return traffic to legacy if needed | Required |
+| `rollbackMode` | string | How operators roll back containers/images without a second frontend runtime | Required |
 
 ### 5. Parity Gap
 

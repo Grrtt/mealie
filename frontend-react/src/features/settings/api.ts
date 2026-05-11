@@ -9,7 +9,7 @@ import type {
   UserBase,
   UserIn,
   UserOut,
-} from "../../../../frontend/app/lib/api/types/user";
+} from "@/lib/api/types/user";
 import type {
   CreateWebhook,
   GroupEventNotifierCreate,
@@ -21,12 +21,12 @@ import type {
   ReadHouseholdPreferences,
   ReadWebhook,
   SetPermissions,
-} from "../../../../frontend/app/lib/api/types/household";
+} from "@/lib/api/types/household";
 import type {
   GroupStorage,
   ReadGroupPreferences,
   SupportedMigrations,
-} from "../../../../frontend/app/lib/api/types/group";
+} from "@/lib/api/types/group";
 import type {
   CategoryIn,
   CreateIngredientFood,
@@ -39,14 +39,14 @@ import type {
   RecipeToolResponse,
   TagIn,
   RecipeToolCreate,
-} from "../../../../frontend/app/lib/api/types/recipe";
+} from "@/lib/api/types/recipe";
 import type {
   MultiPurposeLabelCreate,
   MultiPurposeLabelOut,
   MultiPurposeLabelUpdate,
-} from "../../../../frontend/app/lib/api/types/labels";
-import type { ReportOut, ReportSummary } from "../../../../frontend/app/lib/api/types/reports";
-import type { AllBackups, IndexInfo, MaintenanceStorageDetails, MaintenanceSummary } from "../../../../frontend/app/lib/api/types/admin";
+} from "@/lib/api/types/labels";
+import type { ReportOut, ReportSummary } from "@/lib/api/types/reports";
+import type { AllBackups, IndexInfo, MaintenanceStorageDetails, MaintenanceSummary } from "@/lib/api/types/admin";
 
 type QueryValue = string | number | boolean | null | undefined;
 

@@ -1,17 +1,17 @@
 export type {
   AppInfo,
   AppStartupInfo,
-} from "../../../../frontend/app/lib/api/types/admin";
+} from "@/lib/api/types/admin";
 export type {
   ForgotPassword,
   PrivateUser,
   ResetPassword,
   Token,
-} from "../../../../frontend/app/lib/api/types/user";
+} from "@/lib/api/types/user";
 export type {
   UserRatingOut,
   UserRatingSummary,
-} from "../../../../frontend/app/lib/api/types/user";
+} from "@/lib/api/types/user";
 export type {
   IngredientFood,
   Recipe,
@@ -29,10 +29,10 @@ export type {
   RecipeToolResponse,
   ScrapeRecipeData,
   UpdateImageResponse,
-} from "../../../../frontend/app/lib/api/types/recipe";
+} from "@/lib/api/types/recipe";
 export type {
   ReadCookBook,
-} from "../../../../frontend/app/lib/api/types/cookbook";
+} from "@/lib/api/types/cookbook";
 export type {
   CreatePlanEntry,
   CreateRandomEntry,
@@ -43,7 +43,7 @@ export type {
   PlanRulesType,
   ReadPlanEntry,
   UpdatePlanEntry,
-} from "../../../../frontend/app/lib/api/types/meal-plan";
+} from "@/lib/api/types/meal-plan";
 export type {
   GroupRecipeActionOut,
   GroupRecipeActionType,
@@ -58,7 +58,7 @@ export type {
   ShoppingListOut,
   ShoppingListSummary,
   ShoppingListUpdate,
-} from "../../../../frontend/app/lib/api/types/household";
+} from "@/lib/api/types/household";
 
 export type RegistrationPayload = {
   email: string;

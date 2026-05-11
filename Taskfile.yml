@@ -27,7 +27,7 @@ dotenv:
 tasks:
   setup:ui:
     desc: setup frontend dependencies
-    dir: frontend
+    dir: frontend-react
     run: once
     cmds:
       - yarn install
@@ -53,14 +53,9 @@ tasks:
       - setup:ui
 
   setup:ui:react:
-    desc: setup React migration frontend dependencies
-    dir: frontend-react
-    run: once
-    cmds:
-      - yarn install
-    sources:
-      - package.json
-      - yarn.lock
+    desc: alias for setup frontend dependencies
+    deps:
+      - setup:ui
 
   dev:services:
     desc: starts postgres and mailpit containers
@@ -79,54 +74,41 @@ tasks:
       - rm -f ./dev/data/.secret
 
   ui:build:
-    desc: builds the frontend in frontend/dist
-    dir: frontend
-    cmds:
-      - yarn build
-    sources:
-      - "**"
-      - exclude: .nuxt/**
-      - exclude: .output/**
-      - exclude: dist/**
-      - exclude: node_modules/.cache/**
-
-  ui:generate:
-    desc: generates a static version of the frontend in frontend/dist
-    dir: frontend
+    desc: builds the frontend in frontend-react/dist
+    dir: frontend-react
     deps:
       - setup:ui
     cmds:
-      - yarn generate
+      - yarn build
     sources:
-      - "**"
-      - exclude: .nuxt/**
-      - exclude: .output/**
-      - exclude: dist/**
-      - exclude: node_modules/.cache/**
+      - src/**
+      - public/**
+      - package.json
+      - yarn.lock
+      - tsconfig.json
+      - vite.config.ts
+      - eslint.config.mjs
+
+  ui:generate:
+    desc: generates a static version of the frontend in frontend-react/dist
+    deps:
+      - ui:build
 
   ui:lint:
     desc: runs the frontend linter
-    dir: frontend
+    dir: frontend-react
+    deps:
+      - setup:ui
     cmds:
       - yarn lint --max-warnings=0
-    sources:
-      - "**"
-      - exclude: .nuxt/**
-      - exclude: .output/**
-      - exclude: dist/**
-      - exclude: node_modules/.cache/**
 
   ui:test:
     desc: runs the frontend tests
-    dir: frontend
+    dir: frontend-react
+    deps:
+      - setup:ui
     cmds:
       - yarn test
-    sources:
-      - "**"
-      - exclude: .nuxt/**
-      - exclude: .output/**
-      - exclude: dist/**
-      - exclude: node_modules/.cache/**
 
   ui:check:
     desc: runs all frontend checks
@@ -135,79 +117,42 @@ tasks:
       - ui:test
 
   ui:react:build:
-    desc: builds the React migration frontend in frontend-react/dist
-    dir: frontend-react
+    desc: alias for ui:build
     deps:
-      - setup:ui:react
-    cmds:
-      - yarn build
+      - ui:build
 
   ui:react:generate:
-    desc: generates a static version of the React migration frontend in frontend-react/dist
+    desc: alias for ui:generate
     deps:
-      - ui:react:build
+      - ui:generate
 
   ui:react:lint:
-    desc: runs the React migration frontend linter
-    dir: frontend-react
+    desc: alias for ui:lint
     deps:
-      - setup:ui:react
-    cmds:
-      - yarn lint
+      - ui:lint
 
   ui:react:test:
-    desc: runs the React migration frontend tests
-    dir: frontend-react
+    desc: alias for ui:test
     deps:
-      - setup:ui:react
-    cmds:
-      - yarn test
+      - ui:test
 
   ui:react:check:
-    desc: runs all React migration frontend checks
+    desc: alias for ui:check
     deps:
-      - ui:react:lint
-      - ui:react:test
+      - ui:check
 
   ui:
     desc: runs the frontend server
-    dir: frontend
-    cmds:
-      - yarn run dev --no-fork
-
-  ui:legacy:
-    desc: runs the legacy Nuxt frontend server
-    deps:
-      - ui
-
-  ui:react:
-    desc: runs the React migration frontend server
     dir: frontend-react
     deps:
-      - setup:ui:react
+      - setup:ui
     cmds:
       - yarn dev --host 0.0.0.0 --port 4173
 
-  ui:hybrid:
-    desc: runs both legacy and React frontends for migration work
+  ui:react:
+    desc: alias for ui
     deps:
       - ui
-      - ui:react
-
-  ui:release:hybrid:
-    desc: runs the docker stack with the legacy gateway proxying approved React slices
-    cmds:
-      - MEALIE_FRONTEND_RELEASE_VARIANT=hybrid docker compose -f docker-compose.dotnet.yml up --build --detach
-
-  ui:release:react-default:
-    desc: runs the docker stack with React as the default shipped SPA while retaining explicit rollback controls
-    cmds:
-      - MEALIE_FRONTEND_RELEASE_VARIANT=react-default docker compose -f docker-compose.dotnet.yml up --build --detach
-
-  ui:release:rollback:
-    desc: returns the docker stack to the legacy-only gateway while keeping the React sidecar available for comparison
-    cmds:
-      - MEALIE_FRONTEND_RELEASE_VARIANT=legacy-only docker compose -f docker-compose.dotnet.yml up --build --detach
 
   dotnet:build:
     desc: builds the C# backend

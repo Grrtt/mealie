@@ -5,6 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RecipeDetailView } from "@/components/recipes/RecipeDetailView";
 import type { Recipe } from "@/lib/api/contracts";
 
+const navigateMock = vi.fn();
+
+vi.mock("@tanstack/react-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-router")>();
+
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  };
+});
+
 describe("RecipeDetailView", () => {
   const request = vi.fn();
   const release = vi.fn();

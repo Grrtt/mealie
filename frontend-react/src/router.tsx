@@ -4,6 +4,7 @@ import {
   createRouter,
   redirect,
 } from "@tanstack/react-router";
+import { shoppingListQueryOptions, shoppingListsQueryOptions } from "@/features/shopping/fromRecipe";
 import { getDefaultLandingRoute, getPublicLandingRoute } from "@/features/auth/defaultLanding";
 import {
   redirectAuthenticatedUser,
@@ -84,13 +85,13 @@ import { AdminManageGroupDetailRouteComponent } from "@/routes/admin/manage/grou
 import { AdminManageHouseholdsRouteComponent } from "@/routes/admin/manage/households/index";
 import { AdminManageHouseholdDetailRouteComponent } from "@/routes/admin/manage/households/$id";
 import { AdminManageIngredientAliasesRouteComponent } from "@/routes/admin/manage/ingredient-aliases";
-import { LegacyFallbackRouteComponent, RootRouteComponent, RoutePendingComponent } from "@/routes/__root";
+import { queryClient } from "@/lib/query/queryClient";
+import { NotFoundRouteComponent, RootRouteComponent, RoutePendingComponent } from "@/routes/__root";
 
 const rootRoute = createRootRoute({
   component: RootRouteComponent,
-  pendingComponent: RoutePendingComponent,
   errorComponent: RouteErrorBoundary,
-  notFoundComponent: LegacyFallbackRouteComponent,
+  notFoundComponent: NotFoundRouteComponent,
 });
 
 const indexRoute = createRoute({
@@ -373,6 +374,7 @@ const shoppingListsRoute = createRoute({
   beforeLoad: async ({ location }) => {
     await requireAuth(location);
   },
+  loader: async () => await queryClient.ensureQueryData(shoppingListsQueryOptions),
   component: ShoppingListsRouteComponent,
   validateSearch: search => search as { disableRedirect?: string | boolean },
 });
@@ -383,6 +385,7 @@ const shoppingListDetailRoute = createRoute({
   beforeLoad: async ({ location }) => {
     await requireAuth(location);
   },
+  loader: async ({ params }) => await queryClient.ensureQueryData(shoppingListQueryOptions(params.id)),
   component: ShoppingListDetailRouteComponent,
 });
 

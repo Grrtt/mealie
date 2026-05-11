@@ -3,10 +3,8 @@ import path from "node:path";
 
 const repoRoot = path.resolve(__dirname, "../../..");
 
-const releaseGatesPath = path.join(repoRoot, "specs/003-react-frontend-migration/contracts/release-gates.yaml");
-const routeParityPath = path.join(repoRoot, "specs/003-react-frontend-migration/contracts/route-parity.yaml");
-const localeMessagesDir = path.join(repoRoot, "frontend/app/lang/messages");
-const localeDateTimeDir = path.join(repoRoot, "frontend/app/lang/dateTimeFormats");
+const localeMessagesDir = path.join(repoRoot, "frontend-react/src/lib/i18n/messages");
+const localeDateTimeDir = path.join(repoRoot, "frontend-react/src/lib/i18n/dateTimeFormats");
 
 export type RouteCoverageSample = {
   path: string;
@@ -84,18 +82,6 @@ export const routeCoverageSamples: RouteCoverageSample[] = [
 ];
 
 export const rtlLocales = new Set(["ar-SA", "he-IL"]);
-
-function readText(filePath: string) {
-  return fs.readFileSync(filePath, "utf8");
-}
-
-export function readReleaseGatesContract() {
-  return readText(releaseGatesPath);
-}
-
-export function readRouteParityContract() {
-  return readText(routeParityPath);
-}
 
 export function listLocaleCodes(directory: string) {
   return fs.readdirSync(directory)

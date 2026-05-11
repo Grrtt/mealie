@@ -77,7 +77,7 @@ Now you're ready to start the servers. You'll need two shells open, One for the 
 
 ### Frontend
 
-We use vue-i18n package for internationalization. Translations are stored in json format located in [frontend/app/lang/messages](https://github.com/mealie-recipes/mealie/tree/mealie-next/frontend/app/lang/messages).
+We use react-i18next for internationalization. Translations are stored in json format located in [frontend-react/src/lib/i18n/messages](https://github.com/mealie-recipes/mealie/tree/mealie-next/frontend-react/src/lib/i18n/messages).
 
 ### Backend
 
@@ -91,7 +91,7 @@ A few settings must be tweaked to make the most of its features. Some settings a
 We've found that the following settings work best:
 
 ```
-  "i18n-ally.enabledFrameworks": ["vue"],
+  "i18n-ally.enabledFrameworks": ["react"],
   "i18n-ally.extract.autoDetect": true,
   "i18n-ally.dirStructure": "auto",
   "i18n-ally.extract.targetPickingStrategy": "global-previous",

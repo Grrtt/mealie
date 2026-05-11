@@ -1,0 +1,1 @@
+import{f as s,g as n,v as a,X as c}from"./D2r1MBJ5.js";function f(u,r){const t=s(),o=n();return a({get(){const e=t.query[u];return e??r??null},set(e){c(()=>{o.replace({query:{...t.query,[u]:e}})})}})}export{f as u};

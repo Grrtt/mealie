@@ -48,11 +48,11 @@ export const supportedLocales: SupportedLocale[] = [
   { code: "zh-TW", dir: "ltr" },
 ];
 
-const messageModules = import.meta.glob("../../../../frontend/app/lang/messages/*.json", {
+const messageModules = import.meta.glob("./messages/*.json", {
   import: "default",
 });
 
-const dateTimeModules = import.meta.glob("../../../../frontend/app/lang/dateTimeFormats/*.json", {
+const dateTimeModules = import.meta.glob("./dateTimeFormats/*.json", {
   import: "default",
 });
 

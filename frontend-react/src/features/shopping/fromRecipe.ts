@@ -1,3 +1,4 @@
+import { queryOptions } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import type {
   PaginationData,
@@ -36,6 +37,18 @@ export async function fetchShoppingLists() {
 
 export async function fetchShoppingList(id: string) {
   return await apiClient.get<ShoppingListOut>(`/api/households/shopping/lists/${id}`);
+}
+
+export const shoppingListsQueryOptions = queryOptions({
+  queryKey: ["shopping-lists"],
+  queryFn: fetchShoppingLists,
+});
+
+export function shoppingListQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: ["shopping-list", id],
+    queryFn: async () => await fetchShoppingList(id),
+  });
 }
 
 export async function createShoppingList(payload: ShoppingListCreate) {

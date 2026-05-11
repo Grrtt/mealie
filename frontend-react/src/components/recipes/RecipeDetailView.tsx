@@ -30,6 +30,7 @@ import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import type { GroupRecipeActionOut, PlanEntryType, PrivateUser, Recipe, ShoppingListSummary } from "@/lib/api/contracts";
 import { createMealPlanEntry, formatMealPlanDate, mealPlanEntryTypes } from "@/features/mealplan/actions";
 import {
@@ -246,6 +247,7 @@ function useScreenWakeLock(enabled: boolean) {
 }
 
 export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, recipe, onEdit }: Props) {
+  const navigate = useNavigate();
   const [scaleInput, setScaleInput] = useState("1");
   const [isCookMode, setIsCookMode] = useState(false);
   const [ingredientChecks, setIngredientChecks] = useState<Record<string, boolean>>({});
@@ -480,7 +482,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
     try {
       const duplicate = await duplicateRecipe(recipe.slug, duplicateName.trim() || undefined);
       if (duplicate.slug) {
-        window.location.assign(apiClient.resolvePath(`/g/${groupSlug}/r/${duplicate.slug}`));
+        await navigate({ href: `/g/${groupSlug}/r/${duplicate.slug}` });
       }
     } catch (duplicateError) {
       setActionError(duplicateError instanceof Error ? duplicateError.message : "Unable to duplicate recipe");
@@ -513,7 +515,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
     setActionError(null);
     try {
       await deleteRecipe(recipe.slug);
-      window.location.assign(apiClient.resolvePath(`/g/${groupSlug}`));
+      await navigate({ href: `/g/${groupSlug}` });
     } catch (deleteError) {
       setActionError(deleteError instanceof Error ? deleteError.message : "Unable to delete recipe");
     } finally {

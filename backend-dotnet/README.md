@@ -119,13 +119,8 @@ backend-dotnet/
 
 ## TypeScript API Client Regeneration
 
-After any schema change, regenerate the frontend TypeScript client:
-
-```bash
-# Requires running backend on port 9000
-cd ../frontend
-npx openapi-typescript http://localhost:9000/swagger/v1/swagger.json -o src/lib/api/types.ts
-```
+After any schema change, regenerate the React TypeScript client artifacts under
+`frontend-react/src/lib/api/types/`.
 
 This is a **required step** in the PR checklist for any API-breaking change.
 
