@@ -17,9 +17,11 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 
   return {
     ...actual,
-    Link: forwardRef<HTMLAnchorElement, { to: string } & ComponentPropsWithoutRef<"a">>(({ to, ...props }, ref) => (
-      <a ref={ref} href={to} {...props} />
-    )),
+    Link: forwardRef<HTMLAnchorElement, { to: string; preload?: false } & ComponentPropsWithoutRef<"a">>((props, ref) => {
+      const { to, preload, ...anchorProps } = props;
+      void preload;
+      return <a ref={ref} href={to} {...anchorProps} />;
+    }),
   };
 });
 

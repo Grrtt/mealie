@@ -86,6 +86,7 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
   const mealPlannerRoot = apiClient.resolvePath("/household/mealplan");
   const shoppingListsRoot = apiClient.resolvePath("/shopping-lists");
   const adminRoot = apiClient.resolvePath("/admin");
+  const adminSetupRoot = apiClient.resolvePath("/admin/setup");
 
   const defaultItems = useMemo<NavItem[]>(() => [
     {
@@ -292,6 +293,7 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
             key={item.label}
             component={Link}
             to={item.href}
+            preload={false}
             onClick={onNavigate}
             selected={selected}
             sx={{
@@ -365,19 +367,20 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
         <List sx={{ display: "grid", gap: 0.5, p: 0 }}>
           <ListItemButton
             component={Link}
-            to="/admin"
+            to={adminSetupRoot}
+            preload={false}
             onClick={onNavigate}
-            selected={currentPath === adminRoot || currentPath === `${adminRoot}/setup`}
+            selected={currentPath === adminRoot || currentPath === adminSetupRoot}
             sx={{
               borderRadius: 2.5,
               px: 1.5,
               py: 1.05,
-              color: currentPath === adminRoot || currentPath === `${adminRoot}/setup` ? "primary.dark" : "text.primary",
-              bgcolor: currentPath === adminRoot || currentPath === `${adminRoot}/setup`
+              color: currentPath === adminRoot || currentPath === adminSetupRoot ? "primary.dark" : "text.primary",
+              bgcolor: currentPath === adminRoot || currentPath === adminSetupRoot
                 ? theme => alpha(theme.palette.primary.main, 0.12)
                 : "transparent",
               "&:hover": {
-                bgcolor: theme => currentPath === adminRoot || currentPath === `${adminRoot}/setup`
+                bgcolor: theme => currentPath === adminRoot || currentPath === adminSetupRoot
                   ? alpha(theme.palette.primary.main, 0.16)
                   : alpha(theme.palette.primary.main, 0.05),
               },
@@ -386,12 +389,12 @@ export function MainNav({ groupSlug, onNavigate }: Props) {
             <ListItemIcon
               sx={{
                 minWidth: 40,
-                color: currentPath === adminRoot || currentPath === `${adminRoot}/setup` ? "primary.dark" : "text.secondary",
+                color: currentPath === adminRoot || currentPath === adminSetupRoot ? "primary.dark" : "text.secondary",
               }}
             >
               <StorageRoundedIcon />
             </ListItemIcon>
-            <ListItemText primary="Admin setup" primaryTypographyProps={{ fontWeight: currentPath === adminRoot || currentPath === `${adminRoot}/setup` ? 700 : 500 }} />
+            <ListItemText primary="Admin setup" primaryTypographyProps={{ fontWeight: currentPath === adminRoot || currentPath === adminSetupRoot ? 700 : 500 }} />
           </ListItemButton>
           {renderItems(visiblePrimaryItems)}
         </List>

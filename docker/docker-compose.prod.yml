@@ -1,0 +1,97 @@
+# Mealie — Production stack fetched by the host pull script.
+#
+# This keeps the existing server-side nginx container contract intact:
+#   - outer nginx listens on 80/443 and proxies to the "mealie" service
+#   - the "mealie" service is now the shipped frontend image
+#   - frontend nginx proxies /api, /docs, /healthz, /swagger, and /mcp to
+#     the internal "mealie-api" service
+#
+# Required environment on the host:
+#   - MEALIE_SECRET
+#   - MEALIE_BASE_URL
+#   - MEALIE_SQLSERVER_PASSWORD
+#
+# Optional image overrides:
+#   - MEALIE_FRONTEND_DOCKER_IMAGE (defaults to latest GHCR frontend image)
+#   - MEALIE_API_DOCKER_IMAGE      (defaults to latest GHCR backend image)
+
+services:
+  mealie:
+    container_name: mealie
+    image: "${MEALIE_FRONTEND_DOCKER_IMAGE:-ghcr.io/grrtt/mealie-frontend:latest}"
+    pull_policy: always
+    restart: always
+    depends_on:
+      mealie-api:
+        condition: service_healthy
+
+  mealie-api:
+    container_name: mealie_api
+    image: "${MEALIE_API_DOCKER_IMAGE:-ghcr.io/grrtt/mealie-api:latest}"
+    pull_policy: always
+    restart: always
+    volumes:
+      - mealie-data:/app/data/
+    environment:
+      ALLOW_SIGNUP: "${MEALIE_ALLOW_SIGNUP:-false}"
+      ASPNETCORE_ENVIRONMENT: "${MEALIE_ASPNETCORE_ENVIRONMENT:-Production}"
+      BASE_URL: "${MEALIE_BASE_URL:?Set MEALIE_BASE_URL}"
+      DATA_DIR: /app/data
+      DB_ENGINE: "${MEALIE_DB_ENGINE:-sqlserver}"
+      DATABASE_URL: "${MEALIE_DATABASE_URL:-Server=sqlserver,1433;Database=mealie;User Id=sa;Password=${MEALIE_SQLSERVER_PASSWORD:?Set MEALIE_SQLSERVER_PASSWORD};TrustServerCertificate=True;Encrypt=False}"
+      LOG_LEVEL: "${MEALIE_LOG_LEVEL:-Information}"
+      MCP_SECRET: "${MEALIE_MCP_SECRET:-}"
+      SECRET: "${MEALIE_SECRET:?Set MEALIE_SECRET}"
+      SMTP_AUTH_STRATEGY: "${MEALIE_SMTP_AUTH_STRATEGY:-NONE}"
+      SMTP_FROM_EMAIL: "${MEALIE_SMTP_FROM_EMAIL:-noreply@mealie.local}"
+      SMTP_FROM_NAME: "${MEALIE_SMTP_FROM_NAME:-Mealie}"
+      SMTP_HOST: "${MEALIE_SMTP_HOST:-}"
+      SMTP_PASSWORD: "${MEALIE_SMTP_PASSWORD:-}"
+      SMTP_PORT: "${MEALIE_SMTP_PORT:-1025}"
+      SMTP_USER: "${MEALIE_SMTP_USER:-}"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/healthz"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  sqlserver:
+    container_name: mealie_sqlserver
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: always
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "${MEALIE_SQLSERVER_PASSWORD:?Set MEALIE_SQLSERVER_PASSWORD}"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $$MSSQL_SA_PASSWORD -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - mealie
+
+volumes:
+  mealie-data:
+    driver: local
+  sqlserver-data:
+    driver: local
