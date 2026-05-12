@@ -6,6 +6,8 @@ trigger:
     include:
       - azure-pipelines.yml
       - backend-dotnet/**
+      - docker/**
+      - docker-compose*.yml
       - frontend-react/**
       - frontend-react/src/lib/api/types/**
       - frontend-react/src/lib/i18n/**
