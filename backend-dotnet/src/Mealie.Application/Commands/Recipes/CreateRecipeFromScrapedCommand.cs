@@ -21,7 +21,8 @@ public record CreateRecipeFromScrapedCommand(
     Guid GroupId,
     IReadOnlyList<ParsedIngredientDto>? ParsedIngredients = null,
     List<IngredientFood>? CachedFoods = null,
-    List<IngredientUnit>? CachedUnits = null)
+    List<IngredientUnit>? CachedUnits = null,
+    Guid? UserId = null)
     : IQuery<RecipeSummaryResponse?>
 {
     public async Task<RecipeSummaryResponse?> ExecuteAsync(IQueryServices services, CancellationToken ct = default)
@@ -155,7 +156,7 @@ public record CreateRecipeFromScrapedCommand(
                 CancellationToken.None);
         }
 
-        await services.Mediator.Publish(new RecipeCreatedEvent(recipe.Id, HouseholdId), CancellationToken.None);
+        await services.Mediator.Publish(new RecipeCreatedEvent(recipe.Id, HouseholdId, UserId), CancellationToken.None);
         return RecipeCommandMappings.MapToSummary(recipe);
     }
 }

@@ -19,22 +19,27 @@ public record GetAllTimelineEventsQuery(Guid GroupId, int Page, int PerPage) : I
         var take = PerPage > 0 ? PerPage : total;
 
         var items = await query.Skip(skip).Take(take)
-            .Select(e => TimelineMappings.MapToResponse(e))
+            .Select(e => new TimelineEventResponse
+            {
+                Id = e.Id,
+                Subject = e.Subject,
+                EventType = e.EventType,
+                EventMessage = e.EventMessage,
+                Image = e.Image,
+                RecipeId = e.RecipeId,
+                UserId = e.UserId,
+                Timestamp = e.Timestamp,
+                CreatedAt = e.CreatedAt,
+                UpdateAt = e.UpdateAt,
+                RecipeName = e.Recipe.Name,
+                RecipeSlug = e.Recipe.Slug,
+                RecipeImage = e.Recipe.Image,
+                RecipeDescription = e.Recipe.Description,
+                RecipeTotalTime = e.Recipe.TotalTime,
+                RecipeRating = e.Recipe.Rating
+            })
             .ToListAsync(ct);
 
         return new { items, total, page = Page, perPage = PerPage };
-    }
-}
-
-file static class TimelineMappings
-{
-    public static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev)
-    {
-        return new TimelineEventResponse
-        {
-            Id = ev.Id, Subject = ev.Subject, EventType = ev.EventType, EventMessage = ev.EventMessage,
-            Image = ev.Image, RecipeId = ev.RecipeId, UserId = ev.UserId, Timestamp = ev.Timestamp,
-            CreatedAt = ev.CreatedAt, UpdateAt = ev.UpdateAt
-        };
     }
 }

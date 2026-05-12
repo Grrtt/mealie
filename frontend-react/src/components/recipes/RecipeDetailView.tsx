@@ -29,6 +29,8 @@ import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import { alpha } from "@mui/material/styles";
+import type { Theme } from "@mui/material/styles";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { GroupRecipeActionOut, PlanEntryType, PrivateUser, Recipe, ShoppingListSummary } from "@/lib/api/contracts";
@@ -135,14 +137,85 @@ function normalizeScaleInput(value: string) {
 
 function infoMetricSx() {
   return {
-    minWidth: 128,
-    px: 2,
-    py: 1.5,
+    minWidth: { xs: 0, sm: 152 },
+    width: "100%",
+    px: 2.5,
+    py: 2,
     border: 1,
-    borderColor: "divider",
-    borderRadius: 2,
+    borderColor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
+    bgcolor: (theme: Theme) => alpha(theme.palette.background.default, 0.24),
+    borderRadius: 3,
     textAlign: "center",
-    bgcolor: "background.paper",
+  } as const;
+}
+
+function scaleControlSx() {
+  return {
+    px: 1,
+    py: 0.75,
+    border: 1,
+    borderColor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
+    bgcolor: (theme: Theme) => alpha(theme.palette.background.default, 0.22),
+    borderRadius: 999,
+    width: "fit-content",
+    gap: 0.25,
+    "& .MuiIconButton-root": {
+      p: 0.5,
+    },
+    "& .MuiOutlinedInput-root": {
+      bgcolor: (theme: Theme) => alpha(theme.palette.background.paper, 0.88),
+      "& input": {
+        py: 0.55,
+        px: 0.75,
+        textAlign: "center",
+        fontSize: "0.95rem",
+        fontWeight: 600,
+      },
+    },
+  } as const;
+}
+
+function sectionHeadingSx() {
+  return {
+    fontSize: { xs: "1.45rem", md: "1.65rem" },
+    fontWeight: 700,
+    letterSpacing: "-0.03em",
+    lineHeight: 1.15,
+  } as const;
+}
+
+function sectionMetaSx() {
+  return {
+    color: "text.secondary",
+    fontSize: { xs: "0.95rem", md: "1rem" },
+    lineHeight: 1.5,
+  } as const;
+}
+
+function bodyCopySx(textAlign: "left" | "justify" = "left") {
+  return {
+    color: "text.primary",
+    fontSize: { xs: "1rem", md: "1.05rem" },
+    lineHeight: 1.8,
+    textAlign,
+    textWrap: "pretty",
+  } as const;
+}
+
+function listPrimaryTextSx(checked: boolean) {
+  return {
+    fontSize: { xs: "1rem", md: "1.05rem" },
+    fontWeight: 500,
+    lineHeight: 1.55,
+    color: "text.primary",
+    textDecoration: checked ? "line-through" : undefined,
+  } as const;
+}
+
+function listSecondaryTextSx(checked: boolean) {
+  return {
+    ...sectionMetaSx(),
+    textDecoration: checked ? "line-through" : undefined,
   } as const;
 }
 
@@ -339,6 +412,14 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
   const tags = recipe.tags ?? [];
   const tools = recipe.tools ?? [];
   const groupRecipeActions = recipeActionsQuery.data ?? [];
+  const summaryMetrics = [
+    recipe.recipeYield ? { label: "Yield", value: recipe.recipeYield } : null,
+    recipe.lastMade ? { label: "Last made", value: new Date(recipe.lastMade).toLocaleDateString("en-US") } : null,
+    recipe.prepTime ? { label: "Prep", value: formatRecipeDuration(recipe.prepTime) } : null,
+    recipe.cookTime ? { label: "Cook", value: formatRecipeDuration(recipe.cookTime) } : null,
+    recipe.totalTime ? { label: "Total", value: formatRecipeDuration(recipe.totalTime) } : null,
+    recipe.performTime ? { label: "Perform", value: formatRecipeDuration(recipe.performTime) } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
   const hasCheckedItems = useMemo(() => {
     return [...Object.values(ingredientChecks), ...Object.values(stepChecks), ...Object.values(toolChecks)].some(Boolean);
   }, [ingredientChecks, stepChecks, toolChecks]);
@@ -572,22 +653,31 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
       {wakeLockError ? <Alert severity="warning">{wakeLockError}</Alert> : null}
 
       {!isCookMode ? (
-        <Card variant="outlined" sx={{ overflow: "hidden" }}>
+        <Card
+          variant="outlined"
+          sx={(theme) => ({
+            overflow: "hidden",
+            borderColor: alpha(theme.palette.common.white, 0.08),
+            bgcolor: alpha(theme.palette.background.paper, 0.98),
+            boxShadow: `0 18px 40px ${alpha(theme.palette.common.black, 0.24)}`,
+          })}
+        >
           <Box sx={{ position: "relative" }}>
             <Stack
               direction="row"
               spacing={0.75}
-              sx={{
+              sx={(theme) => ({
                 position: { xs: "static", md: "absolute" },
                 top: { md: 12 },
                 right: { md: 12 },
                 zIndex: 2,
                 justifyContent: { xs: "flex-end" },
                 p: { xs: 1, md: 0.75 },
-                bgcolor: { md: "rgba(255,255,255,0.94)" },
+                bgcolor: { md: alpha(theme.palette.background.paper, 0.92) },
                 borderRadius: { md: 999 },
-                boxShadow: { md: 2 },
-              }}
+                border: { md: `1px solid ${alpha(theme.palette.common.white, 0.08)}` },
+                boxShadow: { md: `0 12px 28px ${alpha(theme.palette.common.black, 0.28)}` },
+              })}
             >
               {currentUser ? (
                 <Tooltip title={favorite ? "Remove favorite" : "Add favorite"}>
@@ -746,69 +836,78 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
             </Menu>
 
             <Grid container>
-            <Grid size={{ xs: 12, md: imageUrl ? 6 : 12 }}>
-              <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                <Stack spacing={2} sx={{ alignItems: "center", justifyContent: "center", minHeight: "100%" }}>
-                  <Stack spacing={0.75} sx={{ alignItems: "center", textAlign: "center" }}>
-                    <Typography sx={{ opacity: 0.8 }} variant="h5">
-                      {recipe.name}
-                    </Typography>
-                    <Rating precision={0.5} readOnly value={recipe.rating ?? 0} />
-                  </Stack>
-
-                  <Divider flexItem />
-
-                  {recipe.description ? (
-                    <Typography color="text.secondary" data-print-role="recipe-description" sx={{ maxWidth: 520, textAlign: "center" }}>
-                      {recipe.description}
-                    </Typography>
-                  ) : null}
-
-                  {recipe.description ? <Divider flexItem /> : null}
-
-                  <Stack direction="row" spacing={4} flexWrap="wrap" useFlexGap justifyContent="center">
-                    <Stack spacing={2} sx={{ alignItems: "center" }}>
-                      {recipe.recipeYield ? (
-                        <Box sx={infoMetricSx()}>
-                          <Typography color="text.secondary" variant="caption">Yield</Typography>
-                          <Typography variant="body2">{recipe.recipeYield}</Typography>
-                        </Box>
-                      ) : null}
-                      {recipe.lastMade ? (
-                        <Box sx={infoMetricSx()}>
-                          <Typography color="text.secondary" variant="caption">Last made</Typography>
-                          <Typography variant="body2">{new Date(recipe.lastMade).toLocaleDateString("en-US")}</Typography>
-                        </Box>
-                      ) : null}
+              <Grid size={{ xs: 12, md: imageUrl ? 6 : 12 }}>
+                <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                  <Stack
+                    spacing={2.5}
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                      minHeight: "100%",
+                      py: { xs: 0, md: 1 },
+                    }}
+                  >
+                    <Stack spacing={0.75} sx={{ alignItems: "center", textAlign: "center" }}>
+                      <Typography sx={sectionHeadingSx()} variant="h4">
+                        {recipe.name}
+                      </Typography>
+                      <Rating
+                        precision={0.5}
+                        readOnly
+                        sx={{
+                          fontSize: { xs: "1.35rem", md: "1.55rem" },
+                          "& .MuiRating-iconEmpty": {
+                            color: (theme) => alpha(theme.palette.text.secondary, 0.45),
+                          },
+                        }}
+                        value={recipe.rating ?? 0}
+                      />
                     </Stack>
 
-                    {recipe.prepTime || recipe.totalTime || recipe.cookTime || recipe.performTime ? (
-                      <Box sx={{ ...infoMetricSx(), minWidth: 240, alignSelf: "center" }}>
-                        <Typography color="text.secondary" variant="caption">Time</Typography>
-                        <Stack spacing={0.5} sx={{ mt: 0.75, alignItems: "center" }}>
-                          {recipe.prepTime ? <Typography variant="body2">Prep {formatRecipeDuration(recipe.prepTime)}</Typography> : null}
-                          {recipe.cookTime ? <Typography variant="body2">Cook {formatRecipeDuration(recipe.cookTime)}</Typography> : null}
-                          {recipe.totalTime ? <Typography variant="body2">Total {formatRecipeDuration(recipe.totalTime)}</Typography> : null}
-                          {recipe.performTime ? <Typography variant="body2">Perform {formatRecipeDuration(recipe.performTime)}</Typography> : null}
-                        </Stack>
-                      </Box>
+                    <Divider flexItem />
+
+                    {recipe.description ? (
+                      <Typography
+                        data-print-role="recipe-description"
+                        sx={{
+                          ...bodyCopySx("justify"),
+                          maxWidth: 540,
+                          textAlignLast: "left",
+                        }}
+                      >
+                        {recipe.description}
+                      </Typography>
+                    ) : null}
+
+                    {recipe.description ? <Divider flexItem /> : null}
+
+                    {summaryMetrics.length > 0 ? (
+                      <Grid container spacing={1.25} sx={{ maxWidth: 560, width: "100%" }}>
+                        {summaryMetrics.map(metric => (
+                          <Grid key={metric.label} size={{ xs: 12, sm: 6 }}>
+                            <Box sx={infoMetricSx()}>
+                              <Typography color="text.secondary" sx={{ display: "block", fontSize: "0.76rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }} variant="caption">{metric.label}</Typography>
+                              <Typography sx={{ fontSize: { xs: "1rem", md: "1.05rem" }, fontWeight: 600 }} variant="body1">{metric.value}</Typography>
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
                     ) : null}
                   </Stack>
-                </Stack>
-              </CardContent>
-            </Grid>
-            {imageUrl ? (
-              <Grid size={{ xs: 12, md: 6 }}>
-                <RecipeImage
-                  alt={recipe.name ?? "Recipe image"}
-                  imgProps={{ "data-print-role": "recipe-image" }}
-                  src={imageUrl}
-                  wrapperSx={{
-                    minHeight: { xs: 240, md: 360 },
-                  }}
-                />
+                </CardContent>
               </Grid>
-            ) : null}
+              {imageUrl ? (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <RecipeImage
+                    alt={recipe.name ?? "Recipe image"}
+                    imgProps={{ "data-print-role": "recipe-image" }}
+                    src={imageUrl}
+                    wrapperSx={{
+                      minHeight: { xs: 240, md: 360 },
+                    }}
+                  />
+                </Grid>
+              ) : null}
             </Grid>
           </Box>
 
@@ -816,49 +915,6 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
 
           <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
             <Stack spacing={3}>
-              <Box>
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  sx={{
-                    px: 1.5,
-                    py: 1,
-                    border: 1,
-                    borderColor: "divider",
-                    borderRadius: 999,
-                    width: "fit-content",
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">Scale</Typography>
-                  <Button
-                    aria-label="Decrease ingredient scale"
-                    onClick={() => setScaleInput(current => String(Math.max(0.25, normalizeScaleInput(current) - 0.25)))}
-                    size="small"
-                    variant="text"
-                  >
-                    <RemoveRoundedIcon fontSize="small" />
-                  </Button>
-                  <TextField
-                    aria-label="Ingredient scale"
-                    inputProps={{ inputMode: "decimal" }}
-                    onBlur={() => setScaleInput(String(scale))}
-                    onChange={event => setScaleInput(event.target.value)}
-                    size="small"
-                    sx={{ width: 76 }}
-                    value={scaleInput}
-                  />
-                  <Button
-                    aria-label="Increase ingredient scale"
-                    onClick={() => setScaleInput(current => String(Math.min(10, normalizeScaleInput(current) + 0.25)))}
-                    size="small"
-                    variant="text"
-                  >
-                    <AddRoundedIcon fontSize="small" />
-                  </Button>
-                </Stack>
-              </Box>
-
               <Grid container>
                 <Grid
                   size={{ xs: 12, md: 4 }}
@@ -870,9 +926,37 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                   }}
                 >
                   <Stack spacing={3}>
-                    <Stack spacing={0.5}>
-                      <Typography variant="h5">Ingredients</Typography>
-                      <Typography color="text.secondary" variant="body2">{ingredientRows.length} items</Typography>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
+                      <Stack spacing={0.5}>
+                        <Typography sx={sectionHeadingSx()} variant="h4">Ingredients</Typography>
+                        <Typography sx={sectionMetaSx()} variant="body2">{ingredientRows.length} items</Typography>
+                      </Stack>
+                      <Stack direction="row" alignItems="center" sx={scaleControlSx()}>
+                        <Typography sx={{ ...sectionMetaSx(), fontWeight: 600, mr: 0.25 }} variant="body2">Scale</Typography>
+                        <IconButton
+                          aria-label="Decrease ingredient scale"
+                          onClick={() => setScaleInput(current => String(Math.max(0.25, normalizeScaleInput(current) - 0.25)))}
+                          size="small"
+                        >
+                          <RemoveRoundedIcon fontSize="small" />
+                        </IconButton>
+                        <TextField
+                          aria-label="Ingredient scale"
+                          inputProps={{ inputMode: "decimal" }}
+                          onBlur={() => setScaleInput(String(scale))}
+                          onChange={event => setScaleInput(event.target.value)}
+                          size="small"
+                          sx={{ width: 64 }}
+                          value={scaleInput}
+                        />
+                        <IconButton
+                          aria-label="Increase ingredient scale"
+                          onClick={() => setScaleInput(current => String(Math.min(10, normalizeScaleInput(current) + 0.25)))}
+                          size="small"
+                        >
+                          <AddRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
                     </Stack>
 
                     <List disablePadding sx={{ mx: -1 }}>
@@ -898,16 +982,11 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                               <ListItemText
                                 primary={ingredientPrimaryText(ingredient, scale)}
                                 primaryTypographyProps={{
-                                  sx: {
-                                    fontWeight: 500,
-                                    textDecoration: checked ? "line-through" : undefined,
-                                  },
+                                  sx: listPrimaryTextSx(checked),
                                 }}
                                 secondary={ingredientSecondaryText(ingredient)}
                                 secondaryTypographyProps={{
-                                  sx: {
-                                    textDecoration: checked ? "line-through" : undefined,
-                                  },
+                                  sx: listSecondaryTextSx(checked),
                                 }}
                               />
                             </ListItemButton>
@@ -920,7 +999,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                       <>
                         <Divider />
                         <Stack spacing={1}>
-                          <Typography variant="h6">Required tools</Typography>
+                          <Typography sx={{ ...sectionHeadingSx(), fontSize: { xs: "1.15rem", md: "1.25rem" } }} variant="h6">Required tools</Typography>
                           <List disablePadding sx={{ mx: -1 }}>
                             {tools.map((tool, index) => {
                               const key = toolKey(tool, index);
@@ -935,7 +1014,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                                   <ListItemText
                                     primary={tool.name}
                                     primaryTypographyProps={{
-                                      sx: { textDecoration: checked ? "line-through" : undefined },
+                                      sx: listPrimaryTextSx(checked),
                                     }}
                                   />
                                 </ListItemButton>
@@ -947,12 +1026,18 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                     ) : null}
 
                     {categories.length > 0 ? (
-                      <Card variant="outlined">
+                      <Card
+                        variant="outlined"
+                        sx={(theme) => ({
+                          borderColor: alpha(theme.palette.common.white, 0.08),
+                          bgcolor: alpha(theme.palette.background.default, 0.18),
+                        })}
+                      >
                         <CardContent sx={{ p: 2 }}>
                           <Stack spacing={1.5}>
-                            <Typography variant="subtitle1">Categories</Typography>
+                            <Typography sx={{ fontWeight: 700 }} variant="subtitle1">Categories</Typography>
                             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                              {categories.map(category => <Chip key={category.id ?? category.slug} label={category.name} size="small" />)}
+                              {categories.map(category => <Chip color="primary" key={category.id ?? category.slug} label={category.name} size="small" variant="outlined" />)}
                             </Stack>
                           </Stack>
                         </CardContent>
@@ -960,12 +1045,18 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                     ) : null}
 
                     {tags.length > 0 ? (
-                      <Card variant="outlined">
+                      <Card
+                        variant="outlined"
+                        sx={(theme) => ({
+                          borderColor: alpha(theme.palette.common.white, 0.08),
+                          bgcolor: alpha(theme.palette.background.default, 0.18),
+                        })}
+                      >
                         <CardContent sx={{ p: 2 }}>
                           <Stack spacing={1.5}>
-                            <Typography variant="subtitle1">Tags</Typography>
+                            <Typography sx={{ fontWeight: 700 }} variant="subtitle1">Tags</Typography>
                             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                              {tags.map(tag => <Chip key={tag.id ?? tag.slug} label={tag.name} size="small" />)}
+                              {tags.map(tag => <Chip color="primary" key={tag.id ?? tag.slug} label={tag.name} size="small" variant="outlined" />)}
                             </Stack>
                           </Stack>
                         </CardContent>
@@ -977,8 +1068,8 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                 <Grid size={{ xs: 12, md: 8 }} sx={{ pl: { md: 3 } }}>
                   <Stack spacing={3}>
                     <Stack spacing={0.5}>
-                      <Typography variant="h5">Instructions</Typography>
-                      <Typography color="text.secondary" variant="body2">{steps.length} steps</Typography>
+                      <Typography sx={sectionHeadingSx()} variant="h4">Instructions</Typography>
+                      <Typography sx={sectionMetaSx()} variant="body2">{steps.length} steps</Typography>
                     </Stack>
 
                     <Stack spacing={1.5}>
@@ -989,16 +1080,17 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                         return (
                           <Box
                             key={key}
-                            sx={{
+                            sx={(theme) => ({
                               border: 1,
                               borderColor: checked ? "success.main" : "divider",
-                              borderRadius: 2,
-                              bgcolor: checked ? "action.selected" : "background.paper",
-                            }}
+                              borderRadius: 3,
+                              bgcolor: checked ? "action.selected" : alpha(theme.palette.background.default, 0.22),
+                              boxShadow: checked ? "none" : `0 8px 18px ${alpha(theme.palette.common.black, 0.12)}`,
+                            })}
                           >
                             <ListItemButton
                               onClick={() => setStepChecks(current => ({ ...current, [key]: !checked }))}
-                              sx={{ borderRadius: 2, alignItems: "flex-start", px: 2, py: 1.5 }}
+                              sx={{ borderRadius: 3, alignItems: "flex-start", px: 2.25, py: 1.75 }}
                             >
                               <Checkbox
                                 checked={checked}
@@ -1008,17 +1100,17 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                               />
                               <Box sx={{ flex: 1 }}>
                                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
-                                  <Chip color={checked ? "success" : "default"} label={`Step ${index + 1}`} size="small" />
+                                  <Chip color={checked ? "success" : "primary"} label={`Step ${index + 1}`} size="small" variant={checked ? "filled" : "outlined"} />
                                   {step.title && step.summary ? (
-                                    <Typography color="text.secondary" variant="body2">
+                                    <Typography sx={sectionMetaSx()} variant="body2">
                                       {step.title}
                                     </Typography>
                                   ) : null}
                                 </Stack>
-                                <Typography sx={{ mt: 1, textDecoration: checked ? "line-through" : undefined }} variant="h6">
+                                <Typography sx={{ ...sectionHeadingSx(), mt: 1, fontSize: { xs: "1.1rem", md: "1.18rem" }, textDecoration: checked ? "line-through" : undefined }} variant="h6">
                                   {heading}
                                 </Typography>
-                                <Typography color="text.secondary" sx={{ mt: 0.75, textDecoration: checked ? "line-through" : undefined }}>
+                                <Typography sx={{ ...bodyCopySx(), mt: 0.85, textDecoration: checked ? "line-through" : undefined }}>
                                   {step.text}
                                 </Typography>
                               </Box>
@@ -1032,11 +1124,11 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                       <>
                         <Divider />
                         <Stack data-print-role="recipe-notes" spacing={1.5}>
-                          <Typography variant="h6">Notes</Typography>
+                          <Typography sx={{ ...sectionHeadingSx(), fontSize: { xs: "1.15rem", md: "1.25rem" } }} variant="h6">Notes</Typography>
                           {notes.map((note, index) => (
                             <Box key={`${note.title}-${index}`}>
-                              <Typography variant="subtitle2">{note.title}</Typography>
-                              <Typography color="text.secondary">{note.text}</Typography>
+                              <Typography sx={{ fontSize: "0.98rem", fontWeight: 700 }} variant="subtitle2">{note.title}</Typography>
+                              <Typography sx={bodyCopySx()}>{note.text}</Typography>
                               {index < notes.length - 1 ? <Divider sx={{ mt: 2 }} /> : null}
                             </Box>
                           ))}
@@ -1061,7 +1153,15 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
           </CardContent>
         </Card>
       ) : (
-        <Card variant="outlined" sx={{ overflow: "hidden" }}>
+        <Card
+          variant="outlined"
+          sx={(theme) => ({
+            overflow: "hidden",
+            borderColor: alpha(theme.palette.common.white, 0.08),
+            bgcolor: alpha(theme.palette.background.paper, 0.98),
+            boxShadow: `0 18px 40px ${alpha(theme.palette.common.black, 0.24)}`,
+          })}
+        >
           <Grid container>
             <Grid
               size={{ xs: 12, md: 5 }}
@@ -1073,7 +1173,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
               <Box sx={{ p: { xs: 2.5, md: 3 } }}>
                 <Stack spacing={3}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h5">Ingredients</Typography>
+                    <Typography sx={sectionHeadingSx()} variant="h4">Ingredients</Typography>
                     <Button
                       onClick={() => setIsCookMode(false)}
                       startIcon={<LocalDiningRoundedIcon />}
@@ -1085,43 +1185,34 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
 
                   <Stack
                     direction="row"
-                    spacing={1}
+                    spacing={0.25}
                     alignItems="center"
-                    sx={{
-                      px: 1.5,
-                      py: 1,
-                      border: 1,
-                      borderColor: "divider",
-                      borderRadius: 999,
-                      width: "fit-content",
-                    }}
+                    sx={scaleControlSx()}
                   >
-                    <Typography variant="body2" color="text.secondary">Scale</Typography>
-                    <Button
+                    <Typography sx={{ ...sectionMetaSx(), fontWeight: 600, mr: 0.25 }} variant="body2">Scale</Typography>
+                    <IconButton
                       aria-label="Decrease ingredient scale"
                       onClick={() => setScaleInput(current => String(Math.max(0.25, normalizeScaleInput(current) - 0.25)))}
                       size="small"
-                      variant="text"
                     >
                       <RemoveRoundedIcon fontSize="small" />
-                    </Button>
+                    </IconButton>
                     <TextField
                       aria-label="Ingredient scale"
                       inputProps={{ inputMode: "decimal" }}
                       onBlur={() => setScaleInput(String(scale))}
                       onChange={event => setScaleInput(event.target.value)}
                       size="small"
-                      sx={{ width: 76 }}
+                      sx={{ width: 64 }}
                       value={scaleInput}
                     />
-                    <Button
+                    <IconButton
                       aria-label="Increase ingredient scale"
                       onClick={() => setScaleInput(current => String(Math.min(10, normalizeScaleInput(current) + 0.25)))}
                       size="small"
-                      variant="text"
                     >
                       <AddRoundedIcon fontSize="small" />
-                    </Button>
+                    </IconButton>
                   </Stack>
 
                   <List disablePadding sx={{ mx: -1 }}>
@@ -1147,16 +1238,11 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                             <ListItemText
                               primary={ingredientPrimaryText(ingredient, scale)}
                               primaryTypographyProps={{
-                                sx: {
-                                  fontWeight: 500,
-                                  textDecoration: checked ? "line-through" : undefined,
-                                },
+                                sx: listPrimaryTextSx(checked),
                               }}
                               secondary={ingredientSecondaryText(ingredient)}
                               secondaryTypographyProps={{
-                                sx: {
-                                  textDecoration: checked ? "line-through" : undefined,
-                                },
+                                sx: listSecondaryTextSx(checked),
                               }}
                             />
                           </ListItemButton>
@@ -1169,7 +1255,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                     <>
                       <Divider />
                       <Stack spacing={1}>
-                        <Typography variant="h6">Required tools</Typography>
+                        <Typography sx={{ ...sectionHeadingSx(), fontSize: { xs: "1.15rem", md: "1.25rem" } }} variant="h6">Required tools</Typography>
                         <List disablePadding sx={{ mx: -1 }}>
                           {tools.map((tool, index) => {
                             const key = toolKey(tool, index);
@@ -1184,7 +1270,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                                 <ListItemText
                                   primary={tool.name}
                                   primaryTypographyProps={{
-                                    sx: { textDecoration: checked ? "line-through" : undefined },
+                                    sx: listPrimaryTextSx(checked),
                                   }}
                                 />
                               </ListItemButton>
@@ -1202,8 +1288,8 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
               <Box sx={{ p: { xs: 2.5, md: 3 } }}>
                 <Stack spacing={3}>
                   <Stack spacing={0.5}>
-                    <Typography variant="h5">Instructions</Typography>
-                    <Typography color="text.secondary" variant="body2">{steps.length} steps</Typography>
+                    <Typography sx={sectionHeadingSx()} variant="h4">Instructions</Typography>
+                    <Typography sx={sectionMetaSx()} variant="body2">{steps.length} steps</Typography>
                   </Stack>
 
                   <Stack spacing={1.5}>
@@ -1214,16 +1300,17 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                       return (
                         <Box
                           key={key}
-                          sx={{
+                          sx={(theme) => ({
                             border: 1,
                             borderColor: checked ? "success.main" : "divider",
-                            borderRadius: 2,
-                            bgcolor: checked ? "action.selected" : "background.paper",
-                          }}
+                            borderRadius: 3,
+                            bgcolor: checked ? "action.selected" : alpha(theme.palette.background.default, 0.22),
+                            boxShadow: checked ? "none" : `0 8px 18px ${alpha(theme.palette.common.black, 0.12)}`,
+                          })}
                         >
                           <ListItemButton
                             onClick={() => setStepChecks(current => ({ ...current, [key]: !checked }))}
-                            sx={{ borderRadius: 2, alignItems: "flex-start", px: 2, py: 1.5 }}
+                            sx={{ borderRadius: 3, alignItems: "flex-start", px: 2.25, py: 1.75 }}
                           >
                             <Checkbox
                               checked={checked}
@@ -1233,17 +1320,17 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                             />
                             <Box sx={{ flex: 1 }}>
                               <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
-                                <Chip color={checked ? "success" : "default"} label={`Step ${index + 1}`} size="small" />
+                                <Chip color={checked ? "success" : "primary"} label={`Step ${index + 1}`} size="small" variant={checked ? "filled" : "outlined"} />
                                 {step.title && step.summary ? (
-                                  <Typography color="text.secondary" variant="body2">
+                                  <Typography sx={sectionMetaSx()} variant="body2">
                                     {step.title}
                                   </Typography>
                                 ) : null}
                               </Stack>
-                              <Typography sx={{ mt: 1, textDecoration: checked ? "line-through" : undefined }} variant="h6">
+                              <Typography sx={{ ...sectionHeadingSx(), mt: 1, fontSize: { xs: "1.1rem", md: "1.18rem" }, textDecoration: checked ? "line-through" : undefined }} variant="h6">
                                 {heading}
                               </Typography>
-                              <Typography color="text.secondary" sx={{ mt: 0.75, textDecoration: checked ? "line-through" : undefined }}>
+                              <Typography sx={{ ...bodyCopySx(), mt: 0.85, textDecoration: checked ? "line-through" : undefined }}>
                                 {step.text}
                               </Typography>
                             </Box>

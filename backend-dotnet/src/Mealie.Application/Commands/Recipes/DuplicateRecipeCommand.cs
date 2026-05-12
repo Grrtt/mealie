@@ -79,7 +79,7 @@ public record DuplicateRecipeCommand(Guid GroupId, Guid HouseholdId, Guid UserId
 
         db.Recipes.Add(copy);
         await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new RecipeCreatedEvent(copy.Id, copy.HouseholdId), ct);
+        await services.Mediator.Publish(new RecipeCreatedEvent(copy.Id, copy.HouseholdId, UserId), ct);
         return RecipeCommandMappings.MapToDetail(copy);
     }
 }

@@ -291,7 +291,7 @@ public class RecipeService(
         db.Recipes.Add(recipe);
         await db.SaveChangesAsync(ct);
 
-        await mediator.Publish(new RecipeCreatedEvent(recipe.Id, householdId), ct);
+        await mediator.Publish(new RecipeCreatedEvent(recipe.Id, householdId, userId), ct);
 
         return MapToDetail(recipe);
     }
@@ -622,7 +622,7 @@ public class RecipeService(
         db.Recipes.Add(copy);
         await db.SaveChangesAsync(ct);
 
-        await mediator.Publish(new RecipeCreatedEvent(copy.Id, copy.HouseholdId), ct);
+        await mediator.Publish(new RecipeCreatedEvent(copy.Id, copy.HouseholdId, userId), ct);
 
         return MapToDetail(copy);
     }

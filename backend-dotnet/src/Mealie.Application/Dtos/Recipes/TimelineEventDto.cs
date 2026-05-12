@@ -12,6 +12,12 @@ public class TimelineEventResponse
     public DateTime Timestamp { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdateAt { get; set; }
+    public string? RecipeName { get; set; }
+    public string? RecipeSlug { get; set; }
+    public string? RecipeImage { get; set; }
+    public string? RecipeDescription { get; set; }
+    public string? RecipeTotalTime { get; set; }
+    public int? RecipeRating { get; set; }
 }
 
 public class CreateTimelineEventRequest

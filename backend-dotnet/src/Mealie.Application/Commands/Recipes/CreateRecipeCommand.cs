@@ -23,7 +23,7 @@ public record CreateRecipeCommand(Guid GroupId, Guid HouseholdId, Guid UserId, C
         };
         db.Recipes.Add(recipe);
         await db.SaveChangesAsync(ct);
-        await services.Mediator.Publish(new RecipeCreatedEvent(recipe.Id, HouseholdId), ct);
+        await services.Mediator.Publish(new RecipeCreatedEvent(recipe.Id, HouseholdId, UserId), ct);
         return RecipeCommandMappings.MapToDetail(recipe);
     }
 }

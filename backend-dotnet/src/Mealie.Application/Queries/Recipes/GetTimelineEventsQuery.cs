@@ -19,20 +19,25 @@ public record GetTimelineEventsQuery(string Slug) : IQuery<IList<TimelineEventRe
         return await db.RecipeTimelineEvents
             .Where(e => e.RecipeId == recipe.Id)
             .OrderByDescending(e => e.Timestamp)
-            .Select(e => TimelineMappings.MapToResponse(e))
+            .Select(e => new TimelineEventResponse
+            {
+                Id = e.Id,
+                Subject = e.Subject,
+                EventType = e.EventType,
+                EventMessage = e.EventMessage,
+                Image = e.Image,
+                RecipeId = e.RecipeId,
+                UserId = e.UserId,
+                Timestamp = e.Timestamp,
+                CreatedAt = e.CreatedAt,
+                UpdateAt = e.UpdateAt,
+                RecipeName = recipe.Name,
+                RecipeSlug = recipe.Slug,
+                RecipeImage = recipe.Image,
+                RecipeDescription = recipe.Description,
+                RecipeTotalTime = recipe.TotalTime,
+                RecipeRating = recipe.Rating
+            })
             .ToListAsync(ct);
-    }
-}
-
-file static class TimelineMappings
-{
-    public static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev)
-    {
-        return new TimelineEventResponse
-        {
-            Id = ev.Id, Subject = ev.Subject, EventType = ev.EventType, EventMessage = ev.EventMessage,
-            Image = ev.Image, RecipeId = ev.RecipeId, UserId = ev.UserId, Timestamp = ev.Timestamp,
-            CreatedAt = ev.CreatedAt, UpdateAt = ev.UpdateAt
-        };
     }
 }

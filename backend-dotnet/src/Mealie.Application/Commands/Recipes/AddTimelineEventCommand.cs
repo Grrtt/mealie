@@ -25,19 +25,24 @@ public record AddTimelineEventCommand(string Slug, Guid UserId, CreateTimelineEv
         };
         db.RecipeTimelineEvents.Add(ev);
         await db.SaveChangesAsync(ct);
-        return TimelineMappings.MapToResponse(ev);
-    }
-}
-
-file static class TimelineMappings
-{
-    public static TimelineEventResponse MapToResponse(RecipeTimelineEvent ev)
-    {
         return new TimelineEventResponse
         {
-            Id = ev.Id, Subject = ev.Subject, EventType = ev.EventType, EventMessage = ev.EventMessage,
-            Image = ev.Image, RecipeId = ev.RecipeId, UserId = ev.UserId, Timestamp = ev.Timestamp,
-            CreatedAt = ev.CreatedAt, UpdateAt = ev.UpdateAt
+            Id = ev.Id,
+            Subject = ev.Subject,
+            EventType = ev.EventType,
+            EventMessage = ev.EventMessage,
+            Image = ev.Image,
+            RecipeId = ev.RecipeId,
+            UserId = ev.UserId,
+            Timestamp = ev.Timestamp,
+            CreatedAt = ev.CreatedAt,
+            UpdateAt = ev.UpdateAt,
+            RecipeName = recipe.Name,
+            RecipeSlug = recipe.Slug,
+            RecipeImage = recipe.Image,
+            RecipeDescription = recipe.Description,
+            RecipeTotalTime = recipe.TotalTime,
+            RecipeRating = recipe.Rating
         };
     }
 }

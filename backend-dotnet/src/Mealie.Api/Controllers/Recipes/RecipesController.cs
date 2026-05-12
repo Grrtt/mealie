@@ -484,7 +484,7 @@ public class RecipesController(
 
             await onProgress("Saving recipe...");
             var recipe = await executor.ExecuteAsync(new CreateRecipeFromScrapedCommand(
-                scraped, tenantContext.HouseholdId, tenantContext.GroupId), ct);
+                scraped, tenantContext.HouseholdId, tenantContext.GroupId, UserId: tenantContext.UserId), ct);
             return recipe?.Slug;
         }, ct);
     }
@@ -514,7 +514,7 @@ public class RecipesController(
 
             await onProgress("Saving recipe...");
             var recipe = await executor.ExecuteAsync(new CreateRecipeFromScrapedCommand(
-                scraped, tenantContext.HouseholdId, tenantContext.GroupId), ct);
+                scraped, tenantContext.HouseholdId, tenantContext.GroupId, UserId: tenantContext.UserId), ct);
             return recipe?.Slug;
         }, ct);
     }
@@ -531,7 +531,7 @@ public class RecipesController(
         }
 
         var recipe = await executor.ExecuteAsync(new CreateRecipeFromScrapedCommand(
-            scraped, tenantContext.HouseholdId, tenantContext.GroupId), ct);
+            scraped, tenantContext.HouseholdId, tenantContext.GroupId, UserId: tenantContext.UserId), ct);
         if (recipe is null)
         {
             return BadRequest(new { detail = "Failed to create recipe" });
@@ -567,7 +567,7 @@ public class RecipesController(
                 }
 
                 var recipe = await executor.ExecuteAsync(new CreateRecipeFromScrapedCommand(
-                    scraped, tenantContext.HouseholdId, tenantContext.GroupId), ct);
+                    scraped, tenantContext.HouseholdId, tenantContext.GroupId, UserId: tenantContext.UserId), ct);
                 results.Add(new { url, success = recipe is not null, slug = recipe?.Slug });
             }
             catch (Exception ex)
