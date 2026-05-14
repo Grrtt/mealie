@@ -18,13 +18,15 @@ export function RegisterRouteComponent() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { invite?: string; token?: string; email?: string };
+  const hasInvite = Boolean(search.invite);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [signupAllowed, setSignupAllowed] = useState(true);
-  const [secureInviteLoading, setSecureInviteLoading] = useState(false);
+  const [secureInviteLoading, setSecureInviteLoading] = useState(hasInvite);
   const [secureInviteReady, setSecureInviteReady] = useState(false);
   const [secureInviteError, setSecureInviteError] = useState<string | null>(null);
+  const registrationBlocked = !signupAllowed && !secureInviteReady;
 
   const form = useZodForm(registerSchema, {
     defaultValues: {
@@ -64,7 +66,8 @@ export function RegisterRouteComponent() {
   }, [form, search.email, search.invite]);
 
   useEffect(() => {
-    if (!search.invite) {
+    const invite = search.invite;
+    if (!invite) {
       setSecureInviteLoading(false);
       setSecureInviteReady(false);
       setSecureInviteError(null);
@@ -76,7 +79,7 @@ export function RegisterRouteComponent() {
     setSecureInviteReady(false);
     setSecureInviteError(null);
 
-    resolveRegistrationInvite(search.invite)
+    resolveRegistrationInvite(invite)
       .then(prefill => {
         if (cancelled) {
           return;
@@ -143,7 +146,7 @@ export function RegisterRouteComponent() {
             <Typography variant="h4" textAlign="center">
               {t("user-registration.user-registration")}
             </Typography>
-            {!signupAllowed ? <Alert severity="warning">{t("user.invite-only")}</Alert> : null}
+            {!signupAllowed && !hasInvite ? <Alert severity="warning">{t("user.invite-only")}</Alert> : null}
             {secureInviteReady ? <Alert severity="info">{t("user-registration.secure-invite-loaded")}</Alert> : null}
             {secureInviteError ? <Alert severity="warning">{secureInviteError}</Alert> : null}
             {error ? <Alert severity="error">{error}</Alert> : null}
@@ -168,7 +171,7 @@ export function RegisterRouteComponent() {
               label={t("user.confirm-password")}
               type="password"
             />
-            <Button variant="contained" type="submit" disabled={busy || !signupAllowed || secureInviteLoading}>
+            <Button variant="contained" type="submit" disabled={busy || registrationBlocked || secureInviteLoading}>
               {t("user.register")}
             </Button>
             <Button component={Link} to="/login">

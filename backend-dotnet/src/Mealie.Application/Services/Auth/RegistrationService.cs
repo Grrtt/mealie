@@ -33,7 +33,7 @@ public class RegistrationService(
 
     public async Task<RegistrationResult> RegisterAsync(RegisterRequest request, CancellationToken ct = default)
     {
-        if (!AllowSignup)
+        if (!AllowSignup && string.IsNullOrWhiteSpace(request.Invite))
         {
             logger.LogWarning("Registration attempted but ALLOW_SIGNUP is false");
             return new RegistrationResult(false, "Registration is disabled");

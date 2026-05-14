@@ -50,11 +50,6 @@ public class UsersController(
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        if (!registrationService.AllowSignup)
-        {
-            return BadRequest(new { detail = "Registration is disabled" });
-        }
-
         var result = await registrationService.RegisterAsync(request);
         if (!result.Success)
         {

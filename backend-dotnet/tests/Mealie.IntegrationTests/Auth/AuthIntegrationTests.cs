@@ -18,12 +18,14 @@ public class AuthTestFactory : WebApplicationFactory<Program>
     private readonly string _dataDir = Path.Combine(Path.GetTempPath(), $"mealie-test-{Guid.NewGuid():N}");
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"mealie-test-{Guid.NewGuid():N}.db");
 
+    protected virtual bool AllowSignup => true;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("DATABASE_URL", $"Data Source={_dbPath}");
         Environment.SetEnvironmentVariable("DB_ENGINE", "sqlite");
         Environment.SetEnvironmentVariable("SECRET", "test-secret-value-that-is-32-chars!!");
-        Environment.SetEnvironmentVariable("ALLOW_SIGNUP", "true");
+        Environment.SetEnvironmentVariable("ALLOW_SIGNUP", AllowSignup ? "true" : "false");
         Environment.SetEnvironmentVariable("DATA_DIR", _dataDir);
         Environment.SetEnvironmentVariable("BASE_URL", "http://localhost");
     }
@@ -51,6 +53,11 @@ public class AuthTestFactory : WebApplicationFactory<Program>
     }
 }
 
+public sealed class ClosedSignupAuthTestFactory : AuthTestFactory
+{
+    protected override bool AllowSignup => false;
+}
+
 public class AuthIntegrationTests(AuthTestFactory factory)
     : IClassFixture<AuthTestFactory>
 {
@@ -59,6 +66,28 @@ public class AuthIntegrationTests(AuthTestFactory factory)
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+
+    private static async Task<string> CreateInviteAsync(IServiceProvider services, string email)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var inviteService = scope.ServiceProvider.GetRequiredService<IRegistrationInviteService>();
+        var defaultUser = await db.Users.SingleAsync(u => u.Email == SeedCommand.DefaultEmail);
+        var rawToken = $"invite-{Guid.NewGuid():N}";
+
+        db.InviteTokens.Add(new GroupInviteToken
+        {
+            Id = Guid.NewGuid(),
+            Token = rawToken,
+            GroupId = defaultUser.GroupId,
+            HouseholdId = defaultUser.HouseholdId,
+            CreatedAt = DateTime.UtcNow,
+            UpdateAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        return inviteService.CreateInvite(email, rawToken);
+    }
 
     [Fact]
     public async Task HealthCheck_Returns200()
@@ -118,28 +147,7 @@ public class AuthIntegrationTests(AuthTestFactory factory)
     public async Task Register_WithInvite_AutoAuthenticates_AndSetsCookie()
     {
         using var client = factory.CreateClient();
-
-        string invite;
-        await using (var scope = factory.Services.CreateAsyncScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var inviteService = scope.ServiceProvider.GetRequiredService<IRegistrationInviteService>();
-            var defaultUser = await db.Users.SingleAsync(u => u.Email == SeedCommand.DefaultEmail);
-            var rawToken = $"invite-{Guid.NewGuid():N}";
-
-            db.InviteTokens.Add(new GroupInviteToken
-            {
-                Id = Guid.NewGuid(),
-                Token = rawToken,
-                GroupId = defaultUser.GroupId,
-                HouseholdId = defaultUser.HouseholdId,
-                CreatedAt = DateTime.UtcNow,
-                UpdateAt = DateTime.UtcNow
-            });
-            await db.SaveChangesAsync();
-
-            invite = inviteService.CreateInvite("invitee@example.com", rawToken);
-        }
+        var invite = await CreateInviteAsync(factory.Services, "invitee@example.com");
 
         var response = await client.PostAsJsonAsync("/api/users/register", new
         {
@@ -164,6 +172,38 @@ public class AuthIntegrationTests(AuthTestFactory factory)
         var self = await me.Content.ReadFromJsonAsync<PrivateUserResponse>(Json);
         Assert.NotNull(self);
         Assert.Equal("invitee@example.com", self!.Email);
+    }
+
+    [Fact]
+    public async Task Register_WithInvite_WhenSignupDisabled_AutoAuthenticates_AndSetsCookie()
+    {
+        using var closedSignupFactory = new ClosedSignupAuthTestFactory();
+        using var client = closedSignupFactory.CreateClient();
+        var invite = await CreateInviteAsync(closedSignupFactory.Services, "invitee-closed@example.com");
+
+        var response = await client.PostAsJsonAsync("/api/users/register", new
+        {
+            email = "invitee-closed@example.com",
+            username = $"invitee-closed-{Guid.NewGuid():N}",
+            fullName = "Invitee Closed Signup User",
+            password = "supersecure123",
+            invite
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(response.Headers.TryGetValues("Set-Cookie", out var cookieHeaders));
+        Assert.Contains(cookieHeaders!, value => value.Contains("mealie.access_token=", StringComparison.Ordinal));
+
+        var body = await response.Content.ReadFromJsonAsync<RegistrationResponse>(Json);
+        Assert.NotNull(body);
+        Assert.True(body!.Authenticated);
+
+        var me = await client.GetAsync("/api/users/self");
+        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+
+        var self = await me.Content.ReadFromJsonAsync<PrivateUserResponse>(Json);
+        Assert.NotNull(self);
+        Assert.Equal("invitee-closed@example.com", self!.Email);
     }
 
     [Fact]
