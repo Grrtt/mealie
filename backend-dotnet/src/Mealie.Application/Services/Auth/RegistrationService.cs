@@ -1,10 +1,8 @@
 using Mealie.Application.Dtos.Users;
 using Mealie.Domain.Entities.Core;
 using Mealie.Domain.Entities.Organizers;
-using Mealie.Domain.Events;
 using Mealie.Infrastructure.Configuration;
 using Mealie.Infrastructure.Data;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,7 +13,6 @@ public class RegistrationService(
     ApplicationDbContext db,
     IOptions<AppSettings> settings,
     IRegistrationInviteService registrationInviteService,
-    IMediator mediator,
     ILogger<RegistrationService> logger) : IRegistrationService
 {
     public bool AllowSignup => settings.Value.AllowSignup;
@@ -116,14 +113,6 @@ public class RegistrationService(
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
         logger.LogInformation("New user registered: {Username}", username);
-
-        await mediator.Publish(new UserSignedUpEvent(
-            UserId: user.Id,
-            Username: user.Username,
-            Email: user.Email,
-            GroupId: user.GroupId,
-            HouseholdId: user.HouseholdId ?? Guid.Empty), ct);
-
         return new RegistrationResult(true, AuthContext: new RegistrationAuthContext(
             user.Id,
             user.GroupId,

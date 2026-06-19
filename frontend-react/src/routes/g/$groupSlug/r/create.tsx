@@ -16,7 +16,7 @@ const actions = [
   { slug: "bulk", title: "Bulk import URLs", description: "Import several recipe links in one go." },
   { slug: "html", title: "Import HTML/JSON", description: "Paste raw recipe markup and save it." },
   { slug: "zip", title: "Import ZIP", description: "Import exported recipe archives." },
-  { slug: "image", title: "Import from image", description: "Extract a recipe from a photo using AI vision." },
+  { slug: "image", title: "Import from image", description: "Try OCR/image import if the backend supports it." },
   { slug: "debug", title: "Debug scraper", description: "Preview scrape output before importing." },
 ];
 

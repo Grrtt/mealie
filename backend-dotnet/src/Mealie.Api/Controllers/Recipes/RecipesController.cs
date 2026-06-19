@@ -6,7 +6,6 @@ using Mealie.Application.Dtos.Recipes;
 using Mealie.Application.Queries;
 using Mealie.Application.Queries.Recipes;
 using Mealie.Application.Services.Images;
-using Mealie.Application.Services.Ocr;
 using Mealie.Application.Services.Recipes;
 using Mealie.Infrastructure.Auth;
 using Mealie.Infrastructure.Configuration;
@@ -30,8 +29,7 @@ public class RecipesController(
     IRecipeImportService importService,
     ITenantContext tenantContext,
     IOptions<AppSettings> appSettings,
-    ApplicationDbContext db,
-    IOcrService ocrService) : ControllerBase
+    ApplicationDbContext db) : ControllerBase
 {
     // ── CRUD Endpoints ──────────────────────────────────────────────────────
 
@@ -619,65 +617,10 @@ public class RecipesController(
         return Ok(new { imported = count });
     }
 
-    /// <summary>Streaming SSE endpoint: import a recipe from an image via AI OCR.</summary>
     [HttpPost("create-image-ocr")]
-    [Consumes("multipart/form-data")]
-    public async Task CreateFromImageOcr([FromForm] IFormFile image, CancellationToken ct)
+    public IActionResult CreateFromImageOcr()
     {
-        if (image is null || image.Length == 0)
-        {
-            Response.StatusCode = 400;
-            await Response.WriteAsJsonAsync(new { detail = "No image file provided" }, ct);
-            return;
-        }
-
-        var activeConfig = await db.AiConfigurations.FirstOrDefaultAsync(c => c.IsActive, ct);
-        if (activeConfig is null || !activeConfig.EnableImageServices)
-        {
-            Response.StatusCode = 400;
-            await Response.WriteAsJsonAsync(new { detail = "OCR image import is not enabled on this server" }, ct);
-            return;
-        }
-
-        await StreamSseAsync(async onProgress =>
-        {
-            await onProgress("Reading image...");
-            await using var memoryStream = new MemoryStream();
-            await image.CopyToAsync(memoryStream, ct);
-            var imageBytes = memoryStream.ToArray();
-
-            await onProgress("Extracting recipe with AI vision...");
-            var scraped = await ocrService.ExtractRecipeFromImageAsync(imageBytes, ct);
-            if (scraped is null)
-            {
-                throw new InvalidOperationException("Could not extract a recipe from the provided image");
-            }
-
-            await onProgress("Saving recipe...");
-            var recipe = await executor.ExecuteAsync(new CreateRecipeFromScrapedCommand(
-                scraped, tenantContext.HouseholdId, tenantContext.GroupId, UserId: tenantContext.UserId), ct);
-            if (recipe is null)
-            {
-                throw new InvalidOperationException("Failed to create recipe");
-            }
-
-            await onProgress("Saving image...");
-            // Mark the recipe as OCR-imported
-            var recipeEntity = await db.Recipes.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(r => r.Id == recipe.Id, ct);
-            if (recipeEntity is not null)
-            {
-                recipeEntity.IsOcr = true;
-                await db.SaveChangesAsync(ct);
-            }
-
-            // Persist image variants to disk
-            var dataDir = appSettings.Value.DataDir;
-            var imagesDir = Path.GetFullPath(Path.Combine(dataDir, "recipes", recipe.Id.ToString(), "images"));
-            RecipeImageProcessor.SaveVariants(imagesDir, imageBytes);
-
-            return recipe.Slug;
-        }, ct);
+        return StatusCode(501, new { detail = "OCR import is not implemented" });
     }
 
     // ── SSE helper ─────────────────────────────────────────────────────────

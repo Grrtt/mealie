@@ -30,8 +30,7 @@ public class AppInfoController(IOptions<AppSettings> settings, ApplicationDbCont
             oidcProviderName = (string?)null,
             tokenTime = 48,
             enableOpenai = db.Set<Mealie.Domain.Entities.Settings.AiConfiguration>().Any(),
-            enableOpenaiImageServices = db.Set<Mealie.Domain.Entities.Settings.AiConfiguration>()
-                .Any(c => c.EnableImageServices)
+            enableOpenaiImageServices = false
         });
     }
 

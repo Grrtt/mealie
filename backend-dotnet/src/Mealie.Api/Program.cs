@@ -22,7 +22,6 @@ using Mealie.Application.Services.Ingredients;
 using Mealie.Application.Services.MealPlans;
 using Mealie.Application.Services.Migrations;
 using Mealie.Application.Services.Organizers;
-using Mealie.Application.Services.Ocr;
 using Mealie.Application.Services.Parser;
 using Mealie.Application.Services.Recipes;
 using Mealie.Application.Services.Search;
@@ -301,10 +300,7 @@ builder.Services.AddScoped<ScheduledBackupJob>();
 builder.Services.AddScoped<MealPlanNotificationJob>();
 builder.Services.AddHostedService<SchedulerHostedService>();
 
-// Phase 8: OCR / AI image import
-builder.Services.AddScoped<IOcrService, OcrService>();
-
-// Phase 9: Ingredient parser
+// Phase 8: Ingredient parser
 builder.Services.AddScoped<UnitMatcher>();
 builder.Services.AddScoped<FoodMatcher>();
 builder.Services.AddScoped<BruteParserStrategy>();
@@ -313,7 +309,7 @@ builder.Services.AddScoped<IParserStrategyResolver, ParserStrategyResolver>();
 builder.Services.AddScoped<IIngredientParserService, IngredientParserService>();
 builder.Services.AddScoped<IRecipeOrganizerService, RecipeOrganizerService>();
 
-// Phase 10: Migration importers
+// Phase 9: Migration importers
 builder.Services.AddSingleton<IMigrationParser, ChowdownMigrationParser>();
 builder.Services.AddSingleton<IMigrationParser, PaprikaMigrationParser>();
 builder.Services.AddSingleton<IMigrationParser, NextcloudCookbookMigrationParser>();

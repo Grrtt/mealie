@@ -25,6 +25,7 @@ import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { alpha, useTheme } from "@mui/material/styles";
+import { ExperimentalBanner } from "@/components/layout/ExperimentalBanner";
 import { MainNav } from "@/components/navigation/MainNav";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { ThemeModeSelector } from "@/components/settings/ThemeModeSelector";
@@ -340,6 +341,7 @@ export function AppShell({ groupSlug, title = "Mealie", subtitle, userName, chil
         }}
       >
         <Toolbar />
+        <ExperimentalBanner />
         <Container component="section" maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
           {children}
         </Container>
