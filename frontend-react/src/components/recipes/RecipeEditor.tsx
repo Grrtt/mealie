@@ -30,6 +30,7 @@ type Props = {
   recipeSlug: string;
   currentUser: PrivateUser | null;
   initialEditMode?: boolean;
+  landscapeView?: boolean;
 };
 
 type RecipeDraft = {
@@ -129,7 +130,7 @@ function draftToPayload(draft: RecipeDraft): UpdateRecipePayload {
   };
 }
 
-export function RecipeEditor({ groupSlug, recipeSlug, currentUser, initialEditMode = false }: Props) {
+export function RecipeEditor({ groupSlug, recipeSlug, currentUser, initialEditMode = false, landscapeView = false }: Props) {
   const [isEditing, setIsEditing] = useState(initialEditMode);
   const [draft, setDraft] = useState<RecipeDraft | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -194,6 +195,7 @@ export function RecipeEditor({ groupSlug, recipeSlug, currentUser, initialEditMo
         <RecipeDetailView
           currentUser={currentUser}
           groupSlug={groupSlug}
+          landscapeView={landscapeView}
           onEdit={() => setIsEditing(true)}
           onRecipeRefresh={async () => {
             await recipeQuery.refetch();

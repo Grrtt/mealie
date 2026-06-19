@@ -23,8 +23,8 @@ export function RecipeCreateImageRouteComponent() {
       <Stack spacing={3}>
         <Typography variant="h4">Import recipe from image</Typography>
         <Typography color="text.secondary">
-          This route calls the current backend OCR endpoint. If the environment has not enabled OCR support yet,
-          the backend returns a not-implemented response instead of a dead-end screen.
+          Upload an image of a recipe and AI will extract the ingredients and instructions.
+          Make sure the image is clear and well-lit for best results.
         </Typography>
         {status ? <Alert severity="success">{status}</Alert> : null}
         {error ? <Alert severity="error">{error}</Alert> : null}

@@ -17,4 +17,5 @@ public class ShoppingList
     public User User { get; set; } = null!;
     public ICollection<ShoppingListItem> Items { get; set; } = [];
     public ICollection<ShoppingListRecipeReference> RecipeReferences { get; set; } = [];
+    public ICollection<ShoppingListLabel> Labels { get; set; } = [];
 }

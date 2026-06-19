@@ -16,4 +16,5 @@ public class MultiPurposeLabel
     public Group Group { get; set; } = null!;
     public ICollection<ShoppingListItem> ShoppingItems { get; set; } = [];
     public ICollection<IngredientFood> Foods { get; set; } = [];
+    public ICollection<ShoppingListLabel> ShoppingListLabels { get; set; } = [];
 }

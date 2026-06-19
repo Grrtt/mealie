@@ -58,6 +58,7 @@ type Props = {
   onRecipeRefresh: () => Promise<void> | void;
   recipe: Recipe;
   onEdit: () => void;
+  landscapeView?: boolean;
 };
 
 type RecipeIngredient = NonNullable<Recipe["recipeIngredient"]>[number];
@@ -319,7 +320,7 @@ function useScreenWakeLock(enabled: boolean) {
   };
 }
 
-export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, recipe, onEdit }: Props) {
+export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, recipe, onEdit, landscapeView = false }: Props) {
   const navigate = useNavigate();
   const [scaleInput, setScaleInput] = useState("1");
   const [isCookMode, setIsCookMode] = useState(false);
@@ -402,6 +403,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
 
   const scale = useMemo(() => normalizeScaleInput(scaleInput), [scaleInput]);
   const imageUrl = recipeImageUrl(recipe.id, typeof recipe.image === "string" ? recipe.image : null);
+  const effectiveLandscape = recipe.settings?.landscapeView ?? landscapeView;
   const canDelete = Boolean(currentUser && (currentUser.admin || currentUser.id === recipe.userId));
   const canReimport = Boolean(currentUser?.admin && recipe.orgURL);
 
@@ -837,14 +839,14 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
 
             <Grid container>
               <Grid size={{ xs: 12, md: imageUrl ? 6 : 12 }}>
-                <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                <CardContent sx={{ p: { xs: effectiveLandscape ? 2 : 3, md: effectiveLandscape ? 3 : 4 } }}>
                   <Stack
-                    spacing={2.5}
+                    spacing={effectiveLandscape ? 1.5 : 2.5}
                     sx={{
                       alignItems: "center",
                       justifyContent: "flex-start",
                       minHeight: "100%",
-                      py: { xs: 0, md: 1 },
+                      py: { xs: 0, md: effectiveLandscape ? 0 : 1 },
                     }}
                   >
                     <Stack spacing={0.75} sx={{ alignItems: "center", textAlign: "center" }}>
@@ -903,7 +905,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                     imgProps={{ "data-print-role": "recipe-image" }}
                     src={imageUrl}
                     wrapperSx={{
-                      minHeight: { xs: 240, md: 360 },
+                      minHeight: effectiveLandscape ? { xs: 180, md: 240 } : { xs: 240, md: 360 },
                     }}
                   />
                 </Grid>
@@ -913,15 +915,15 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
 
           <Divider />
 
-          <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
-            <Stack spacing={3}>
+          <CardContent sx={{ p: { xs: effectiveLandscape ? 2 : 2.5, md: effectiveLandscape ? 2.5 : 3 } }}>
+            <Stack spacing={effectiveLandscape ? 2 : 3}>
               <Grid container>
                 <Grid
-                  size={{ xs: 12, md: 4 }}
+                  size={{ xs: 12, md: effectiveLandscape ? 6 : 4 }}
                   sx={{
                     borderRight: { md: 1 },
                     borderColor: "divider",
-                    pr: { md: 3 },
+                    pr: { md: effectiveLandscape ? 2.5 : 3 },
                     mb: { xs: 3, md: 0 },
                   }}
                 >
@@ -1065,7 +1067,7 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
                   </Stack>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 8 }} sx={{ pl: { md: 3 } }}>
+                <Grid size={{ xs: 12, md: effectiveLandscape ? 6 : 8 }} sx={{ pl: { md: effectiveLandscape ? 2.5 : 3 } }}>
                   <Stack spacing={3}>
                     <Stack spacing={0.5}>
                       <Typography sx={sectionHeadingSx()} variant="h4">Instructions</Typography>
@@ -1164,13 +1166,13 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
         >
           <Grid container>
             <Grid
-              size={{ xs: 12, md: 5 }}
+              size={{ xs: 12, md: effectiveLandscape ? 6 : 5 }}
               sx={{
                 borderRight: { md: 1 },
                 borderColor: "divider",
               }}
             >
-              <Box sx={{ p: { xs: 2.5, md: 3 } }}>
+              <Box sx={{ p: { xs: effectiveLandscape ? 2 : 2.5, md: effectiveLandscape ? 2.5 : 3 } }}>
                 <Stack spacing={3}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography sx={sectionHeadingSx()} variant="h4">Ingredients</Typography>
@@ -1284,8 +1286,8 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
               </Box>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 7 }}>
-              <Box sx={{ p: { xs: 2.5, md: 3 } }}>
+            <Grid size={{ xs: 12, md: effectiveLandscape ? 6 : 7 }}>
+              <Box sx={{ p: { xs: effectiveLandscape ? 2 : 2.5, md: effectiveLandscape ? 2.5 : 3 } }}>
                 <Stack spacing={3}>
                   <Stack spacing={0.5}>
                     <Typography sx={sectionHeadingSx()} variant="h4">Instructions</Typography>

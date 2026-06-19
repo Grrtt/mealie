@@ -1,56 +1,91 @@
+using Mealie.Application.Commands.RecipeActions;
+using Mealie.Application.Dtos.RecipeActions;
+using Mealie.Application.Queries;
+using Mealie.Application.Queries.RecipeActions;
 using Mealie.Infrastructure.Auth;
-using Mealie.Shared.Pagination;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mealie.Api.Controllers.Households;
 
 [ApiController]
 [Route("api/households/recipe-actions")]
-public class RecipeActionsController(ITenantContext tenantContext) : MealieControllerBase(tenantContext)
+public class RecipeActionsController(QueryExecutor executor, ITenantContext tenantContext)
+    : MealieControllerBase(tenantContext)
 {
     [HttpGet]
-    public ActionResult<PaginatedResponse<object>> GetRecipeActions([FromQuery] PaginationParams pagination)
+    public async Task<IActionResult> GetRecipeActions([FromQuery] int page = 1, [FromQuery] int perPage = 200,
+        CancellationToken ct = default)
     {
-        var response = new PaginatedResponse<object>
+        var items = await executor.ExecuteAsync(new GetRecipeActionsQuery(CurrentHouseholdId), ct);
+        var total = items.Count;
+        var paged = items.Skip((page - 1) * perPage).Take(perPage).ToList();
+        return Ok(new
         {
-            Page = pagination.Page,
-            PerPage = pagination.PerPage,
-            Total = 0,
-            TotalPages = 0,
-            Items = []
-        };
-        return Ok(response);
+            page,
+            perPage,
+            total,
+            totalPages = (int)Math.Ceiling((double)total / perPage),
+            items = paged
+        });
     }
 
     [HttpGet("{id:guid}")]
-    public ActionResult<object> GetRecipeAction(Guid id)
+    public async Task<IActionResult> GetRecipeAction(Guid id, CancellationToken ct = default)
     {
-        return NotFoundOrForbidden();
+        var item = await executor.ExecuteAsync(new GetRecipeActionByIdQuery(CurrentHouseholdId, id), ct);
+        if (item is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
+        return Ok(item);
     }
 
     [HttpPost]
-    public ActionResult<object> CreateRecipeAction([FromBody] object request)
+    public async Task<IActionResult> CreateRecipeAction([FromBody] CreateRecipeActionRequest request,
+        CancellationToken ct = default)
     {
-        return Ok(new { id = Guid.NewGuid() });
+        return Ok(
+            await executor.ExecuteAsync(new CreateRecipeActionCommand(CurrentGroupId, CurrentHouseholdId, request), ct));
     }
 
     [HttpPut("{id:guid}")]
     [HttpPatch("{id:guid}")]
-    public ActionResult<object> UpdateRecipeAction(Guid id, [FromBody] object request)
+    public async Task<IActionResult> UpdateRecipeAction(Guid id, [FromBody] UpdateRecipeActionRequest request,
+        CancellationToken ct = default)
     {
-        return Ok(new { id });
+        var item = await executor.ExecuteAsync(new UpdateRecipeActionCommand(CurrentHouseholdId, id, request), ct);
+        if (item is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
+        return Ok(item);
     }
 
     [HttpDelete("{id:guid}")]
-    public IActionResult DeleteRecipeAction(Guid id)
+    public async Task<IActionResult> DeleteRecipeAction(Guid id, CancellationToken ct = default)
     {
-        return NoContent();
+        var success = await executor.ExecuteAsync(new DeleteRecipeActionCommand(CurrentHouseholdId, id), ct);
+        if (!success)
+        {
+            return NotFoundOrForbidden();
+        }
+
+        return Ok();
     }
 
     [HttpPost("{id:guid}/trigger/{recipeSlug}")]
-    public async Task<IActionResult> TriggerRecipeAction(Guid id, string recipeSlug)
+    public async Task<IActionResult> TriggerRecipeAction(Guid id, string recipeSlug,
+        [FromBody] RecipeActionTriggerRequest? request = null, CancellationToken ct = default)
     {
-        // Stub: would make HTTP call to configured URL with recipe data
-        return Ok(new { triggered = true });
+        var result = await executor.ExecuteAsync(
+            new TriggerRecipeActionCommand(CurrentHouseholdId, CurrentGroupId, id, recipeSlug, request), ct);
+        if (result is null)
+        {
+            return NotFoundOrForbidden();
+        }
+
+        return Ok(result);
     }
 }

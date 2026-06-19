@@ -32,4 +32,5 @@ public interface IQueryServices
     IWebhookDeliveryService WebhookDeliveryService { get; }
     IRecipeSearchIndex SearchIndex { get; }
     IApiKeyEncryptionService EncryptionService { get; }
+    IHttpClientFactory HttpClientFactory { get; }
 }

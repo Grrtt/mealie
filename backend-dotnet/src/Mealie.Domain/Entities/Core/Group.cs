@@ -25,6 +25,7 @@ public class Group
     public GroupPreferences? Preferences { get; set; }
     public ICollection<GroupInviteToken> InviteTokens { get; set; } = [];
     public ICollection<Webhook> Webhooks { get; set; } = [];
+    public ICollection<RecipeAction> RecipeActions { get; set; } = [];
     public ICollection<Cookbook> Cookbooks { get; set; } = [];
     public ICollection<MealPlan> MealPlans { get; set; } = [];
     public ICollection<ShoppingList> ShoppingLists { get; set; } = [];

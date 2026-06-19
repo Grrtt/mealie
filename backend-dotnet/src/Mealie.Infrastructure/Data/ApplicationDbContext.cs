@@ -58,12 +58,14 @@ public class ApplicationDbContext : DbContext
         Set<ShoppingListItemRecipeReference>();
 
     public DbSet<ShoppingListRecipeReference> ShoppingListRecipeReferences => Set<ShoppingListRecipeReference>();
+    public DbSet<ShoppingListLabel> ShoppingListLabels => Set<ShoppingListLabel>();
 
     // Settings
     public DbSet<GroupPreferences> GroupPreferences => Set<GroupPreferences>();
     public DbSet<HouseholdPreferences> HouseholdPreferences => Set<HouseholdPreferences>();
     public DbSet<Webhook> Webhooks => Set<Webhook>();
     public DbSet<EventNotifier> EventNotifiers => Set<EventNotifier>();
+    public DbSet<RecipeAction> RecipeActions => Set<RecipeAction>();
     public DbSet<ServerTask> ServerTasks => Set<ServerTask>();
     public DbSet<AiConfiguration> AiConfigurations => Set<AiConfiguration>();
     public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
@@ -123,6 +125,8 @@ public class ApplicationDbContext : DbContext
             _tenantFilter.HouseholdId == Guid.Empty || w.HouseholdId == _tenantFilter.HouseholdId);
         modelBuilder.Entity<EventNotifier>().HasQueryFilter(e =>
             _tenantFilter.HouseholdId == Guid.Empty || e.HouseholdId == _tenantFilter.HouseholdId);
+        modelBuilder.Entity<RecipeAction>().HasQueryFilter(ra =>
+            _tenantFilter.HouseholdId == Guid.Empty || ra.HouseholdId == _tenantFilter.HouseholdId);
 
         // Group-scoped query filters
         modelBuilder.Entity<Tag>()

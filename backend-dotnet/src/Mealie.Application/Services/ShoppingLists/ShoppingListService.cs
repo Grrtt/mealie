@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Mealie.Application.Dtos.ShoppingLists;
 using Mealie.Domain.Entities.Planning;
 using Mealie.Domain.Events;
@@ -36,6 +37,7 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
             .Where(s => s.HouseholdId == householdId && s.Id == id)
             .Include(s => s.Items).ThenInclude(i => i.Unit)
             .Include(s => s.Items).ThenInclude(i => i.Food)
+            .Include(s => s.Labels).ThenInclude(l => l.Label)
             .FirstOrDefaultAsync(ct);
         if (list is null)
         {
@@ -67,6 +69,7 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
             .Where(s => s.HouseholdId == householdId && s.Id == id)
             .Include(s => s.Items).ThenInclude(i => i.Unit)
             .Include(s => s.Items).ThenInclude(i => i.Food)
+            .Include(s => s.Labels).ThenInclude(l => l.Label)
             .FirstOrDefaultAsync(ct);
         if (list is null)
         {
@@ -431,6 +434,7 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
             .Where(s => s.HouseholdId == householdId && s.Id == listId)
             .Include(s => s.Items).ThenInclude(i => i.Unit)
             .Include(s => s.Items).ThenInclude(i => i.Food)
+            .Include(s => s.Labels).ThenInclude(l => l.Label)
             .FirstOrDefaultAsync(ct);
         if (list is null)
         {
@@ -575,6 +579,11 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
         return true;
     }
 
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public async Task<ShoppingListResponse?> UpdateLabelSettingsAsync(Guid householdId, Guid listId,
         UpdateShoppingListLabelSettingsRequest request, CancellationToken ct = default)
     {
@@ -590,13 +599,43 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
 
         if (request.LabelSettings is not null)
         {
-            // Store label settings if needed (could be JSON in a field on ShoppingList)
-            // For now, just update the timestamp
+            var labelSettings = JsonSerializer.Deserialize<List<ShoppingListLabelSettingsItem>>(
+                request.LabelSettings, JsonOpts);
+
+            if (labelSettings is not null)
+            {
+                // Remove existing label associations
+                var existing = await db.ShoppingListLabels
+                    .Where(l => l.ShoppingListId == listId)
+                    .ToListAsync(ct);
+                db.ShoppingListLabels.RemoveRange(existing);
+
+                // Create new label associations
+                foreach (var item in labelSettings)
+                {
+                    db.ShoppingListLabels.Add(new ShoppingListLabel
+                    {
+                        Id = Guid.NewGuid(),
+                        ShoppingListId = listId,
+                        LabelId = item.LabelId,
+                        Position = item.Position
+                    });
+                }
+            }
         }
 
         list.UpdateAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return MapToResponse(list);
+
+        // Reload the list to get fresh Labels navigation data for the response
+        var updated = await db.ShoppingLists.IgnoreQueryFilters()
+            .Where(s => s.HouseholdId == householdId && s.Id == listId)
+            .Include(s => s.Items).ThenInclude(i => i.Unit)
+            .Include(s => s.Items).ThenInclude(i => i.Food)
+            .Include(s => s.Labels).ThenInclude(l => l.Label)
+            .FirstOrDefaultAsync(ct);
+
+        return updated is null ? null : MapToResponse(updated);
     }
 
     private static ShoppingListResponse MapToResponse(ShoppingList s)
@@ -605,7 +644,17 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
         {
             Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
             CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt,
-            Items = s.Items.Select(MapItemToResponse).ToList()
+            Items = s.Items.Select(MapItemToResponse).ToList(),
+            LabelSettings = s.Labels
+                .OrderBy(l => l.Position)
+                .Select(l => new ShoppingListMultiPurposeLabelOut
+                {
+                    LabelId = l.LabelId,
+                    Position = l.Position,
+                    LabelName = l.Label.Name,
+                    LabelColor = l.Label.Color
+                })
+                .ToList()
         };
     }
 

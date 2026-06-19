@@ -9,7 +9,8 @@ public static class ShoppingListMappingHelper
     public static IQueryable<ShoppingList> WithItems(IQueryable<ShoppingList> query)
     {
         return query.Include(s => s.Items).ThenInclude(i => i.Unit)
-            .Include(s => s.Items).ThenInclude(i => i.Food);
+            .Include(s => s.Items).ThenInclude(i => i.Food)
+            .Include(s => s.Labels).ThenInclude(l => l.Label);
     }
 
     public static IQueryable<ShoppingListItem> WithItemDetails(IQueryable<ShoppingListItem> query)
@@ -27,7 +28,17 @@ public static class ShoppingListMappingHelper
             HouseholdId = list.HouseholdId,
             CreatedAt = list.CreatedAt,
             UpdateAt = list.UpdateAt,
-            Items = list.Items.Select(MapItemToResponse).ToList()
+            Items = list.Items.Select(MapItemToResponse).ToList(),
+            LabelSettings = list.Labels
+                .OrderBy(l => l.Position)
+                .Select(l => new ShoppingListMultiPurposeLabelOut
+                {
+                    LabelId = l.LabelId,
+                    Position = l.Position,
+                    LabelName = l.Label.Name,
+                    LabelColor = l.Label.Color
+                })
+                .ToList()
         };
     }
 

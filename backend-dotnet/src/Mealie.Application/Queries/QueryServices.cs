@@ -25,7 +25,8 @@ public class QueryServices(
     ImageScrapeQueue imageScrapeQueue,
     IWebhookDeliveryService webhookDeliveryService,
     IRecipeSearchIndex searchIndex,
-    IApiKeyEncryptionService encryptionService) : IQueryServices
+    IApiKeyEncryptionService encryptionService,
+    IHttpClientFactory httpClientFactory) : IQueryServices
 {
     public ApplicationDbContext Db { get; } = db;
     public ITenantContext Tenant { get; } = tenant;
@@ -39,4 +40,5 @@ public class QueryServices(
     public IWebhookDeliveryService WebhookDeliveryService { get; } = webhookDeliveryService;
     public IRecipeSearchIndex SearchIndex { get; } = searchIndex;
     public IApiKeyEncryptionService EncryptionService { get; } = encryptionService;
+    public IHttpClientFactory HttpClientFactory { get; } = httpClientFactory;
 }

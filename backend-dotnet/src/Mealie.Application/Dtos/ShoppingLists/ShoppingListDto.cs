@@ -9,6 +9,15 @@ public class ShoppingListResponse
     public DateTime CreatedAt { get; set; }
     public DateTime UpdateAt { get; set; }
     public IList<ShoppingListItemResponse> Items { get; set; } = [];
+    public IList<ShoppingListMultiPurposeLabelOut> LabelSettings { get; set; } = [];
+}
+
+public class ShoppingListMultiPurposeLabelOut
+{
+    public Guid LabelId { get; set; }
+    public int Position { get; set; }
+    public string LabelName { get; set; } = string.Empty;
+    public string? LabelColor { get; set; }
 }
 
 public class ShoppingListItemResponse
@@ -142,4 +151,10 @@ public class RemoveRecipeFromShoppingListRequest
 public class UpdateShoppingListLabelSettingsRequest
 {
     public string? LabelSettings { get; set; }
+}
+
+public class ShoppingListLabelSettingsItem
+{
+    public Guid LabelId { get; set; }
+    public int Position { get; set; }
 }

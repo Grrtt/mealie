@@ -21,4 +21,5 @@ public class Household
     public ICollection<ShoppingList> ShoppingLists { get; set; } = [];
     public ICollection<Webhook> Webhooks { get; set; } = [];
     public ICollection<EventNotifier> EventNotifiers { get; set; } = [];
+    public ICollection<RecipeAction> RecipeActions { get; set; } = [];
 }
