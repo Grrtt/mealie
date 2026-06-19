@@ -2,7 +2,6 @@
 using Mealie.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -11,27 +10,23 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Mealie.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260619032123_AddRecipeActions")]
-    partial class AddRecipeActions
+    [Migration("20260619130025_AddRecipeActionsAndShoppingListLabels")]
+    partial class AddRecipeActionsAndShoppingListLabels
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
-
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
 
             modelBuilder.Entity("CategoryCookbook", b =>
                 {
                     b.Property<string>("CategoriesId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("categories_id");
 
                     b.Property<string>("CookbookId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("cookbook_id");
 
                     b.HasKey("CategoriesId", "CookbookId")
@@ -46,11 +41,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("CookbookTag", b =>
                 {
                     b.Property<string>("CookbookId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("cookbook_id");
 
                     b.Property<string>("TagsId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("tags_id");
 
                     b.HasKey("CookbookId", "TagsId")
@@ -65,11 +60,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("CookbookTool", b =>
                 {
                     b.Property<string>("CookbookId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("cookbook_id");
 
                     b.Property<string>("ToolsId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("tools_id");
 
                     b.HasKey("CookbookId", "ToolsId")
@@ -85,35 +80,33 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("token");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -132,27 +125,27 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("Slug")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("slug");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -164,8 +157,7 @@ namespace Mealie.Infrastructure.Data.Migrations
 
                     b.HasIndex("Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_groups_slug")
-                        .HasFilter("[slug] IS NOT NULL");
+                        .HasDatabaseName("ix_groups_slug");
 
                     b.ToTable("groups", (string)null);
                 });
@@ -174,32 +166,32 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("Slug")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("slug");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -215,52 +207,52 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("category");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<int>("ProcessedCount")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("processed_count");
 
                     b.Property<string>("QueuedFilePath")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("queued_file_path");
 
                     b.Property<string>("QueuedHouseholdId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("queued_household_id");
 
                     b.Property<string>("QueuedUserId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("queued_user_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("status");
 
                     b.Property<string>("Timestamp")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("timestamp");
 
                     b.Property<int?>("TotalCount")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("total_count");
 
                     b.HasKey("Id")
@@ -276,30 +268,30 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("Exception")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("exception");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("message");
 
                     b.Property<string>("ReportId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("report_id");
 
                     b.Property<int>("Success")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("success");
 
                     b.Property<string>("Timestamp")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("timestamp");
 
                     b.HasKey("Id")
@@ -315,91 +307,91 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<int>("Admin")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("admin");
 
                     b.Property<int>("Advanced")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("advanced");
 
                     b.Property<string>("AuthMethod")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("auth_method");
 
                     b.Property<string>("CacheKey")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("cache_key");
 
                     b.Property<int>("CanInvite")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("can_invite");
 
                     b.Property<int>("CanManage")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("can_manage");
 
                     b.Property<int>("CanManageHousehold")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("can_manage_household");
 
                     b.Property<int>("CanOrganize")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("can_organize");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Email")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("email");
 
                     b.Property<string>("FullName")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("full_name");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("LastReadAnnouncement")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("last_read_announcement");
 
                     b.Property<string>("LockedAt")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("locked_at");
 
                     b.Property<int>("LoginAttempts")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("login_attempts");
 
                     b.Property<string>("Password")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("password");
 
                     b.Property<int>("ShowAnnouncements")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("show_announcements");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("Username")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("username");
 
                     b.HasKey("Id")
@@ -407,8 +399,7 @@ namespace Mealie.Infrastructure.Data.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_users_email")
-                        .HasFilter("[email] IS NOT NULL");
+                        .HasDatabaseName("ix_users_email");
 
                     b.HasIndex("FullName")
                         .HasDatabaseName("ix_users_full_name");
@@ -421,8 +412,7 @@ namespace Mealie.Infrastructure.Data.Migrations
 
                     b.HasIndex("Username")
                         .IsUnique()
-                        .HasDatabaseName("ix_users_username")
-                        .HasFilter("[username] IS NOT NULL");
+                        .HasDatabaseName("ix_users_username");
 
                     b.ToTable("users", (string)null);
                 });
@@ -431,47 +421,47 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("description");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("LabelId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("label_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<int>("OnHand")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("on_hand");
 
                     b.Property<string>("PluralName")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("plural_name");
 
                     b.Property<string>("UnitId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("unit_id");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -493,17 +483,17 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("FoodId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("food_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.HasKey("Id")
@@ -519,51 +509,51 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("Abbreviation")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("abbreviation");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("description");
 
                     b.Property<int>("Fraction")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("fraction");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("PluralAbbreviation")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("plural_abbreviation");
 
                     b.Property<string>("PluralName")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("plural_name");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<int>("UseAbbreviation")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("use_abbreviation");
 
                     b.HasKey("Id")
@@ -579,17 +569,17 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("UnitId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("unit_id");
 
                     b.HasKey("Id")
@@ -605,32 +595,32 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("slug");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -646,52 +636,52 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("description");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Image")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("image");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<int>("Position")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("position");
 
                     b.Property<int>("Public")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("public");
 
                     b.Property<int>("RequireAllCategories")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("require_all_categories");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -710,31 +700,31 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("token");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -750,31 +740,31 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("Color")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("color");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -790,32 +780,32 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("slug");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -831,36 +821,36 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<int>("OnHand")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("on_hand");
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("slug");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -876,55 +866,55 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Date")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("date");
 
                     b.Property<string>("EntryType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("entry_type");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("RecipeId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("Text")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("title");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -952,47 +942,47 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Day")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasDefaultValue("unset")
                         .HasColumnName("day");
 
                     b.Property<string>("EntryType")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasDefaultValue("unset")
                         .HasColumnName("entry_type");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("QueryFilterString")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasDefaultValue("")
                         .HasColumnName("query_filter_string");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -1011,37 +1001,37 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -1063,58 +1053,58 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<int>("Checked")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("checked");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<int>("DisableAmount")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("disable_amount");
 
                     b.Property<string>("FoodId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("food_id");
 
                     b.Property<int>("IsFood")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("is_food");
 
                     b.Property<string>("LabelId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("label_id");
 
                     b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("note");
 
                     b.Property<int>("Position")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("position");
 
                     b.Property<decimal?>("Quantity")
-                        .HasColumnType("decimal(18,2)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("quantity");
 
                     b.Property<string>("ShoppingListId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("shopping_list_id");
 
                     b.Property<string>("UnitId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("unit_id");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -1139,29 +1129,29 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<decimal>("RecipeQuantity")
-                        .HasColumnType("decimal(18,2)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_quantity");
 
                     b.Property<string>("RecipeQuantityId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_quantity_id");
 
                     b.Property<decimal>("RecipeScale")
-                        .HasColumnType("decimal(18,2)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_scale");
 
                     b.Property<string>("ShoppingListItemId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("shopping_list_item_id");
 
                     b.HasKey("Id")
@@ -1176,25 +1166,61 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.ToTable("shopping_list_item_recipe_reference", (string)null);
                 });
 
+            modelBuilder.Entity("Mealie.Domain.Entities.Planning.ShoppingListLabel", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("LabelId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label_id");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("position");
+
+                    b.Property<string>("ShoppingListId")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("shopping_list_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_shopping_list_labels");
+
+                    b.HasIndex("LabelId")
+                        .HasDatabaseName("ix_shopping_list_labels_label_id");
+
+                    b.HasIndex("ShoppingListId")
+                        .HasDatabaseName("ix_shopping_list_labels_shopping_list_id");
+
+                    b.HasIndex("ShoppingListId", "Position")
+                        .HasDatabaseName("ix_shopping_list_labels_shopping_list_id_position");
+
+                    b.ToTable("shopping_list_labels", (string)null);
+                });
+
             modelBuilder.Entity("Mealie.Domain.Entities.Planning.ShoppingListRecipeReference", b =>
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<decimal>("RecipeScale")
-                        .HasColumnType("decimal(18,2)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_scale");
 
                     b.Property<string>("ShoppingListId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("shopping_list_id");
 
                     b.HasKey("Id")
@@ -1213,87 +1239,87 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CookTime")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("cook_time");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("description");
 
                     b.Property<int>("DisableAmount")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("disable_amount");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Image")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("image");
 
                     b.Property<int>("IsOcr")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("is_ocr");
 
                     b.Property<string>("LastMade")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("last_made");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("OrgUrl")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("org_url");
 
                     b.Property<string>("PerformTime")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("perform_time");
 
                     b.Property<string>("PrepTime")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("prep_time");
 
                     b.Property<int?>("Rating")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("rating");
 
                     b.Property<string>("RecipeYield")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_yield");
 
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("slug");
 
                     b.Property<string>("TotalTime")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("total_time");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -1316,27 +1342,27 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("Extension")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("extension");
 
                     b.Property<string>("Icon")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("icon");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.HasKey("Id")
@@ -1352,32 +1378,32 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("text");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -1396,48 +1422,48 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<int>("DisableAmount")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("disable_amount");
 
                     b.Property<string>("FoodId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("food_id");
 
                     b.Property<int>("IsFood")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("is_food");
 
                     b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("note");
 
                     b.Property<string>("OriginalText")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("original_text");
 
                     b.Property<int>("Position")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("position");
 
                     b.Property<decimal?>("Quantity")
-                        .HasColumnType("decimal(18,2)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("quantity");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("Title")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("title");
 
                     b.Property<string>("UnitId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("unit_id");
 
                     b.HasKey("Id")
@@ -1459,33 +1485,33 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("IngredientReferencesJson")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("ingredient_references");
 
                     b.Property<int>("Position")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("position");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("Summary")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("summary");
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("text");
 
                     b.Property<string>("Title")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("title");
 
                     b.HasKey("Id")
@@ -1501,22 +1527,22 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("Text")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("title");
 
                     b.HasKey("Id")
@@ -1532,26 +1558,26 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("ExpiresAt")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("expires_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.HasKey("Id")
@@ -1570,47 +1596,47 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("EventMessage")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("event_message");
 
                     b.Property<string>("EventType")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("event_type");
 
                     b.Property<string>("Image")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("image");
 
                     b.Property<string>("RecipeId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("Subject")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("subject");
 
                     b.Property<string>("Timestamp")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("timestamp");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -1626,61 +1652,61 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("BaseUrl")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("base_url");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("DefaultModel")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("default_model");
 
                     b.Property<int>("EnableImageServices")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(1)
                         .HasColumnName("enable_image_services");
 
                     b.Property<int>("EnableTranscriptionServices")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(1)
                         .HasColumnName("enable_transcription_services");
 
                     b.Property<string>("EncryptedApiKey")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("encrypted_api_key");
 
                     b.Property<int>("IsActive")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasDefaultValue(0)
                         .HasColumnName("is_active");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("ProjectId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("project_id");
 
                     b.Property<string>("ProviderType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("provider_type");
 
                     b.Property<string>("UpdatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id")
@@ -1696,41 +1722,41 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("ApprisUrl")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("appris_url");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<int>("Enabled")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("enabled");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -1749,30 +1775,30 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("FirstDayOfWeek")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("first_day_of_week");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<int>("PrivateGroup")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("private_group");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -1789,54 +1815,54 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("FirstDayOfWeek")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("first_day_of_week");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<int>("PrivateHousehold")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("private_household");
 
                     b.Property<string>("RecipeDisableAmount")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_disable_amount");
 
                     b.Property<string>("RecipeDisableComments")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_disable_comments");
 
                     b.Property<string>("RecipeLandscapeView")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_landscape_view");
 
                     b.Property<string>("RecipePublic")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_public");
 
                     b.Property<string>("RecipeShowAssets")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_show_assets");
 
                     b.Property<string>("RecipeShowNutrition")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_show_nutrition");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -1853,43 +1879,43 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("ActionType")
                         .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("nvarchar(16)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("action_type");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("title");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("Url")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("url");
 
                     b.HasKey("Id")
@@ -1908,38 +1934,38 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GroupId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Log")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("log");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("status");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.HasKey("Id")
@@ -1952,36 +1978,36 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CategorySystemPrompt")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("category_system_prompt");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<string>("DefaultParser")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasDefaultValue("nlp")
                         .HasColumnName("default_parser");
 
                     b.Property<string>("IngredientSystemPrompt")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("ingredient_system_prompt");
 
                     b.Property<string>("TagSystemPrompt")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("tag_system_prompt");
 
                     b.Property<string>("UpdatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id")
@@ -1994,49 +2020,49 @@ namespace Mealie.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("id");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("created_at");
 
                     b.Property<int>("Enabled")
-                        .HasColumnType("int")
+                        .HasColumnType("INTEGER")
                         .HasColumnName("enabled");
 
                     b.Property<string>("GroupId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_id");
 
                     b.Property<string>("HouseholdId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.Property<string>("Method")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("method");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("name");
 
                     b.Property<string>("ScheduledTime")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("scheduled_time");
 
                     b.Property<string>("UpdateAt")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("update_at");
 
                     b.Property<string>("Url")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("url");
 
                     b.HasKey("Id")
@@ -2054,11 +2080,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("RecipeUser", b =>
                 {
                     b.Property<string>("FavoriteRecipesId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("favorite_recipes_id");
 
                     b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("user_id");
 
                     b.HasKey("FavoriteRecipesId", "UserId")
@@ -2073,11 +2099,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("plan_rules_to_categories", b =>
                 {
                     b.Property<string>("group_plan_rule_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_plan_rule_id");
 
                     b.Property<string>("category_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("category_id");
 
                     b.HasKey("group_plan_rule_id", "category_id")
@@ -2092,11 +2118,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("plan_rules_to_households", b =>
                 {
                     b.Property<string>("group_plan_rule_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("group_plan_rule_id");
 
                     b.Property<string>("household_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("household_id");
 
                     b.HasKey("group_plan_rule_id", "household_id")
@@ -2111,11 +2137,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("plan_rules_to_tags", b =>
                 {
                     b.Property<string>("plan_rule_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("plan_rule_id");
 
                     b.Property<string>("tag_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("tag_id");
 
                     b.HasKey("plan_rule_id", "tag_id")
@@ -2130,11 +2156,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("recipes_to_categories", b =>
                 {
                     b.Property<string>("category_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("category_id");
 
                     b.Property<string>("recipe_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.HasKey("category_id", "recipe_id")
@@ -2149,11 +2175,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("recipes_to_tags", b =>
                 {
                     b.Property<string>("recipe_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("tag_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("tag_id");
 
                     b.HasKey("recipe_id", "tag_id")
@@ -2168,11 +2194,11 @@ namespace Mealie.Infrastructure.Data.Migrations
             modelBuilder.Entity("recipes_to_tools", b =>
                 {
                     b.Property<string>("recipe_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("recipe_id");
 
                     b.Property<string>("tool_id")
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("TEXT")
                         .HasColumnName("tool_id");
 
                     b.HasKey("recipe_id", "tool_id")
@@ -2189,14 +2215,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Organizers.Category", null)
                         .WithMany()
                         .HasForeignKey("CategoriesId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_to_categories_categories_categories_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Cookbook", null)
                         .WithMany()
                         .HasForeignKey("CookbookId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_to_categories_cookbooks_cookbook_id");
                 });
@@ -2206,14 +2232,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Organizers.Cookbook", null)
                         .WithMany()
                         .HasForeignKey("CookbookId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_to_tags_cookbooks_cookbook_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagsId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_to_tags_tags_tags_id");
                 });
@@ -2223,14 +2249,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Organizers.Cookbook", null)
                         .WithMany()
                         .HasForeignKey("CookbookId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_to_tools_cookbooks_cookbook_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.Tool", null)
                         .WithMany()
                         .HasForeignKey("ToolsId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_to_tools_tools_tools_id");
                 });
@@ -2240,7 +2266,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.User", "User")
                         .WithMany("ApiKeys")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_long_live_tokens_users_user_id");
 
@@ -2252,7 +2278,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Households")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_households_groups_group_id");
 
@@ -2264,7 +2290,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_reports_groups_group_id");
 
@@ -2276,7 +2302,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Report", "Report")
                         .WithMany("Entries")
                         .HasForeignKey("ReportId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_report_entries_reports_report_id");
 
@@ -2295,6 +2321,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithMany("Users")
                         .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_users_households_household_id");
 
                     b.Navigation("Group");
@@ -2307,18 +2334,20 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Foods")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_ingredient_foods_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.MultiPurposeLabel", "Label")
                         .WithMany("Foods")
                         .HasForeignKey("LabelId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_ingredient_foods_labels_label_id");
 
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientUnit", "Unit")
                         .WithMany("Foods")
                         .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_ingredient_foods_units_unit_id");
 
                     b.Navigation("Group");
@@ -2333,7 +2362,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientFood", "Food")
                         .WithMany("Aliases")
                         .HasForeignKey("FoodId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_ingredient_foods_aliases_foods_food_id");
 
@@ -2345,7 +2374,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Units")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_ingredient_units_groups_group_id");
 
@@ -2357,7 +2386,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientUnit", "Unit")
                         .WithMany("Aliases")
                         .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_ingredient_units_aliases_units_unit_id");
 
@@ -2369,7 +2398,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Categories")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_categories_groups_group_id");
 
@@ -2381,7 +2410,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Cookbooks")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_cookbooks_groups_group_id");
 
@@ -2402,7 +2431,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("InviteTokens")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_invite_tokens_groups_group_id");
 
@@ -2414,7 +2443,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Labels")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_multi_purpose_labels_groups_group_id");
 
@@ -2426,7 +2455,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Tags")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_tags_groups_group_id");
 
@@ -2438,7 +2467,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Tools")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_tools_groups_group_id");
 
@@ -2450,7 +2479,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("MealPlans")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_group_meal_plans_groups_group_id");
 
@@ -2464,6 +2493,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany()
                         .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_group_meal_plans_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.User", "User")
@@ -2487,7 +2517,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_group_meal_plan_rules_groups_group_id");
 
@@ -2499,7 +2529,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("ShoppingLists")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_shopping_lists_groups_group_id");
 
@@ -2529,23 +2559,26 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientFood", "Food")
                         .WithMany()
                         .HasForeignKey("FoodId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_shopping_list_items_foods_food_id");
 
                     b.HasOne("Mealie.Domain.Entities.Organizers.MultiPurposeLabel", "Label")
                         .WithMany("ShoppingItems")
                         .HasForeignKey("LabelId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_shopping_list_items_labels_label_id");
 
                     b.HasOne("Mealie.Domain.Entities.Planning.ShoppingList", "ShoppingList")
                         .WithMany("Items")
                         .HasForeignKey("ShoppingListId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_shopping_list_items_shopping_lists_shopping_list_id");
 
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientUnit", "Unit")
                         .WithMany()
                         .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_shopping_list_items_units_unit_id");
 
                     b.Navigation("Food");
@@ -2562,14 +2595,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany()
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_shopping_list_item_recipe_reference_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Planning.ShoppingListItem", "ShoppingListItem")
                         .WithMany("RecipeReferences")
                         .HasForeignKey("ShoppingListItemId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_shopping_list_item_recipe_reference_shopping_list_items_shopping_list_item_id");
 
@@ -2578,19 +2611,40 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.Navigation("ShoppingListItem");
                 });
 
+            modelBuilder.Entity("Mealie.Domain.Entities.Planning.ShoppingListLabel", b =>
+                {
+                    b.HasOne("Mealie.Domain.Entities.Organizers.MultiPurposeLabel", "Label")
+                        .WithMany("ShoppingListLabels")
+                        .HasForeignKey("LabelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_list_labels_labels_label_id");
+
+                    b.HasOne("Mealie.Domain.Entities.Planning.ShoppingList", "ShoppingList")
+                        .WithMany("Labels")
+                        .HasForeignKey("ShoppingListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_shopping_list_labels_shopping_lists_shopping_list_id");
+
+                    b.Navigation("Label");
+
+                    b.Navigation("ShoppingList");
+                });
+
             modelBuilder.Entity("Mealie.Domain.Entities.Planning.ShoppingListRecipeReference", b =>
                 {
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany()
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_shopping_list_recipe_reference_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Planning.ShoppingList", "ShoppingList")
                         .WithMany("RecipeReferences")
                         .HasForeignKey("ShoppingListId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_shopping_list_recipe_reference_shopping_lists_shopping_list_id");
 
@@ -2604,7 +2658,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Recipes")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipes_groups_group_id");
 
@@ -2618,35 +2672,35 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.OwnsOne("Mealie.Domain.Entities.Recipes.Nutrition", "Nutrition", b1 =>
                         {
                             b1.Property<string>("RecipeId")
-                                .HasColumnType("nvarchar(450)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("id");
 
                             b1.Property<string>("Calories")
-                                .HasColumnType("nvarchar(max)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("nutrition_calories");
 
                             b1.Property<string>("CarbohydrateContent")
-                                .HasColumnType("nvarchar(max)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("nutrition_carbohydrate_content");
 
                             b1.Property<string>("FatContent")
-                                .HasColumnType("nvarchar(max)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("nutrition_fat_content");
 
                             b1.Property<string>("FiberContent")
-                                .HasColumnType("nvarchar(max)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("nutrition_fiber_content");
 
                             b1.Property<string>("ProteinContent")
-                                .HasColumnType("nvarchar(max)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("nutrition_protein_content");
 
                             b1.Property<string>("SodiumContent")
-                                .HasColumnType("nvarchar(max)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("nutrition_sodium_content");
 
                             b1.Property<string>("SugarContent")
-                                .HasColumnType("nvarchar(max)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("nutrition_sugar_content");
 
                             b1.HasKey("RecipeId");
@@ -2661,35 +2715,35 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.OwnsOne("Mealie.Domain.Entities.Recipes.RecipeSettings", "Settings", b1 =>
                         {
                             b1.Property<string>("RecipeId")
-                                .HasColumnType("nvarchar(450)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("id");
 
                             b1.Property<int>("DisableAmount")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("settings_disable_amount");
 
                             b1.Property<int>("DisableComments")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("settings_disable_comments");
 
                             b1.Property<int>("LandscapeView")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("settings_landscape_view");
 
                             b1.Property<int>("Locked")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("settings_locked");
 
                             b1.Property<int>("Public")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("settings_public");
 
                             b1.Property<int>("ShowAssets")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("settings_show_assets");
 
                             b1.Property<int>("ShowNutrition")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("settings_show_nutrition");
 
                             b1.HasKey("RecipeId");
@@ -2715,7 +2769,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("Assets")
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_assets_recipes_recipe_id");
 
@@ -2727,14 +2781,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("Comments")
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_comments_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.User", "User")
                         .WithMany("Comments")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_comments_users_user_id");
 
@@ -2748,18 +2802,20 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientFood", "Food")
                         .WithMany()
                         .HasForeignKey("FoodId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_recipes_ingredients_ingredient_foods_food_id");
 
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("RecipeIngredients")
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipes_ingredients_recipes_recipe_id");
 
                     b.HasOne("Mealie.Domain.Entities.Ingredients.IngredientUnit", "Unit")
                         .WithMany()
                         .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_recipes_ingredients_ingredient_units_unit_id");
 
                     b.Navigation("Food");
@@ -2774,7 +2830,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("RecipeInstructions")
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_instructions_recipes_recipe_id");
 
@@ -2786,7 +2842,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("Notes")
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_notes_recipes_recipe_id");
 
@@ -2798,14 +2854,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_share_tokens_groups_group_id");
 
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("ShareTokens")
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_share_tokens_recipes_recipe_id");
 
@@ -2819,7 +2875,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", "Recipe")
                         .WithMany("TimelineEvents")
                         .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_timeline_events_recipes_recipe_id");
 
@@ -2831,7 +2887,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_group_events_notifiers_groups_group_id");
 
@@ -2845,43 +2901,43 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.OwnsOne("Mealie.Domain.Entities.Settings.EventNotifierOptions", "Options", b1 =>
                         {
                             b1.Property<string>("EventNotifierId")
-                                .HasColumnType("nvarchar(450)")
+                                .HasColumnType("TEXT")
                                 .HasColumnName("id");
 
                             b1.Property<int>("MealplanEntryCreated")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("mealplan_entry_created");
 
                             b1.Property<int>("RecipeCreated")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("recipe_created");
 
                             b1.Property<int>("RecipeDeleted")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("recipe_deleted");
 
                             b1.Property<int>("RecipeUpdated")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("recipe_updated");
 
                             b1.Property<int>("ShoppingListCreated")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("shopping_list_created");
 
                             b1.Property<int>("ShoppingListDeleted")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("shopping_list_deleted");
 
                             b1.Property<int>("ShoppingListUpdated")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("shopping_list_updated");
 
                             b1.Property<int>("TestMessage")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("test_message");
 
                             b1.Property<int>("UserSignup")
-                                .HasColumnType("int")
+                                .HasColumnType("INTEGER")
                                 .HasColumnName("user_signup");
 
                             b1.HasKey("EventNotifierId")
@@ -2906,7 +2962,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithOne("Preferences")
                         .HasForeignKey("Mealie.Domain.Entities.Settings.GroupPreferences", "GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_group_preferences_groups_group_id");
 
@@ -2918,7 +2974,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Household", "Household")
                         .WithOne("Preferences")
                         .HasForeignKey("Mealie.Domain.Entities.Settings.HouseholdPreferences", "HouseholdId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_household_preferences_households_household_id");
 
@@ -2930,7 +2986,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("RecipeActions")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipe_actions_groups_group_id");
 
@@ -2951,7 +3007,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Core.Group", "Group")
                         .WithMany("Webhooks")
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_webhook_urls_groups_group_id");
 
@@ -2972,14 +3028,14 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
                         .WithMany()
                         .HasForeignKey("FavoriteRecipesId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_users_to_recipes_recipes_favorite_recipes_id");
 
                     b.HasOne("Mealie.Domain.Entities.Core.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_users_to_recipes_users_user_id");
                 });
@@ -2996,7 +3052,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Planning.MealPlanRule", null)
                         .WithMany()
                         .HasForeignKey("group_plan_rule_id")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_plan_rules_to_categories_group_meal_plan_rules_group_plan_rule_id");
                 });
@@ -3006,7 +3062,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Planning.MealPlanRule", null)
                         .WithMany()
                         .HasForeignKey("group_plan_rule_id")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_plan_rules_to_households_group_meal_plan_rules_group_plan_rule_id");
 
@@ -3023,7 +3079,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Planning.MealPlanRule", null)
                         .WithMany()
                         .HasForeignKey("plan_rule_id")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_plan_rules_to_tags_group_meal_plan_rules_plan_rule_id");
 
@@ -3047,7 +3103,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
                         .WithMany()
                         .HasForeignKey("recipe_id")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipes_to_categories_recipes_recipe_id");
                 });
@@ -3057,7 +3113,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
                         .WithMany()
                         .HasForeignKey("recipe_id")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipes_to_tags_recipes_recipe_id");
 
@@ -3074,7 +3130,7 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.HasOne("Mealie.Domain.Entities.Recipes.Recipe", null)
                         .WithMany()
                         .HasForeignKey("recipe_id")
-                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_recipes_to_tools_recipes_recipe_id");
 
@@ -3169,11 +3225,15 @@ namespace Mealie.Infrastructure.Data.Migrations
                     b.Navigation("Foods");
 
                     b.Navigation("ShoppingItems");
+
+                    b.Navigation("ShoppingListLabels");
                 });
 
             modelBuilder.Entity("Mealie.Domain.Entities.Planning.ShoppingList", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Labels");
 
                     b.Navigation("RecipeReferences");
                 });
