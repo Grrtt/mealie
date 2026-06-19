@@ -13,9 +13,9 @@ public record GetShoppingListsQuery(Guid HouseholdId, PaginationParams Paginatio
         var db = services.Db;
         var query = db.ShoppingLists.IgnoreQueryFilters().Where(s => s.HouseholdId == HouseholdId);
         var total = await query.CountAsync(ct);
-        var items = await query.OrderBy(s => s.Name)
-            .Skip(Pagination.Skip).Take(Pagination.PerPage)
-            .Select(s => new ShoppingListSummaryResponse
+        var paged = query.OrderBy(s => s.Name).Skip(Pagination.Skip);
+        if (Pagination.PerPage > 0) paged = paged.Take(Pagination.PerPage);
+        var items = await paged.Select(s => new ShoppingListSummaryResponse
             {
                 Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
                 UserId = s.UserId, CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt
@@ -24,7 +24,7 @@ public record GetShoppingListsQuery(Guid HouseholdId, PaginationParams Paginatio
         return new PaginatedResponse<ShoppingListSummaryResponse>
         {
             Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / Pagination.PerPage), Items = items
+            TotalPages = Pagination.PerPage > 0 ? (int)Math.Ceiling((double)total / Pagination.PerPage) : 1, Items = items
         };
     }
 }

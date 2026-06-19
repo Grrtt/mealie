@@ -14,9 +14,9 @@ public record GetCookbooksQuery(Guid HouseholdId, PaginationParams Pagination)
         var db = services.Db;
         var query = db.Cookbooks.IgnoreQueryFilters().Where(c => c.HouseholdId == HouseholdId);
         var total = await query.CountAsync(ct);
-        var rawItems = await query.OrderBy(c => c.Position).ThenBy(c => c.Name)
-            .Skip(Pagination.Skip).Take(Pagination.PerPage)
-            .ToListAsync(ct);
+        var pagedCookbooks = query.OrderBy(c => c.Position).ThenBy(c => c.Name).Skip(Pagination.Skip);
+        if (Pagination.PerPage > 0) pagedCookbooks = pagedCookbooks.Take(Pagination.PerPage);
+        var rawItems = await pagedCookbooks.ToListAsync(ct);
         var items = rawItems.Select(c => CookbookMappings.MapToResponse(c)).ToList();
         return new PaginatedResponse<CookbookResponse>
         {

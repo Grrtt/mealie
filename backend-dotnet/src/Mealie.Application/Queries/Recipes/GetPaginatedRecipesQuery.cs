@@ -138,8 +138,9 @@ public record GetPaginatedRecipesQuery(Guid HouseholdId, PaginationParams Pagina
             _ => query.OrderByDescending(r => r.CreatedAt)
         };
 
-        var efItems = await ordered2.Skip(Pagination.Skip).Take(Pagination.PerPage)
-            .Select(r => RecipeCommandMappings.MapToSummary(r)).ToListAsync(ct);
+        var paged = ordered2.Skip(Pagination.Skip);
+        if (Pagination.PerPage > 0) paged = paged.Take(Pagination.PerPage);
+        var efItems = await paged.Select(r => RecipeCommandMappings.MapToSummary(r)).ToListAsync(ct);
         return new PaginatedResponse<RecipeSummaryResponse>
         {
             Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,

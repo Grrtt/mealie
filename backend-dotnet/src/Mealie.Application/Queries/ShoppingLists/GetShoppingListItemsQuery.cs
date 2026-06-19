@@ -21,13 +21,13 @@ public record GetShoppingListItemsQuery(Guid HouseholdId, PaginationParams Pagin
         }
 
         var total = await query.CountAsync(ct);
-        var items = await query.OrderByDescending(i => i.UpdateAt).ThenBy(i => i.Position)
-            .Skip(Pagination.Skip).Take(Pagination.PerPage)
-            .ToListAsync(ct);
+        var paged = query.OrderByDescending(i => i.UpdateAt).ThenBy(i => i.Position).Skip(Pagination.Skip);
+        if (Pagination.PerPage > 0) paged = paged.Take(Pagination.PerPage);
+        var items = await paged.ToListAsync(ct);
         return new PaginatedResponse<ShoppingListItemResponse>
         {
             Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / Pagination.PerPage),
+            TotalPages = Pagination.PerPage > 0 ? (int)Math.Ceiling((double)total / Pagination.PerPage) : 1,
             Items = items.Select(ShoppingListMappingHelper.MapItemToResponse).ToList()
         };
     }
