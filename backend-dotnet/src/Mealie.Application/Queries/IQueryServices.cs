@@ -1,6 +1,7 @@
 using Mealie.Application.Contracts.Search;
 using Mealie.Application.Services.ImageScrape;
 using Mealie.Application.Services.Parser;
+using Mealie.Application.Services.Webhooks;
 using Mealie.Infrastructure.Admin;
 using NlpParserService = Mealie.Application.Services.IngredientParser.IngredientParserService;
 using Mealie.Infrastructure.Auth;
@@ -32,4 +33,5 @@ public interface IQueryServices
     IWebhookDeliveryService WebhookDeliveryService { get; }
     IRecipeSearchIndex SearchIndex { get; }
     IApiKeyEncryptionService EncryptionService { get; }
+    IEventNotifierService NotifierService { get; }
 }
