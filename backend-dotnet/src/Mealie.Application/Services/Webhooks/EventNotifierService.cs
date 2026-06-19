@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Mealie.Application.Dtos.Webhooks;
 using Mealie.Domain.Entities.Settings;
 using Mealie.Infrastructure.Data;
@@ -6,7 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Mealie.Application.Services.Webhooks;
 
-public class EventNotifierService(ApplicationDbContext db, ILogger<EventNotifierService> logger) : IEventNotifierService
+public class EventNotifierService(
+    ApplicationDbContext db,
+    ILogger<EventNotifierService> logger,
+    IHttpClientFactory httpClientFactory) : IEventNotifierService
 {
     public async Task<IList<EventNotifierResponse>> GetAllAsync(Guid householdId, CancellationToken ct = default)
     {
@@ -76,8 +80,33 @@ public class EventNotifierService(ApplicationDbContext db, ILogger<EventNotifier
             return;
         }
 
-        logger.LogInformation("Test notification sent to {ApprisUrl}", notifier.ApprisUrl);
-        // Appris URL notification would be implemented here with HTTP client
+        if (!notifier.ApprisUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !notifier.ApprisUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogInformation("Skipping non-HTTP Apprise URL for test: {Url}", notifier.ApprisUrl);
+            return;
+        }
+
+        var payload = new { event_type = "test", timestamp = DateTime.UtcNow.ToString("O") };
+        var httpClient = httpClientFactory.CreateClient();
+
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync(notifier.ApprisUrl, payload, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                logger.LogInformation("Test notification sent successfully to {ApprisUrl}", notifier.ApprisUrl);
+            }
+            else
+            {
+                logger.LogWarning("Test notification failed for {ApprisUrl}. Status={Status}",
+                    notifier.ApprisUrl, (int)response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Test notification exception for {ApprisUrl}", notifier.ApprisUrl);
+        }
     }
 
     private static EventNotifierResponse MapToResponse(EventNotifier e)
