@@ -15,14 +15,15 @@ public static class DefaultAiParserPrompts
                                      """;
 
     public const string Category = """
-                                    Classify this recipe into the appropriate standardized categories.
-                                    Choose only from: Breakfast, Lunch, Dinner, Snack, Side, Gluten-Free.
-                                    Consider the recipe name, description, and ingredients to determine what category or categories apply.
-                                    Add Gluten-Free when the recipe is explicitly gluten-free or the ingredient list clearly indicates it is gluten-free.
-                                    The website's existing categories are shown for context — do not repeat them, only add clearly
-                                    applicable standardized categories that are missing.
-                                    Return only categories that clearly apply. If none apply, return an empty array.
-                                    """;
+                                     Classify this recipe into the appropriate standardized categories.
+                                     Choose only from: Breakfast, Lunch, Dinner, Snack, Side, Gluten-Free.
+                                     Consider the recipe name, description, and ingredients to determine what category or categories apply.
+                                     You must choose at least one additional category when there is a clear fit beyond the website's existing categories.
+                                     Add Gluten-Free when the recipe is explicitly gluten-free or the ingredient list clearly indicates it is gluten-free.
+                                     The website's existing categories are shown for context — do not repeat them, only add clearly
+                                     applicable standardized categories that are missing.
+                                     Return only categories that clearly apply. If none apply, return an empty array.
+                                     """;
 
     public const string Tag = """
                               Suggest cuisine and culture tags for this recipe.

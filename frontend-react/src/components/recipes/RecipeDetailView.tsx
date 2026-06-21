@@ -47,7 +47,7 @@ import {
 } from "@/features/recipes/api";
 import { formatRecipeDuration } from "@/features/recipes/format-duration";
 import { fetchGroupRecipeActions, triggerGroupRecipeAction } from "@/features/settings/api";
-import { addRecipeToShoppingList, createOrSelectShoppingList, fetchShoppingLists } from "@/features/shopping/fromRecipe";
+import { addRecipeToShoppingList, createShoppingListWithRecipe, fetchShoppingLists } from "@/features/shopping/fromRecipe";
 import { apiClient } from "@/lib/api/client";
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
 import { RecipeImage } from "@/components/recipes/RecipeImage";
@@ -514,17 +514,33 @@ export function RecipeDetailView({ currentUser, groupSlug, onRecipeRefresh, reci
     setShoppingLoading(true);
     setActionError(null);
     try {
-      const listId = await createOrSelectShoppingList(selectedListId || null, newListName);
-
-      if (!listId) {
-        throw new Error("Choose an existing shopping list or provide a new list name.");
+      if (!recipe.id) {
+        throw new Error("Recipe is missing an id.");
       }
 
-      await addRecipeToShoppingList(listId, recipe, scale);
+      let listId = selectedListId;
+
+      if (listId) {
+        await addRecipeToShoppingList(listId, recipe, scale);
+      }
+      else {
+        if (!newListName.trim()) {
+          throw new Error("Choose an existing shopping list or provide a new list name.");
+        }
+
+        const created = await createShoppingListWithRecipe({
+          name: newListName.trim(),
+          recipeId: recipe.id,
+          recipeScale: scale,
+        });
+        listId = created.id;
+      }
+
       setActionStatus("Recipe added to shopping list");
       setShoppingDialogOpen(false);
       setSelectedListId("");
       setNewListName("");
+      await navigate({ href: `/shopping-lists/${listId}` });
     } catch (shoppingError) {
       setActionError(shoppingError instanceof Error ? shoppingError.message : "Unable to add recipe to shopping list");
     } finally {

@@ -16,18 +16,26 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
     {
         var query = db.ShoppingLists.IgnoreQueryFilters().Where(s => s.HouseholdId == householdId);
         var total = await query.CountAsync(ct);
-        var items = await query.OrderBy(s => s.Name)
-            .Skip(pagination.Skip).Take(pagination.PerPage)
+        var pagedQuery = query.OrderBy(s => s.Name);
+        var itemsQuery = pagination.PerPage > 0
+            ? pagedQuery.Skip(pagination.Skip).Take(pagination.PerPage)
+            : pagedQuery;
+        var items = await itemsQuery
             .Select(s => new ShoppingListSummaryResponse
             {
-                Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId, CreatedAt = s.CreatedAt,
-                UpdateAt = s.UpdateAt
+                Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
+                UserId = s.UserId, RecipeReferenceCount = s.RecipeReferences.Count,
+                CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt
             })
             .ToListAsync(ct);
+        var perPage = pagination.PerPage > 0 ? pagination.PerPage : Math.Max(total, 1);
         return new PaginatedResponse<ShoppingListSummaryResponse>
         {
-            Page = pagination.Page, PerPage = pagination.PerPage, Total = total,
-            TotalPages = (int)Math.Ceiling((double)total / pagination.PerPage), Items = items
+            Page = pagination.PerPage > 0 ? pagination.Page : 1,
+            PerPage = perPage,
+            Total = total,
+            TotalPages = perPage > 0 ? (int)Math.Ceiling((double)total / perPage) : 1,
+            Items = items
         };
     }
 
@@ -90,6 +98,9 @@ public class ShoppingListService(ApplicationDbContext db, IMediator mediator) : 
     public async Task<bool> DeleteAsync(Guid householdId, Guid id, CancellationToken ct = default)
     {
         var list = await db.ShoppingLists.IgnoreQueryFilters()
+            .Include(s => s.RecipeReferences)
+            .Include(s => s.Items)
+            .ThenInclude(i => i.RecipeReferences)
             .FirstOrDefaultAsync(s => s.HouseholdId == householdId && s.Id == id, ct);
         if (list is null)
         {

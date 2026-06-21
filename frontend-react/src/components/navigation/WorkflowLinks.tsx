@@ -9,8 +9,14 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useNavigate } from "@tanstack/react-router";
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/dialogs";
-import { addRecipeToShoppingList, createOrSelectShoppingList, fetchShoppingLists } from "@/features/shopping/fromRecipe";
-import { addMealPlanToShoppingList } from "@/features/mealplan/toShoppingList";
+import {
+  addRecipeToShoppingList,
+  addRecipesToShoppingList,
+  collectMealPlanRecipeRefs,
+  createShoppingList,
+  createShoppingListWithRecipe,
+  fetchShoppingLists,
+} from "@/features/shopping/fromRecipe";
 import { createMealPlanEntry, formatMealPlanDate } from "@/features/mealplan/actions";
 import type { PlanEntryType, ReadPlanEntry, Recipe, ShoppingListSummary } from "@/lib/api/contracts";
 
@@ -64,25 +70,58 @@ export function WorkflowLinks({ groupSlug, recipe, mealPlanEntries = [] }: Props
     setError(null);
 
     try {
-      const listId = await createOrSelectShoppingList(selectedListId || null, newListName);
-
-      if (!listId) {
-        throw new Error("Choose an existing shopping list or provide a new list name.");
-      }
+      let listId = selectedListId;
 
       if (shoppingDialogMode === "recipe") {
         if (!recipe) throw new Error("Recipe details are unavailable.");
-        await addRecipeToShoppingList(listId, recipe);
+        if (!recipe.id) throw new Error("Recipe is missing an id.");
+
+        if (listId) {
+          await addRecipeToShoppingList(listId, recipe);
+        }
+        else {
+          if (!newListName.trim()) {
+            throw new Error("Choose an existing shopping list or provide a new list name.");
+          }
+
+          const created = await createShoppingListWithRecipe({
+            name: newListName.trim(),
+            recipeId: recipe.id,
+          });
+          listId = created.id;
+        }
+
         setStatus("Recipe added to shopping list");
       }
       else if (shoppingDialogMode === "planner") {
-        await addMealPlanToShoppingList(listId, mealPlanEntries);
+        const recipes = collectMealPlanRecipeRefs(mealPlanEntries);
+        if (!recipes.length) {
+          throw new Error("There are no recipe-backed meal plan entries in this range.");
+        }
+
+        if (listId) {
+          await addRecipesToShoppingList(listId, recipes);
+        }
+        else {
+          if (!newListName.trim()) {
+            throw new Error("Choose an existing shopping list or provide a new list name.");
+          }
+
+          const created = await createShoppingList({ name: newListName.trim() });
+          listId = created.id;
+          await addRecipesToShoppingList(listId, recipes);
+        }
+
         setStatus("Planned meals added to shopping list");
+      }
+      else {
+        throw new Error("Choose a shopping list action.");
       }
 
       setShoppingDialogMode(null);
       setSelectedListId("");
       setNewListName("");
+      await navigate({ href: `/shopping-lists/${listId}` });
     }
     catch (shoppingError) {
       setError(shoppingError instanceof Error ? shoppingError.message : "Unable to complete shopping list action");

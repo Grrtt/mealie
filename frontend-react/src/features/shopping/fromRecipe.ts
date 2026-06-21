@@ -12,6 +12,45 @@ import type {
   ShoppingListUpdate,
 } from "@/lib/api/contracts";
 
+type DotnetShoppingListItemResponse = {
+  id: string;
+  note?: string | null;
+  isFood: boolean;
+  checked: boolean;
+  disableAmount: boolean;
+  quantity?: number | null;
+  shoppingListId: string;
+  unitId?: string | null;
+  foodId?: string | null;
+  labelId?: string | null;
+  position: number;
+  unitName?: string | null;
+  foodName?: string | null;
+  createdAt?: string | null;
+  updateAt?: string | null;
+};
+
+type DotnetShoppingListResponse = {
+  id: string;
+  name?: string | null;
+  groupId: string;
+  householdId: string;
+  createdAt?: string | null;
+  updateAt?: string | null;
+  items?: DotnetShoppingListItemResponse[];
+};
+
+type DotnetShoppingListSummaryResponse = {
+  id: string;
+  name?: string | null;
+  groupId: string;
+  householdId: string;
+  userId: string;
+  recipeReferenceCount?: number;
+  createdAt?: string | null;
+  updateAt?: string | null;
+};
+
 function toQuery(params: Record<string, string | number | boolean | undefined | null>) {
   const search = new URLSearchParams();
 
@@ -24,8 +63,94 @@ function toQuery(params: Record<string, string | number | boolean | undefined | 
   return query ? `?${query}` : "";
 }
 
+function isDotnetShoppingListResponse(raw: ShoppingListOut | DotnetShoppingListResponse): raw is DotnetShoppingListResponse {
+  return "items" in raw || "updateAt" in raw;
+}
+
+function normalizeFood(raw: DotnetShoppingListItemResponse): ShoppingListItemOut["food"] {
+  if (!raw.foodId || !raw.foodName) return null;
+
+  return {
+    id: raw.foodId,
+    name: raw.foodName,
+  };
+}
+
+function normalizeUnit(raw: DotnetShoppingListItemResponse): ShoppingListItemOut["unit"] {
+  if (!raw.unitId || !raw.unitName) return null;
+
+  return {
+    id: raw.unitId,
+    name: raw.unitName,
+  };
+}
+
+function normalizeShoppingList(raw: ShoppingListOut | DotnetShoppingListResponse): ShoppingListOut {
+  if (!isDotnetShoppingListResponse(raw)) {
+    return raw;
+  }
+
+  return {
+    id: raw.id,
+    name: raw.name,
+    groupId: raw.groupId,
+    householdId: raw.householdId,
+    userId: "",
+    createdAt: raw.createdAt,
+    updatedAt: raw.updateAt,
+    listItems: (raw.items ?? []).map((item): ShoppingListItemOut => ({
+      id: item.id,
+      shoppingListId: item.shoppingListId,
+      groupId: raw.groupId,
+      householdId: raw.householdId,
+      checked: item.checked,
+      position: item.position,
+      note: item.note,
+      display: item.foodName ?? item.note ?? "Shopping list item",
+      quantity: item.quantity ?? undefined,
+      foodId: item.foodId,
+      unitId: item.unitId,
+      labelId: item.labelId,
+      food: normalizeFood(item),
+      unit: normalizeUnit(item),
+      createdAt: item.createdAt,
+      updatedAt: item.updateAt,
+    })),
+    recipeReferences: [],
+    labelSettings: [],
+  };
+}
+
+function isDotnetShoppingListSummary(raw: ShoppingListSummary | DotnetShoppingListSummaryResponse): raw is DotnetShoppingListSummaryResponse {
+  return "recipeReferenceCount" in raw || "updateAt" in raw;
+}
+
+function normalizeShoppingListSummary(raw: ShoppingListSummary | DotnetShoppingListSummaryResponse): ShoppingListSummary {
+  if (!isDotnetShoppingListSummary(raw)) {
+    return raw;
+  }
+
+  return {
+    id: raw.id,
+    name: raw.name,
+    groupId: raw.groupId,
+    householdId: raw.householdId,
+    userId: raw.userId,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updateAt,
+    recipeReferences: Array.from({ length: raw.recipeReferenceCount ?? 0 }, () => ({
+      id: "",
+      shoppingListId: raw.id,
+      recipeId: "",
+      recipeQuantity: 0,
+      recipe: {},
+    })),
+    labelSettings: [],
+  };
+}
+
 export async function fetchShoppingLists() {
-  return await apiClient.get<PaginationData<ShoppingListSummary>>(
+  const response = await apiClient.get<PaginationData<ShoppingListSummary | DotnetShoppingListSummaryResponse>>(
     `/api/households/shopping/lists${toQuery({
       page: 1,
       perPage: -1,
@@ -33,10 +158,16 @@ export async function fetchShoppingLists() {
       orderDirection: "asc",
     })}`,
   );
+
+  return {
+    ...response,
+    items: response.items.map(normalizeShoppingListSummary),
+  };
 }
 
 export async function fetchShoppingList(id: string) {
-  return await apiClient.get<ShoppingListOut>(`/api/households/shopping/lists/${id}`);
+  const response = await apiClient.get<ShoppingListOut | DotnetShoppingListResponse>(`/api/households/shopping/lists/${id}`);
+  return normalizeShoppingList(response);
 }
 
 export const shoppingListsQueryOptions = queryOptions({
@@ -52,11 +183,22 @@ export function shoppingListQueryOptions(id: string) {
 }
 
 export async function createShoppingList(payload: ShoppingListCreate) {
-  return await apiClient.post<ShoppingListOut>("/api/households/shopping/lists", payload);
+  const response = await apiClient.post<ShoppingListOut | DotnetShoppingListResponse>("/api/households/shopping/lists", payload);
+  return normalizeShoppingList(response);
+}
+
+export async function createShoppingListWithRecipe(payload: { name: string; recipeId: string; recipeScale?: number }) {
+  const response = await apiClient.post<ShoppingListOut | DotnetShoppingListResponse>("/api/households/shopping/lists/with-recipe", {
+    name: payload.name,
+    recipeId: payload.recipeId,
+    recipeIncrementQuantity: payload.recipeScale ?? 1,
+  });
+  return normalizeShoppingList(response);
 }
 
 export async function updateShoppingList(id: string, payload: ShoppingListUpdate) {
-  return await apiClient.put<ShoppingListOut>(`/api/households/shopping/lists/${id}`, payload);
+  const response = await apiClient.put<ShoppingListOut | DotnetShoppingListResponse>(`/api/households/shopping/lists/${id}`, payload);
+  return normalizeShoppingList(response);
 }
 
 export async function deleteShoppingList(id: string) {
@@ -77,20 +219,22 @@ export async function deleteShoppingListItems(items: Array<Pick<ShoppingListItem
 }
 
 export async function addRecipesToShoppingList(listId: string, recipes: Array<{ recipeId: string; recipeScale?: number }>) {
-  return await apiClient.post<ShoppingListOut>(
+  const response = await apiClient.post<ShoppingListOut | DotnetShoppingListResponse>(
     `/api/households/shopping/lists/${listId}/recipe`,
     recipes.map(recipe => ({
       recipeId: recipe.recipeId,
       recipeIncrementQuantity: recipe.recipeScale ?? 1,
     })),
   );
+  return normalizeShoppingList(response);
 }
 
 export async function removeRecipeFromShoppingList(listId: string, recipeId: string, recipeDecrementQuantity = 1) {
-  return await apiClient.post<ShoppingListOut>(
+  const response = await apiClient.post<ShoppingListOut | DotnetShoppingListResponse>(
     `/api/households/shopping/lists/${listId}/recipe/${recipeId}/delete`,
     { recipeDecrementQuantity },
   );
+  return normalizeShoppingList(response);
 }
 
 export async function createOrSelectShoppingList(listId: string | null, newListName: string) {

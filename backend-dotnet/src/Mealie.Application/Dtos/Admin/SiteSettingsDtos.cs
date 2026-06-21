@@ -17,6 +17,15 @@ public class SiteSettingsResponse
 
     /// <summary>Custom system prompt for AI tag assignment. Null = use built-in default.</summary>
     public string? TagSystemPrompt { get; set; }
+
+    /// <summary>Built-in default ingredient system prompt shown when no custom prompt is set.</summary>
+    public string DefaultIngredientSystemPrompt { get; set; } = string.Empty;
+
+    /// <summary>Built-in default category system prompt shown when no custom prompt is set.</summary>
+    public string DefaultCategorySystemPrompt { get; set; } = string.Empty;
+
+    /// <summary>Built-in default tag system prompt shown when no custom prompt is set.</summary>
+    public string DefaultTagSystemPrompt { get; set; } = string.Empty;
 }
 
 public class UpdateSiteSettingsRequest

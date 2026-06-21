@@ -13,18 +13,26 @@ public record GetShoppingListsQuery(Guid HouseholdId, PaginationParams Paginatio
         var db = services.Db;
         var query = db.ShoppingLists.IgnoreQueryFilters().Where(s => s.HouseholdId == HouseholdId);
         var total = await query.CountAsync(ct);
-        var paged = query.OrderBy(s => s.Name).Skip(Pagination.Skip);
-        if (Pagination.PerPage > 0) paged = paged.Take(Pagination.PerPage);
-        var items = await paged.Select(s => new ShoppingListSummaryResponse
+        var pagedQuery = query.OrderBy(s => s.Name);
+        var itemsQuery = Pagination.PerPage > 0
+            ? pagedQuery.Skip(Pagination.Skip).Take(Pagination.PerPage)
+            : pagedQuery;
+        var items = await itemsQuery
+            .Select(s => new ShoppingListSummaryResponse
             {
                 Id = s.Id, Name = s.Name, GroupId = s.GroupId, HouseholdId = s.HouseholdId,
-                UserId = s.UserId, CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt
+                UserId = s.UserId, RecipeReferenceCount = s.RecipeReferences.Count,
+                CreatedAt = s.CreatedAt, UpdateAt = s.UpdateAt
             })
             .ToListAsync(ct);
+        var perPage = Pagination.PerPage > 0 ? Pagination.PerPage : Math.Max(total, 1);
         return new PaginatedResponse<ShoppingListSummaryResponse>
         {
-            Page = Pagination.Page, PerPage = Pagination.PerPage, Total = total,
-            TotalPages = Pagination.PerPage > 0 ? (int)Math.Ceiling((double)total / Pagination.PerPage) : 1, Items = items
+            Page = Pagination.PerPage > 0 ? Pagination.Page : 1,
+            PerPage = perPage,
+            Total = total,
+            TotalPages = perPage > 0 ? (int)Math.Ceiling((double)total / perPage) : 1,
+            Items = items
         };
     }
 }

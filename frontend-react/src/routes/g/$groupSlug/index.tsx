@@ -180,32 +180,32 @@ export function GroupLandingRouteComponent() {
                   >
                     Create recipe
                   </Button>
-                  <Button
-                    href={apiClient.resolvePath(`/g/${groupSlug}/recipes/finder`)}
-                    sx={{
-                      justifyContent: "flex-start",
-                      bgcolor: alpha("#ffffff", 0.94),
-                      color: "text.primary",
-                      borderColor: alpha("#ffffff", 0.72),
-                      "&:hover": {
-                        bgcolor: alpha("#ffffff", 0.88),
-                        borderColor: alpha("#ffffff", 0.88),
+                   <Button
+                     href={apiClient.resolvePath(`/g/${groupSlug}/recipes/finder`)}
+                     sx={{
+                       justifyContent: "flex-start",
+                       bgcolor: alpha("#ffffff", 0.94),
+                       color: theme => theme.palette.grey[900],
+                       borderColor: alpha("#ffffff", 0.72),
+                       "&:hover": {
+                         bgcolor: alpha("#ffffff", 0.88),
+                         borderColor: alpha("#ffffff", 0.88),
                       },
                     }}
                     variant="outlined"
                   >
                     Open finder
                   </Button>
-                  <Button
-                    href={apiClient.resolvePath("/shopping-lists")}
-                    sx={{
-                      justifyContent: "flex-start",
-                      bgcolor: alpha("#ffffff", 0.94),
-                      color: "text.primary",
-                      borderColor: alpha("#ffffff", 0.72),
-                      "&:hover": {
-                        bgcolor: alpha("#ffffff", 0.88),
-                        borderColor: alpha("#ffffff", 0.88),
+                   <Button
+                     href={apiClient.resolvePath("/shopping-lists")}
+                     sx={{
+                       justifyContent: "flex-start",
+                       bgcolor: alpha("#ffffff", 0.94),
+                       color: theme => theme.palette.grey[900],
+                       borderColor: alpha("#ffffff", 0.72),
+                       "&:hover": {
+                         bgcolor: alpha("#ffffff", 0.88),
+                         borderColor: alpha("#ffffff", 0.88),
                       },
                     }}
                     variant="outlined"

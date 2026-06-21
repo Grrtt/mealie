@@ -56,6 +56,9 @@ export interface SiteSettingsResponse {
   ingredientSystemPrompt: string | null;
   categorySystemPrompt: string | null;
   tagSystemPrompt: string | null;
+  defaultIngredientSystemPrompt: string;
+  defaultCategorySystemPrompt: string;
+  defaultTagSystemPrompt: string;
 }
 
 export interface UpdateSiteSettingsRequest {

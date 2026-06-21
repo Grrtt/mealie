@@ -49,13 +49,26 @@ export function AdminSiteSettingsRouteComponent() {
     tagSystemPrompt: "",
   });
 
+  function promptValue(customValue: string | null | undefined, defaultValue: string | undefined) {
+    return customValue ?? defaultValue ?? "";
+  }
+
   useEffect(() => {
     if (siteSettingsQuery.data) {
       setForm({
         defaultParser: siteSettingsQuery.data.defaultParser,
-        ingredientSystemPrompt: siteSettingsQuery.data.ingredientSystemPrompt ?? "",
-        categorySystemPrompt: siteSettingsQuery.data.categorySystemPrompt ?? "",
-        tagSystemPrompt: siteSettingsQuery.data.tagSystemPrompt ?? "",
+        ingredientSystemPrompt: promptValue(
+          siteSettingsQuery.data.ingredientSystemPrompt,
+          siteSettingsQuery.data.defaultIngredientSystemPrompt,
+        ),
+        categorySystemPrompt: promptValue(
+          siteSettingsQuery.data.categorySystemPrompt,
+          siteSettingsQuery.data.defaultCategorySystemPrompt,
+        ),
+        tagSystemPrompt: promptValue(
+          siteSettingsQuery.data.tagSystemPrompt,
+          siteSettingsQuery.data.defaultTagSystemPrompt,
+        ),
       });
     }
   }, [siteSettingsQuery.data]);
@@ -81,7 +94,47 @@ export function AdminSiteSettingsRouteComponent() {
   }, [aiConfigurationsQuery.data, form.defaultParser, siteSettingsQuery.data?.defaultParserUnavailable]);
 
   const mutation = useMutation({
-    mutationFn: async () => await updateSiteSettings(form),
+    mutationFn: async () => {
+      const settings = siteSettingsQuery.data;
+      if (!settings) {
+        throw new Error("Site settings are unavailable.");
+      }
+
+      const resolvePromptUpdate = (
+        value: string,
+        currentValue: string | null,
+        defaultValue: string,
+      ) => {
+        if (value === "") {
+          return "";
+        }
+
+        if (currentValue == null && value === defaultValue) {
+          return null;
+        }
+
+        return value;
+      };
+
+      return await updateSiteSettings({
+        defaultParser: form.defaultParser,
+        ingredientSystemPrompt: resolvePromptUpdate(
+          form.ingredientSystemPrompt,
+          settings.ingredientSystemPrompt,
+          settings.defaultIngredientSystemPrompt,
+        ),
+        categorySystemPrompt: resolvePromptUpdate(
+          form.categorySystemPrompt,
+          settings.categorySystemPrompt,
+          settings.defaultCategorySystemPrompt,
+        ),
+        tagSystemPrompt: resolvePromptUpdate(
+          form.tagSystemPrompt,
+          settings.tagSystemPrompt,
+          settings.defaultTagSystemPrompt,
+        ),
+      });
+    },
     onSuccess: async () => {
       setStatus("Site settings updated.");
       setError(null);

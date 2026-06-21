@@ -191,7 +191,13 @@ export function MealPlanner({ groupSlug, mode, search }: Props) {
 
   const helperMutation = useMutation({
     mutationFn: async (action: () => Promise<unknown>) => await action(),
-    onSuccess: async () => {
+    onSuccess: async result => {
+      if (Array.isArray(result) && result.length === 0) {
+        setStatus(null);
+        setError("No meal plan entries were created. Add recipes first or adjust your planning rules.");
+        return;
+      }
+
       setStatus("Meal planner updated");
       await refreshMeals();
     },

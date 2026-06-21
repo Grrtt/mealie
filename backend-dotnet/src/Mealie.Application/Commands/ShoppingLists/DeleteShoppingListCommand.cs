@@ -10,6 +10,9 @@ public record DeleteShoppingListCommand(Guid HouseholdId, Guid Id) : IQuery<bool
     {
         var db = services.Db;
         var list = await db.ShoppingLists.IgnoreQueryFilters()
+            .Include(s => s.RecipeReferences)
+            .Include(s => s.Items)
+            .ThenInclude(i => i.RecipeReferences)
             .FirstOrDefaultAsync(s => s.HouseholdId == HouseholdId && s.Id == Id, ct);
         if (list is null)
         {

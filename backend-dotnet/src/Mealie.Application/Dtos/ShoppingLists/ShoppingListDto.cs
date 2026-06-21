@@ -46,6 +46,7 @@ public class ShoppingListSummaryResponse
     public Guid GroupId { get; set; }
     public Guid HouseholdId { get; set; }
     public Guid UserId { get; set; }
+    public int RecipeReferenceCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdateAt { get; set; }
 }

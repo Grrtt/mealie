@@ -6,6 +6,8 @@ allowed-tools: shell
 
 # Mealie Implementation Completion Requirements
 
+Unless the user explicitly asks for tests, do **not** add or modify tests as part of implementation work. You may still run existing validation commands to confirm the implementation works, but test creation is opt-in only.
+
 Before declaring any implementation task **done**, you MUST verify both the C# backend and the React frontend compile successfully, then rebuild both Docker containers to confirm the full stack works.
 
 ## Step 1 — Compile the C# Backend

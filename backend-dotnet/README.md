@@ -1,6 +1,6 @@
 # Mealie C# Backend
 
-A reimplementation of the Mealie recipe manager backend in C# / ASP.NET Core 10. This provides full API compatibility with the existing Python/FastAPI backend while enabling better performance and type safety.
+A C# / ASP.NET Core 10 backend for the Mealie recipe manager.
 
 ## Prerequisites
 
@@ -105,9 +105,8 @@ backend-dotnet/
 │   ├── Mealie.UnitTests/     # Fast unit tests (no DB, no HTTP)
 │   └── Mealie.IntegrationTests/ # End-to-end tests via WebApplicationFactory
 ├── tools/
-│   └── Mealie.Migration/     # CLI tool for migrating Python DB → C# DB
+│   └── Mealie.Migration/     # CLI tool for importing legacy data
 ├── scripts/
-│   └── validate-openapi-compat.sh  # OpenAPI diff validation script
 ├── docker/
 │   └── Dockerfile            # Multi-stage build
 ├── .env.example              # All supported environment variables
@@ -143,4 +142,4 @@ See `.env.example` for the full list with descriptions.
 - **Tenant isolation**: All queries are filtered by `GroupId`/`HouseholdId` via EF Core global query filters
 - **Authentication**: JWT (48h access tokens) + API key authentication (BCrypt-hashed)
 - **Pagination**: All list endpoints use cursor-based `PaginatedResponse<T>` matching Python shape
-- **OpenAPI**: Swashbuckle at `/swagger` — schema IDs match Python Pydantic model names
+- **OpenAPI**: Swashbuckle at `/swagger`

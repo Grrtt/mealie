@@ -1,5 +1,6 @@
 using Mealie.Application.Dtos.Admin;
 using Mealie.Application.Queries;
+using Mealie.Application.Services.Parser;
 using Mealie.Domain.Entities.Settings;
 using Microsoft.EntityFrameworkCore;
 
@@ -56,6 +57,9 @@ public record GetSiteSettingsQuery : IQuery<SiteSettingsResponse>
             IngredientSystemPrompt = settings.IngredientSystemPrompt,
             CategorySystemPrompt = settings.CategorySystemPrompt,
             TagSystemPrompt = settings.TagSystemPrompt,
+            DefaultIngredientSystemPrompt = DefaultAiParserPrompts.Ingredient,
+            DefaultCategorySystemPrompt = DefaultAiParserPrompts.Category,
+            DefaultTagSystemPrompt = DefaultAiParserPrompts.Tag,
         };
     }
 }

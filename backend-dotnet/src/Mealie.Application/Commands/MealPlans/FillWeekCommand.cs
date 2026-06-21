@@ -35,7 +35,9 @@ public record FillWeekCommand(Guid GroupId, Guid HouseholdId, Guid UserId, FillW
             if (hasRules)
             {
                 var dayRules = allRules.Where(r => r.Day == dayName || r.Day == "unset").ToList();
-                slots = dayRules.Select(r => (r.EntryType, (MealPlanRule?)r));
+                slots = dayRules.Count > 0
+                    ? dayRules.Select(r => (r.EntryType, (MealPlanRule?)r))
+                    : DefaultFillEntryTypes.Select(t => (t, (MealPlanRule?)null));
             }
             else
             {
