@@ -590,13 +590,16 @@ public class RecipesController(
     [HttpGet("{slug}/exports")]
     public async Task<IActionResult> ExportRecipe(string slug, CancellationToken ct)
     {
-        var result = await executor.ExecuteAsync(new ExportRecipeQuery(slug), ct);
-        if (result is null)
+        var export = await executor.ExecuteAsync(new ExportRecipeQuery(slug), ct);
+        if (export is null)
         {
             return NotFound(new { detail = "Recipe not found" });
         }
 
-        return File(result.Value.Data, "application/zip", result.Value.FileName);
+        var (recipe, fileName) = export.Value;
+        RecipeExportResponseHeaders.Apply(Response, fileName);
+        await RecipeZipWriter.WriteRecipeAsync(Response.Body, recipe, ct);
+        return new EmptyResult();
     }
 
     // ── Import Endpoints ────────────────────────────────────────────────────

@@ -70,35 +70,6 @@ public class RecipeExportService(ApplicationDbContext db, IOptions<AppSettings> 
         return Task.FromResult<IList<ExportFileInfo>>(files);
     }
 
-    public async Task<(byte[] Data, string FileName)?> ExportRecipeAsync(string slug, CancellationToken ct = default)
-    {
-        var recipe = await db.Recipes
-            .Include(r => r.RecipeIngredients)
-            .Include(r => r.RecipeInstructions)
-            .Include(r => r.Notes)
-            .Include(r => r.Tags)
-            .Include(r => r.Categories)
-            .Include(r => r.Nutrition)
-            .Include(r => r.Settings)
-            .FirstOrDefaultAsync(r => r.Slug == slug, ct);
-
-        if (recipe is null)
-        {
-            return null;
-        }
-
-        var json = JsonSerializer.Serialize(recipe, SerializerOptions);
-
-        using var ms = new MemoryStream();
-        using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, true))
-        {
-            await WriteRecipeToArchiveAsync(archive, recipe.Slug, json);
-        }
-
-        ms.Seek(0, SeekOrigin.Begin);
-        return (ms.ToArray(), $"{recipe.Slug}.zip");
-    }
-
     /// <summary>
     ///     Creates a combined ZIP containing all specified recipes (JSON + images) and saves it to the exports directory.
     ///     Returns file info for the saved ZIP.
