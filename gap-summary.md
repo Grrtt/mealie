@@ -1,6 +1,6 @@
 # Gap Analysis Summary
 
-Quick-reference index of all gap analysis files and their priority.  Updated 2026-06-18.
+Quick-reference index of all gap analysis files and their priority.  Updated 2026-09-10.
 
 > **Note:** The individual `gap-*.md` files are snapshots from the initial port assessment and many
 > of their findings have since been resolved.  This summary reflects the current state; individual
@@ -28,7 +28,7 @@ Quick-reference index of all gap analysis files and their priority.  Updated 202
 - **OCR image import** — Full SSE-streaming endpoint with AI vision (OpenAI/Azure/Ollama/custom). Upload an image, extract recipe text, create recipe with `IsOcr=true`.
 - **User signup webhook** — `UserSignedUpEvent` is now published from `RegistrationService` so Apprise notifiers fire on new user registration.
 - **Event notifier test endpoint** — `POST .../test` now actually sends an HTTP POST with a `{event_type: "test"}` payload instead of just logging.
-- **Media authorization** — `MediaController` no longer serves private recipe images anonymously. Public recipe images remain accessible; private recipe images, user profile images, and assets require authentication.
+- **Media authorization** — Anonymous media access is removed: the API no longer mounts `DATA_DIR` as unauthenticated static files, and `MediaController` enforces per-endpoint rules. Recipe images are served to the owning household (same group) or to anyone when the recipe is public and its household is not private, matching `ExploreController`; assets, timeline images, and user profile media require authenticated owner/household access with a matching group. File names are validated as a single file name (both slash types, rooted, and traversal names are rejected), responses are `no-store`, and integration tests cover the full caller matrix plus cookie-based access for `<img>` tags.
 
 ## Known Gaps (Real, Verified)
 
@@ -44,7 +44,7 @@ Only `http://` and `https://` Apprise URLs are delivered. Protocol URLs (`slack:
 Not yet implemented — the `gap-summary.md` "C# Enhancements" section flags this. Export currently uses buffered approach.
 
 ### Token-signed media URLs
-The `gap-media.md` spec for `IMediaTokenService` with HMAC-SHA256 signing was not implemented. Instead, media auth uses a simpler approach: check if the recipe is public/household is non-private for anonymous access; require authentication otherwise. Token-signed URLs (which don't require cookies) may still be desirable for shared recipe images loaded via `<img>` tags in emails.
+The `gap-media.md` spec for `IMediaTokenService` with HMAC-SHA256 signing was not implemented. Instead, media authorization is enforced by `MediaController` itself: recipe images allow anonymous access only for public recipes in non-private households; assets, timeline images, and profile media require a matching group and household (owner or same-household member for profiles). In-app `<img>` tags keep working because the JWT is carried in the `mealie.access_token` cookie, so no signed URL is needed for browser loads. Token-signed URLs may still be desirable for shared recipe images embedded in emails or third-party pages.
 
 ## C# Enhancements Over Python
 

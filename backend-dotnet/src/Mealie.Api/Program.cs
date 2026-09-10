@@ -44,7 +44,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -457,16 +456,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseSwagger(c => c.RouteTemplate = "api/openapi.json");
-}
-
-var dataDir = appSettings.DataDir;
-if (Directory.Exists(dataDir))
-{
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(dataDir),
-        RequestPath = ""
-    });
 }
 
 app.MapControllers();
